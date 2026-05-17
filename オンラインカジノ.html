@@ -1,0 +1,2486 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Casino Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --casino-gold: #FFD700;
+            --casino-red: #D32F2F;
+            --casino-green: #2E7D32;
+            --casino-bg: #121212;
+            --casino-panel: #1E1E1E;
+            --text-main: #E0E0E0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--casino-bg);
+            color: var(--text-main);
+            margin: 0;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 共通ボタンのスタイル */
+        .btn-action {
+            background: linear-gradient(145deg, var(--casino-red), #9A0007);
+            color: white;
+            border: 2px solid var(--casino-gold);
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        .btn-action:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(255, 215, 0, 0.3);
+            filter: brightness(1.1);
+        }
+        
+        .btn-action:active:not(:disabled) {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .btn-action:disabled {
+            background: #555;
+            border-color: #777;
+            color: #999;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* パネルスタイル */
+        .game-panel {
+            background-color: var(--casino-panel);
+            border-radius: 12px;
+            border: 1px solid #333;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--casino-bg);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--casino-gold);
+        }
+
+        /* アラートメッセージ用 */
+        #message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            background: rgba(0,0,0,0.9);
+            border: 1px solid var(--casino-gold);
+            padding: 15px 30px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            display: none;
+            box-shadow: 0 0 20px rgba(255,215,0,0.2);
+            animation: fadeInOut 3s forwards;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; top: 0; }
+            10% { opacity: 1; top: 20px; }
+            90% { opacity: 1; top: 20px; }
+            100% { opacity: 0; top: 0; }
+        }
+
+        /* --- スロットマシンの特別スタイル --- */
+        .slot-machine-container {
+            background: linear-gradient(to bottom, #2c3e50, #000000);
+            border: 10px solid #8B4513; /* 木目調の枠 */
+            border-radius: 20px;
+            padding: 20px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 20px rgba(0,0,0,0.8),
+                0 15px 30px rgba(0,0,0,0.6),
+                0 0 15px var(--casino-gold);
+        }
+        
+        .slot-header {
+            text-align: center;
+            background: linear-gradient(180deg, #FFD700, #B8860B);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            filter: drop-shadow(0px 2px 2px rgba(255,255,255,0.3));
+        }
+
+        .reels-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            border: 4px solid #555;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden; /* リールの外側を隠す */
+            height: 180px; /* 見える範囲の高さ */
+        }
+
+        /* リールのハイライト線 */
+        .win-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 0, 0, 0.6);
+            transform: translateY(-50%);
+            z-index: 10;
+            box-shadow: 0 0 10px red;
+            display: none;
+        }
+
+        .reel {
+            width: 100px;
+            height: 150px; /* リール単体の高さ */
+            background: #f0f0f0;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
+        }
+
+        .reel-strip {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 0;
+            width: 100%;
+            /* ぼかし効果の初期状態 */
+            filter: blur(0px);
+            transition: filter 0.2s;
+        }
+        
+        /* 回転中のぼかしクラス */
+        .spinning-blur {
+            filter: blur(2px);
+        }
+
+        .symbol {
+            width: 100%;
+            height: 150px; /* 各シンボルの高さ（リールの見える範囲と同じにする） */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4rem;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        /* リアルなレバー */
+        .lever-container {
+            position: absolute;
+            right: -60px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 200px;
+        }
+
+        .lever-base {
+            width: 30px;
+            height: 60px;
+            background: #333;
+            border-radius: 5px 0 0 5px;
+            position: absolute;
+            left: 0;
+            top: 70px;
+            border: 2px solid #555;
+            border-right: none;
+        }
+
+        .lever-arm {
+            width: 15px;
+            height: 120px;
+            background: linear-gradient(to right, #b0bec5, #78909c, #b0bec5);
+            position: absolute;
+            left: 15px;
+            bottom: 70px;
+            transform-origin: bottom center;
+            border-radius: 10px;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            z-index: 5;
+        }
+
+        .lever-ball {
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle at 30% 30%, #ff4d4d, #cc0000);
+            border-radius: 50%;
+            position: absolute;
+            top: -20px;
+            left: -12.5px;
+            box-shadow: inset -5px -5px 10px rgba(0,0,0,0.4), 0 5px 10px rgba(0,0,0,0.5);
+        }
+
+        /* レバーを引いた状態のクラス */
+        .lever-pulled .lever-arm {
+            transform: rotate(45deg);
+        }
+
+        /* スロットコントロール */
+        .slot-controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #333;
+        }
+
+        .bet-display, .win-display {
+            background: #000;
+            border: 2px solid var(--casino-gold);
+            color: var(--casino-gold);
+            padding: 5px 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 5px;
+            min-width: 120px;
+            text-align: right;
+            box-shadow: inset 0 0 10px rgba(255,215,0,0.2);
+        }
+        
+        .spin-btn {
+            background: radial-gradient(circle, #4CAF50, #2E7D32);
+            color: white;
+            border: 3px solid #1B5E20;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 10px 0 #1B5E20, 0 15px 20px rgba(0,0,0,0.4);
+            transition: all 0.1s;
+            text-transform: uppercase;
+        }
+        
+        .spin-btn:active, .spin-btn.active {
+            transform: translateY(10px);
+            box-shadow: 0 0 0 #1B5E20, 0 5px 10px rgba(0,0,0,0.4);
+        }
+
+        /* --- その他のゲームの基本スタイル --- */
+        .game-area {
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .card {
+            width: 80px;
+            height: 120px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            font-weight: bold;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            margin: 5px;
+            position: relative;
+        }
+        
+        .card.red { color: red; }
+        .card.black { color: black; }
+        
+        .card-back {
+            background: repeating-linear-gradient(
+                45deg,
+                #003366,
+                #003366 10px,
+                #004080 10px,
+                #004080 20px
+            );
+            border: 2px solid white;
+        }
+        
+        /* ルーレット盤（簡易的） */
+        .roulette-wheel {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 10px solid #333;
+            background: conic-gradient(
+                #008000 0% 2.7%, /* 0 */
+                #ff0000 2.7% 5.4%, /* 32 */
+                #000000 5.4% 8.1%,
+                #ff0000 8.1% 10.8%,
+                #000000 10.8% 13.5%,
+                /* 中略... 視覚的な表現として一部のみ定義 */
+                #000000 97.3% 100%
+            );
+            position: relative;
+            animation: spin 10s linear infinite paused;
+        }
+        .roulette-wheel.spinning {
+            animation-play-state: running;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .roulette-ball {
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* ダイス */
+        .dice {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            color: black;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1), 2px 2px 5px rgba(0,0,0,0.3);
+            margin: 10px;
+        }
+
+        /* ビンゴカード */
+        .bingo-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .bingo-cell {
+            width: 40px;
+            height: 40px;
+            background: white;
+            color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .bingo-cell.marked {
+            background: var(--casino-red);
+            color: white;
+        }
+
+        /* キノボード */
+        .keno-board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 4px;
+            margin-top: 20px;
+        }
+        .keno-number {
+            width: 30px;
+            height: 30px;
+            background: #444;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .keno-number.selected { background: var(--casino-gold); color: black; }
+        .keno-number.drawn { background: var(--casino-red); }
+        .keno-number.hit { background: var(--casino-green); color: white; border: 2px solid gold; }
+
+        /* ナビゲーションメニュー */
+        .nav-btn {
+            background: transparent;
+            color: #aaa;
+            border: none;
+            padding: 10px 15px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-btn:hover { color: white; }
+        .nav-btn.active {
+            color: var(--casino-gold);
+            border-bottom: 2px solid var(--casino-gold);
+            font-weight: bold;
+        }
+
+        /* ローダー */
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid var(--casino-gold);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin-loader 1s linear infinite;
+        }
+        @keyframes spin-loader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+
+    <!-- ヘッダー（所持金表示など） -->
+    <header class="bg-black border-b border-gray-800 p-4 sticky top-0 z-50 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-dice text-yellow-500 text-3xl"></i>
+                <h1 class="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
+                    GRAND CASINO
+                </h1>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <div class="bg-gray-900 border border-yellow-600 rounded-full px-4 py-1 flex items-center gap-2 shadow-inner">
+                    <i class="fa-solid fa-coins text-yellow-500"></i>
+                    <span id="player-balance" class="text-xl font-mono font-bold text-white">10000</span>
+                </div>
+                <button onclick="addFunds()" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1 rounded border border-gray-600">
+                    入金
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ナビゲーションメニュー（10種類のゲーム） -->
+    <nav class="bg-gray-900 border-b border-gray-800 overflow-x-auto whitespace-nowrap scrollbar-hide py-2 px-4">
+        <div class="container mx-auto flex gap-2" id="game-nav">
+            <!-- JSで動的に生成 -->
+        </div>
+    </nav>
+
+    <!-- メインコンテンツ領域 -->
+    <main class="container mx-auto flex-grow p-4 md:p-8 flex justify-center items-start">
+        
+        <!-- ゲーム表示エリア -->
+        <div id="game-container" class="game-panel w-full max-w-4xl min-h-[600px] relative">
+            <!-- ゲームコンテンツがここにロードされる -->
+            <div id="welcome-screen" class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-[url('https://placehold.co/800x600/121212/333333?text=Casino+Background')] bg-cover bg-center">
+                <div class="bg-black/80 p-8 rounded-xl border border-yellow-600 backdrop-blur-sm">
+                    <i class="fa-solid fa-crown text-6xl text-yellow-500 mb-4"></i>
+                    <h2 class="text-4xl font-bold mb-4 text-white">ようこそ、グランドカジノへ</h2>
+                    <p class="text-gray-300 mb-8 max-w-md mx-auto">
+                        10種類の本格的なカジノゲームをお楽しみいただけます。<br>
+                        上部のメニューからお好きなゲームを選んでください。<br>
+                        特におすすめは、超リアルな挙動の「スロット」です！
+                    </p>
+                    <button onclick="switchGame('slot')" class="btn-action text-xl px-8 py-4 animate-pulse">
+                        <i class="fa-solid fa-play mr-2"></i> スロットを始める
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-black p-4 text-center text-gray-500 text-sm border-t border-gray-800">
+        &copy; 2026 Grand Casino Simulator. All virtual rights reserved. <br>
+        ※このゲームはシミュレーションであり、実際の金銭は使用しません。
+    </footer>
+
+    <!-- グローバルメッセージボックス -->
+    <div id="message-box"></div>
+
+    <script>
+        // --- グローバル変数と状態管理 ---
+        let balance = 10000;
+        let currentGame = null;
+
+        const messageBox = document.getElementById('message-box');
+        const balanceDisplay = document.getElementById('player-balance');
+        const gameContainer = document.getElementById('game-container');
+        const gameNav = document.getElementById('game-nav');
+
+        // ゲームリスト（10種類）
+        const games = [
+            { id: 'slot', name: 'スロット', icon: 'fa-slot-machine', isPremium: true },
+            { id: 'blackjack', name: 'ブラックジャック', icon: 'fa-cards' },
+            { id: 'roulette', name: 'ルーレット', icon: 'fa-circle-notch' },
+            { id: 'poker', name: 'ビデオポーカー', icon: 'fa-spade' },
+            { id: 'baccarat', name: 'バカラ', icon: 'fa-diamond' },
+            { id: 'craps', name: 'クラップス(サイコロ)', icon: 'fa-dice-d20' },
+            { id: 'hilo', name: 'ハイ＆ロー', icon: 'fa-arrow-up-down' },
+            { id: 'keno', name: 'キノ', icon: 'fa-border-all' },
+            { id: 'bingo', name: 'ビンゴ', icon: 'fa-table-cells' },
+            { id: 'mines', name: 'マインズ', icon: 'fa-bomb' }
+        ];
+
+        // --- ユーティリティ関数 ---
+        function updateBalance(amount) {
+            balance += amount;
+            // アニメーション効果
+            balanceDisplay.style.color = amount > 0 ? '#4CAF50' : (amount < 0 ? '#F44336' : 'white');
+            balanceDisplay.style.transform = 'scale(1.2)';
+            
+            // 数値のカウントアップ/ダウンアニメーション（簡易版）
+            balanceDisplay.innerText = Math.floor(balance).toLocaleString();
+            
+            setTimeout(() => {
+                balanceDisplay.style.color = 'white';
+                balanceDisplay.style.transform = 'scale(1)';
+            }, 300);
+            
+            if (balance <= 0) {
+                showMessage("資金が底をつきました！入金してください。", "error");
+            }
+        }
+
+        function showMessage(msg, type = 'info') {
+            messageBox.innerText = msg;
+            messageBox.style.borderColor = type === 'error' ? 'red' : (type === 'win' ? 'gold' : '#3498db');
+            messageBox.style.color = type === 'error' ? '#ffcccc' : 'white';
+            
+            // アニメーションのリセット
+            messageBox.style.animation = 'none';
+            messageBox.offsetHeight; /* trigger reflow */
+            messageBox.style.animation = 'fadeInOut 3s forwards';
+            messageBox.style.display = 'block';
+        }
+
+        function addFunds() {
+            if (balance < 1000) {
+                updateBalance(5000);
+                showMessage("5000 コインを入金しました！", "info");
+            } else {
+                showMessage("まだ十分な資金があります。", "error");
+            }
+        }
+
+        // --- ナビゲーション構築 ---
+        function buildNav() {
+            games.forEach(game => {
+                const btn = document.createElement('button');
+                btn.className = 'nav-btn flex items-center gap-2';
+                // FontAwesomeの無料版アイコンで代用（存在しないものもあるため近似）
+                let iconClass = 'fa-gamepad';
+                if(game.id === 'slot') iconClass = 'fa-bolt'; // fa-slot-machine の代わり
+                if(game.id === 'blackjack') iconClass = 'fa-layer-group';
+                if(game.id === 'roulette') iconClass = 'fa-life-ring';
+                if(game.id === 'poker') iconClass = 'fa-heart';
+                if(game.id === 'baccarat') iconClass = 'fa-gem';
+                if(game.id === 'craps') iconClass = 'fa-dice';
+                if(game.id === 'hilo') iconClass = 'fa-sort';
+                if(game.id === 'keno') iconClass = 'fa-th';
+                if(game.id === 'bingo') iconClass = 'fa-table';
+                if(game.id === 'mines') iconClass = 'fa-bomb';
+
+                btn.innerHTML = `<i class="fa-solid ${iconClass} ${game.isPremium ? 'text-yellow-500' : ''}"></i> ${game.name}`;
+                btn.onclick = () => switchGame(game.id);
+                btn.id = `nav-${game.id}`;
+                gameNav.appendChild(btn);
+            });
+        }
+
+        // --- ゲーム切り替え ---
+        function switchGame(gameId) {
+            // 現在のゲームをクリーンアップ（タイマー等があれば）
+            if (currentGame && currentGame.cleanup) {
+                currentGame.cleanup();
+            }
+
+            // ナビゲーションのアクティブ状態更新
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.getElementById(`nav-${gameId}`);
+            if(activeBtn) activeBtn.classList.add('active');
+
+            // ローディング表示
+            gameContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full min-h-[500px]">
+                    <div class="loader mb-4"></div>
+                    <p class="text-gray-400">Loading ${games.find(g => g.id === gameId).name}...</p>
+                </div>
+            `;
+
+            // 少し遅延させてゲームをロード（演出）
+            setTimeout(() => {
+                gameContainer.innerHTML = ''; // クリア
+                
+                switch(gameId) {
+                    case 'slot': initSlotMachine(); break;
+                    case 'blackjack': initBlackjack(); break;
+                    case 'roulette': initRoulette(); break;
+                    case 'poker': initPoker(); break;
+                    case 'baccarat': initBaccarat(); break;
+                    case 'craps': initCraps(); break;
+                    case 'hilo': initHiLo(); break;
+                    case 'keno': initKeno(); break;
+                    case 'bingo': initBingo(); break;
+                    case 'mines': initMines(); break;
+                    default: 
+                        gameContainer.innerHTML = '<div class="p-8 text-center text-red-500">Game not implemented yet.</div>';
+                }
+            }, 500);
+        }
+
+        // ============================================================================
+        // 1. スロットマシン (超リアル実装)
+        // ============================================================================
+        function initSlotMachine() {
+            // --- 設定とデータ ---
+            const symbols = [
+                { id: 'seven', char: '7️⃣', value: 100 },
+                { id: 'bar', char: '🍫', value: 50 },
+                { id: 'bell', char: '🔔', value: 30 },
+                { id: 'melon', char: '🍉', value: 20 },
+                { id: 'plum', char: '🍇', value: 15 },
+                { id: 'orange', char: '🍊', value: 10 },
+                { id: 'cherry', char: '🍒', value: 5 }
+            ];
+            
+            const numReels = 3;
+            // 各リールのシンボル配列（配列の長さは十分に長くする）
+            const reelStrips = Array.from({length: numReels}, () => {
+                let strip = [];
+                // ランダムに30個程度のシンボルを並べる
+                for(let i=0; i<30; i++) {
+                    // 出現確率を調整（チェリーが多く、7が少ない）
+                    let rand = Math.random();
+                    let sym;
+                    if(rand < 0.05) sym = symbols[0]; // 7 (5%)
+                    else if(rand < 0.15) sym = symbols[1]; // bar (10%)
+                    else if(rand < 0.30) sym = symbols[2]; // bell (15%)
+                    else if(rand < 0.45) sym = symbols[3]; // melon
+                    else if(rand < 0.60) sym = symbols[4]; // plum
+                    else if(rand < 0.75) sym = symbols[5]; // orange
+                    else sym = symbols[6]; // cherry (25%)
+                    strip.push(sym);
+                }
+                return strip;
+            });
+
+            let currentBet = 10;
+            let isSpinning = false;
+            let reelElements = [];
+            let stripElements = [];
+            let finalResults = [];
+
+            // --- UI構築 ---
+            gameContainer.innerHTML = `
+                <div class="h-full flex flex-col justify-center items-center bg-[url('https://placehold.co/800x600/1a1a1a/222?text=+')] bg-cover">
+                    
+                    <div class="slot-machine-container">
+                        <div class="slot-header">LUCKY 777</div>
+                        
+                        <!-- リールエリア -->
+                        <div class="reels-container" id="reels-area">
+                            <div class="win-line" id="win-line"></div>
+                            <!-- リールはJSで生成 -->
+                        </div>
+
+                        <!-- 物理レバー風UI -->
+                        <div class="lever-container" id="slot-lever">
+                            <div class="lever-base"></div>
+                            <div class="lever-arm">
+                                <div class="lever-ball"></div>
+                            </div>
+                        </div>
+
+                        <!-- コントロールエリア -->
+                        <div class="slot-controls">
+                            <div class="flex flex-col">
+                                <span class="text-xs text-gray-400">BET AMOUNT</span>
+                                <div class="flex items-center gap-2">
+                                    <button class="bg-gray-700 px-2 rounded hover:bg-gray-600" id="btn-bet-down">-</button>
+                                    <div class="bet-display" id="slot-bet">${currentBet}</div>
+                                    <button class="bg-gray-700 px-2 rounded hover:bg-gray-600" id="btn-bet-up">+</button>
+                                    <button class="bg-yellow-700 text-xs px-2 py-1 rounded ml-2 hover:bg-yellow-600" id="btn-bet-max">MAX</button>
+                                </div>
+                            </div>
+                            
+                            <button class="spin-btn" id="btn-spin">SPIN</button>
+                            
+                            <div class="flex flex-col">
+                                <span class="text-xs text-gray-400">WINNINGS</span>
+                                <div class="win-display" id="slot-win">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 text-gray-400 text-sm bg-black/50 p-4 rounded-lg border border-gray-700">
+                        <p class="font-bold text-white mb-2">Payouts (per 10 Bet):</p>
+                        <div class="grid grid-cols-4 gap-2 text-center">
+                            <div>7️⃣7️⃣7️⃣<br><span class="text-yellow-500">1000</span></div>
+                            <div>🍫🍫🍫<br><span class="text-yellow-500">500</span></div>
+                            <div>🔔🔔🔔<br><span class="text-yellow-500">300</span></div>
+                            <div>🍉🍉🍉<br><span class="text-yellow-500">200</span></div>
+                            <div>🍇🍇🍇<br><span class="text-yellow-500">150</span></div>
+                            <div>🍊🍊🍊<br><span class="text-yellow-500">100</span></div>
+                            <div>🍒🍒🍒<br><span class="text-yellow-500">50</span></div>
+                            <div>🍒🍒ANY<br><span class="text-yellow-500">20</span></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // DOM要素の取得
+            const reelsArea = document.getElementById('reels-area');
+            const lever = document.getElementById('slot-lever');
+            const btnSpin = document.getElementById('btn-spin');
+            const betDisplay = document.getElementById('slot-bet');
+            const winDisplay = document.getElementById('slot-win');
+            const winLine = document.getElementById('win-line');
+
+            // リールの生成
+            const symbolHeight = 150; // CSSと一致させる
+            for (let i = 0; i < numReels; i++) {
+                const reel = document.createElement('div');
+                reel.className = 'reel';
+                
+                const strip = document.createElement('div');
+                strip.className = 'reel-strip';
+                
+                // ストリップにシンボルを配置
+                // 初期状態で見えるように数回繰り返して配置する
+                let stripHTML = '';
+                // 3ループ分つなげる（十分な長さにするため）
+                for(let loop=0; loop<3; loop++){
+                    reelStrips[i].forEach(sym => {
+                        stripHTML += `<div class="symbol">${sym.char}</div>`;
+                    });
+                }
+                strip.innerHTML = stripHTML;
+                
+                reel.appendChild(strip);
+                reelsArea.appendChild(reel);
+                
+                reelElements.push(reel);
+                stripElements.push(strip);
+
+                // 初期位置をランダムに設定
+                const initialOffset = -Math.floor(Math.random() * reelStrips[i].length) * symbolHeight;
+                strip.style.transform = `translateY(${initialOffset}px)`;
+            }
+
+            // --- コントロールのイベント ---
+            document.getElementById('btn-bet-up').onclick = () => { if(!isSpinning) { currentBet += 10; updateBetDisplay(); }};
+            document.getElementById('btn-bet-down').onclick = () => { if(!isSpinning && currentBet > 10) { currentBet -= 10; updateBetDisplay(); }};
+            document.getElementById('btn-bet-max').onclick = () => { if(!isSpinning) { currentBet = 100; updateBetDisplay(); }};
+            
+            function updateBetDisplay() { betDisplay.innerText = currentBet; }
+
+            // レバークリックイベント
+            lever.onclick = () => {
+                if(!isSpinning) {
+                    pullLever();
+                }
+            };
+
+            // スピンボタンクリック
+            btnSpin.onclick = () => {
+                if(!isSpinning) {
+                    // ボタンのアニメーション効果
+                    btnSpin.classList.add('active');
+                    setTimeout(() => btnSpin.classList.remove('active'), 100);
+                    startSpin();
+                }
+            };
+
+            // キーボードのスペースキー対応
+            const keydownHandler = (e) => {
+                if(e.code === 'Space' && !isSpinning) {
+                    e.preventDefault(); // スクロール防止
+                    btnSpin.click();
+                }
+            };
+            document.addEventListener('keydown', keydownHandler);
+
+            // --- スピンロジック ---
+            function pullLever() {
+                lever.classList.add('lever-pulled');
+                setTimeout(() => {
+                    lever.classList.remove('lever-pulled');
+                    startSpin();
+                }, 300);
+            }
+
+            function startSpin() {
+                if (balance < currentBet) {
+                    showMessage("残高が不足しています", "error");
+                    return;
+                }
+
+                isSpinning = true;
+                updateBalance(-currentBet);
+                winDisplay.innerText = '0';
+                winLine.style.display = 'none';
+                finalResults = [];
+
+                // 各リールのアニメーション設定
+                stripElements.forEach((strip, index) => {
+                    // ぼかし効果を追加して回転してる感を出す
+                    strip.classList.add('spinning-blur');
+                    
+                    // 現在のY位置を取得
+                    let currentTransform = strip.style.transform;
+                    let currentY = 0;
+                    if(currentTransform) {
+                        currentY = parseFloat(currentTransform.replace('translateY(', '').replace('px)', ''));
+                    }
+
+                    // 目標位置を決定（現在の位置から大きく下にスクロール）
+                    // 最低でもストリップ1周分（reelStrips[index].length * symbolHeight）は回す
+                    const spinDistance = (reelStrips[index].length * symbolHeight) * 2; 
+                    // 最終的に止まるインデックスをランダムに決定
+                    const targetIndex = Math.floor(Math.random() * reelStrips[index].length);
+                    // ターゲットのシンボルを保存
+                    finalResults.push(reelStrips[index][targetIndex]);
+
+                    // 目標のY座標（ストリップの真ん中ループの targetIndex の位置）
+                    // ※負の値で上にずらす
+                    const targetY = -((reelStrips[index].length + targetIndex) * symbolHeight);
+
+                    // CSS transitionを使用してアニメーション
+                    // リールごとに遅延時間を設ける（左から順に止まる）
+                    const duration = 2.0 + (index * 0.5); // 2.0s, 2.5s, 3.0s
+                    
+                    // 一旦transitionをリセットして初期位置を設定（無限回転のように見せるトリック）
+                    strip.style.transition = 'none';
+                    // 上の方にリセット
+                    strip.style.transform = `translateY(${currentY % (reelStrips[index].length * symbolHeight)}px)`;
+                    
+                    // 強制リフロー
+                    strip.offsetHeight;
+
+                    // アニメーション開始
+                    // cubic-bezier(0.2, 0.8, 0.2, 1) は、最初は速く、最後にゆっくり止まるイージング
+                    strip.style.transition = `transform ${duration}s cubic-bezier(0.2, 0.8, 0.2, 1.05)`;
+                    strip.style.transform = `translateY(${targetY}px)`;
+
+                    // 回転終了時の処理
+                    setTimeout(() => {
+                        strip.classList.remove('spinning-blur');
+                        // 最後の音が鳴るような演出（省略）
+                        
+                        // 全てのリールが止まったら判定
+                        if (index === numReels - 1) {
+                            setTimeout(checkWin, 300);
+                        }
+                    }, duration * 1000);
+                });
+            }
+
+            function checkWin() {
+                const s1 = finalResults[0].id;
+                const s2 = finalResults[1].id;
+                const s3 = finalResults[2].id;
+                
+                let winAmount = 0;
+                let multiplier = currentBet / 10;
+
+                // 勝利判定ロジック
+                if (s1 === s2 && s2 === s3) {
+                    // 3つ揃い
+                    const baseVal = finalResults[0].value;
+                    // 3つ揃いのボーナス倍率
+                    winAmount = baseVal * 10 * multiplier;
+                } else if (s1 === 'cherry' && s2 === 'cherry') {
+                    // チェリー2つ
+                    winAmount = 20 * multiplier;
+                } else if (s1 === 'cherry') {
+                    // チェリー1つ
+                    winAmount = 5 * multiplier;
+                }
+
+                if (winAmount > 0) {
+                    // 当たり演出
+                    winLine.style.display = 'block';
+                    
+                    // 徐々に金額を増やすアニメーション
+                    let currentWin = 0;
+                    const step = Math.max(1, Math.floor(winAmount / 20));
+                    const winInterval = setInterval(() => {
+                        currentWin += step;
+                        if(currentWin >= winAmount) {
+                            currentWin = winAmount;
+                            clearInterval(winInterval);
+                            updateBalance(winAmount);
+                            showMessage(`BIG WIN! ${winAmount} コイン獲得！`, 'win');
+                            isSpinning = false;
+                        }
+                        winDisplay.innerText = currentWin;
+                    }, 50);
+                    
+                    // 全体がピカピカ光る
+                    gameContainer.firstElementChild.style.animation = 'pulse 1s infinite';
+                    setTimeout(() => {
+                        gameContainer.firstElementChild.style.animation = '';
+                    }, 3000);
+
+                } else {
+                    isSpinning = false;
+                }
+            }
+
+            // クリーンアップ関数を登録
+            currentGame = {
+                cleanup: () => {
+                    document.removeEventListener('keydown', keydownHandler);
+                }
+            };
+        }
+
+        // ============================================================================
+        // 2. ブラックジャック (簡易実装)
+        // ============================================================================
+        function initBlackjack() {
+            gameContainer.innerHTML = `
+                <div class="h-full flex flex-col p-6 bg-green-900 rounded-xl relative">
+                    <h2 class="text-3xl font-bold text-center text-white mb-4 border-b border-green-700 pb-2">BLACKJACK</h2>
+                    
+                    <!-- ディーラーエリア -->
+                    <div class="flex-1 flex flex-col items-center">
+                        <div class="text-gray-300 mb-2">Dealer (<span id="bj-dealer-score">?</span>)</div>
+                        <div id="bj-dealer-cards" class="flex justify-center h-32"></div>
+                    </div>
+                    
+                    <!-- メッセージエリア -->
+                    <div id="bj-message" class="text-center text-2xl font-bold text-yellow-400 h-10 my-4"></div>
+
+                    <!-- プレイヤーエリア -->
+                    <div class="flex-1 flex flex-col items-center">
+                        <div id="bj-player-cards" class="flex justify-center h-32 mb-2"></div>
+                        <div class="text-white mb-4">Player (<span id="bj-player-score">0</span>)</div>
+                        
+                        <!-- コントロール -->
+                        <div class="flex gap-4" id="bj-controls">
+                            <div class="flex items-center gap-2 mr-4" id="bj-bet-area">
+                                <span class="text-white">Bet:</span>
+                                <input type="number" id="bj-bet" value="100" min="10" step="10" class="w-24 px-2 py-1 bg-gray-800 text-white rounded">
+                                <button id="bj-btn-deal" class="btn-action bg-blue-600 border-blue-400">DEAL</button>
+                            </div>
+                            
+                            <div id="bj-action-area" class="hidden gap-2">
+                                <button id="bj-btn-hit" class="btn-action bg-green-600 border-green-400">HIT</button>
+                                <button id="bj-btn-stand" class="btn-action bg-red-600 border-red-400">STAND</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            let deck = [];
+            let playerHand = [];
+            let dealerHand = [];
+            let currentBet = 0;
+
+            const suits = ['♠', '♥', '♦', '♣'];
+            const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+            function createDeck() {
+                deck = [];
+                for (let suit of suits) {
+                    for (let value of values) {
+                        let weight = parseInt(value);
+                        if (['J', 'Q', 'K'].includes(value)) weight = 10;
+                        if (value === 'A') weight = 11; // 初期値11、後で調整
+                        deck.push({ suit, value, weight, color: (suit === '♥' || suit === '♦') ? 'red' : 'black' });
+                    }
+                }
+                // シャッフル
+                for (let i = deck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [deck[i], deck[j]] = [deck[j], deck[i]];
+                }
+            }
+
+            function getScore(hand) {
+                let score = 0;
+                let aces = 0;
+                for (let card of hand) {
+                    score += card.weight;
+                    if (card.value === 'A') aces += 1;
+                }
+                while (score > 21 && aces > 0) {
+                    score -= 10;
+                    aces -= 1;
+                }
+                return score;
+            }
+
+            function renderCard(card, hidden = false) {
+                if (hidden) {
+                    return `<div class="card card-back mx-[-20px] transition-transform hover:-translate-y-2"></div>`;
+                }
+                return `
+                    <div class="card ${card.color} mx-[-20px] shadow-lg transition-transform hover:-translate-y-2 bg-white">
+                        <div class="absolute top-1 left-2 text-sm">${card.value}</div>
+                        <div class="text-3xl">${card.suit}</div>
+                        <div class="absolute bottom-1 right-2 text-sm rotate-180">${card.value}</div>
+                    </div>
+                `;
+            }
+
+            function renderHands(hideDealerSecond = false) {
+                const dCards = document.getElementById('bj-dealer-cards');
+                const pCards = document.getElementById('bj-player-cards');
+                
+                dCards.innerHTML = '';
+                dealerHand.forEach((card, idx) => {
+                    dCards.innerHTML += renderCard(card, hideDealerSecond && idx === 1);
+                });
+
+                pCards.innerHTML = '';
+                playerHand.forEach(card => {
+                    pCards.innerHTML += renderCard(card);
+                });
+
+                document.getElementById('bj-player-score').innerText = getScore(playerHand);
+                if (hideDealerSecond) {
+                    document.getElementById('bj-dealer-score').innerText = dealerHand[0].weight;
+                } else {
+                    document.getElementById('bj-dealer-score').innerText = getScore(dealerHand);
+                }
+            }
+
+            document.getElementById('bj-btn-deal').onclick = () => {
+                currentBet = parseInt(document.getElementById('bj-bet').value);
+                if(isNaN(currentBet) || currentBet <= 0) return showMessage("正しいベット額を入力してください", "error");
+                if(balance < currentBet) return showMessage("残高が不足しています", "error");
+
+                updateBalance(-currentBet);
+                createDeck();
+                playerHand = [deck.pop(), deck.pop()];
+                dealerHand = [deck.pop(), deck.pop()];
+                
+                document.getElementById('bj-message').innerText = '';
+                document.getElementById('bj-bet-area').classList.add('hidden');
+                document.getElementById('bj-action-area').classList.remove('hidden');
+                document.getElementById('bj-action-area').classList.add('flex');
+                
+                renderHands(true);
+
+                // ブラックジャック判定
+                if(getScore(playerHand) === 21) {
+                    endGame("BLACKJACK!", currentBet * 2.5);
+                }
+            };
+
+            document.getElementById('bj-btn-hit').onclick = () => {
+                playerHand.push(deck.pop());
+                renderHands(true);
+                if(getScore(playerHand) > 21) {
+                    endGame("BUST! 負け", 0);
+                }
+            };
+
+            document.getElementById('bj-btn-stand').onclick = () => {
+                renderHands(false); // ディーラーのカードを表にする
+                
+                // ディーラーの自動ドロー
+                const drawInterval = setInterval(() => {
+                    if (getScore(dealerHand) < 17) {
+                        dealerHand.push(deck.pop());
+                        renderHands(false);
+                    } else {
+                        clearInterval(drawInterval);
+                        judge();
+                    }
+                }, 800);
+            };
+
+            function judge() {
+                const pScore = getScore(playerHand);
+                const dScore = getScore(dealerHand);
+
+                if (dScore > 21) endGame("ディーラー BUST! 勝ち", currentBet * 2);
+                else if (pScore > dScore) endGame("YOU WIN!", currentBet * 2);
+                else if (pScore < dScore) endGame("YOU LOSE", 0);
+                else endGame("PUSH (引き分け)", currentBet);
+            }
+
+            function endGame(msg, winAmount) {
+                document.getElementById('bj-message').innerText = msg;
+                if(winAmount > 0) {
+                    updateBalance(winAmount);
+                    if(winAmount > currentBet) showMessage("勝利しました！", "win");
+                }
+                
+                renderHands(false); // 全て見せる
+                
+                setTimeout(() => {
+                    document.getElementById('bj-bet-area').classList.remove('hidden');
+                    document.getElementById('bj-action-area').classList.add('hidden');
+                    document.getElementById('bj-action-area').classList.remove('flex');
+                }, 2000);
+            }
+            
+            currentGame = {};
+        }
+
+        // ============================================================================
+        // 3. ルーレット (簡易実装)
+        // ============================================================================
+        function initRoulette() {
+            gameContainer.innerHTML = `
+                <div class="h-full flex flex-col md:flex-row p-6 bg-green-800 rounded-xl">
+                    <!-- 左側：ホイール -->
+                    <div class="flex-1 flex flex-col items-center justify-center p-4 border-r border-green-600">
+                        <div class="roulette-wheel" id="roulette-wheel">
+                            <div class="roulette-ball" id="roulette-ball"></div>
+                            <!-- 中央の装飾 -->
+                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-yellow-600 rounded-full border-4 border-yellow-800 flex items-center justify-center font-bold text-white shadow-inner">
+                                <div id="roulette-result-display">0</div>
+                            </div>
+                        </div>
+                        <div class="mt-8 text-white text-xl font-bold" id="roulette-status">ベットしてください</div>
+                    </div>
+                    
+                    <!-- 右側：ベッティングボード -->
+                    <div class="flex-[1.5] flex flex-col p-4">
+                        <div class="mb-4 flex items-center justify-between">
+                            <div class="text-white">BET: <span id="r-current-bet" class="text-yellow-400 font-bold">10</span></div>
+                            <div class="flex gap-2">
+                                <button class="bg-gray-700 text-white px-3 py-1 rounded" onclick="document.getElementById('r-bet-input').stepDown()">-</button>
+                                <input type="number" id="r-bet-input" value="10" min="10" step="10" class="w-20 text-center text-black font-bold">
+                                <button class="bg-gray-700 text-white px-3 py-1 rounded" onclick="document.getElementById('r-bet-input').stepUp()">+</button>
+                            </div>
+                        </div>
+
+                        <!-- 簡易ボード（Red/Black, Odd/Even のみ実装） -->
+                        <div class="grid grid-cols-2 gap-4 flex-grow">
+                            <button class="btn-action bg-red-600 border-red-800 hover:bg-red-500 text-2xl h-32" id="r-bet-red">RED (2x)</button>
+                            <button class="btn-action bg-black border-gray-800 hover:bg-gray-900 text-2xl h-32" id="r-bet-black">BLACK (2x)</button>
+                            <button class="btn-action bg-blue-800 border-blue-900 hover:bg-blue-700 text-2xl h-32" id="r-bet-even">EVEN (2x)</button>
+                            <button class="btn-action bg-purple-800 border-purple-900 hover:bg-purple-700 text-2xl h-32" id="r-bet-odd">ODD (2x)</button>
+                        </div>
+                        
+                        <div class="mt-4 text-center text-sm text-green-300">
+                            ※簡易版のため、アウトサイドベットの一部のみ対応しています。
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const wheel = document.getElementById('roulette-wheel');
+            const resultDisplay = document.getElementById('roulette-result-display');
+            const status = document.getElementById('roulette-status');
+            const betInput = document.getElementById('r-bet-input');
+            
+            let isSpinning = false;
+            
+            // ルーレットの数字（ヨーロピアン）
+            const numbers = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+            const reds = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+
+            function placeBet(type) {
+                if(isSpinning) return;
+                const amt = parseInt(betInput.value);
+                if(balance < amt) return showMessage("残高不足です", "error");
+                
+                updateBalance(-amt);
+                spin(type, amt);
+            }
+
+            document.getElementById('r-bet-red').onclick = () => placeBet('red');
+            document.getElementById('r-bet-black').onclick = () => placeBet('black');
+            document.getElementById('r-bet-even').onclick = () => placeBet('even');
+            document.getElementById('r-bet-odd').onclick = () => placeBet('odd');
+
+            function spin(betType, betAmount) {
+                isSpinning = true;
+                status.innerText = "No More Bets!";
+                wheel.classList.add('spinning');
+                resultDisplay.innerText = "?";
+                
+                // CSS Animation を早くする
+                wheel.style.animationDuration = '1s';
+
+                setTimeout(() => {
+                    wheel.style.animationDuration = '3s'; // 徐々に遅く
+                    
+                    setTimeout(() => {
+                        wheel.classList.remove('spinning');
+                        wheel.style.animationDuration = '10s'; // 元に戻す
+                        
+                        // 結果を決定
+                        const resultNum = numbers[Math.floor(Math.random() * numbers.length)];
+                        resultDisplay.innerText = resultNum;
+                        
+                        // 背景色を設定
+                        if(resultNum === 0) resultDisplay.parentElement.style.backgroundColor = 'green';
+                        else if(reds.includes(resultNum)) resultDisplay.parentElement.style.backgroundColor = 'red';
+                        else resultDisplay.parentElement.style.backgroundColor = 'black';
+
+                        checkWin(resultNum, betType, betAmount);
+                        isSpinning = false;
+                    }, 2000);
+                }, 2000);
+            }
+
+            function checkWin(num, type, amount) {
+                let win = false;
+                if(num !== 0) {
+                    const isRed = reds.includes(num);
+                    const isEven = num % 2 === 0;
+                    
+                    if(type === 'red' && isRed) win = true;
+                    if(type === 'black' && !isRed) win = true;
+                    if(type === 'even' && isEven) win = true;
+                    if(type === 'odd' && !isEven) win = true;
+                }
+
+                if(win) {
+                    const winAmount = amount * 2;
+                    status.innerText = `You Win! ${winAmount} 獲得`;
+                    status.classList.add('text-yellow-400');
+                    updateBalance(winAmount);
+                    showMessage(`当たり！ ${winAmount} コイン獲得！`, 'win');
+                } else {
+                    status.innerText = `You Lose. 結果: ${num}`;
+                    status.classList.remove('text-yellow-400');
+                }
+            }
+            
+            currentGame = {};
+        }
+
+        // ============================================================================
+        // 4. ビデオポーカー (Jacks or Better 簡易版)
+        // ============================================================================
+        function initPoker() {
+            gameContainer.innerHTML = `
+                <div class="h-full flex flex-col p-6 bg-blue-900 rounded-xl text-white">
+                    <h2 class="text-3xl font-bold text-center text-yellow-400 mb-4 border-b border-blue-700 pb-2">VIDEO POKER</h2>
+                    
+                    <!-- ペイテーブル（一部） -->
+                    <div class="bg-blue-950 p-2 text-sm grid grid-cols-2 gap-x-4 mb-4 rounded border border-blue-800 font-mono">
+                        <div>Royal Flush: 800x</div>
+                        <div>Straight Flush: 50x</div>
+                        <div>4 of a Kind: 25x</div>
+                        <div>Full House: 9x</div>
+                        <div>Flush: 6x</div>
+                        <div>Straight: 4x</div>
+                        <div>3 of a Kind: 3x</div>
+                        <div>Two Pair: 2x</div>
+                        <div class="col-span-2 text-yellow-300">Jacks or Better: 1x</div>
+                    </div>
+
+                    <div id="vp-message" class="text-center text-xl font-bold h-8 mb-4"></div>
+
+                    <!-- カードエリア -->
+                    <div class="flex justify-center gap-2 mb-6" id="vp-cards">
+                        <!-- カード5枚がここに入る -->
+                    </div>
+                    
+                    <!-- ホールドボタン -->
+                    <div class="flex justify-center gap-2 mb-6" id="vp-hold-btns">
+                        <button class="bg-gray-600 hover:bg-gray-500 text-white w-20 py-1 rounded invisible">HOLD</button>
+                    </div>
+
+                    <!-- コントロール -->
+                    <div class="flex justify-center gap-4 mt-auto">
+                        <div class="flex items-center gap-2">
+                            <span>Bet:</span>
+                            <input type="number" id="vp-bet" value="50" min="10" step="10" class="w-20 px-2 py-1 bg-gray-800 rounded">
+                        </div>
+                        <button id="vp-btn-deal" class="btn-action w-32">DEAL</button>
+                    </div>
+                </div>
+            `;
+
+            let deck = [];
+            let hand = [];
+            let held = [false, false, false, false, false];
+            let state = 'IDLE'; // IDLE, DRAW
+            let currentBet = 0;
+
+            const suits = ['♠', '♥', '♦', '♣'];
+            const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+            function initDeck() {
+                deck = [];
+                for (let s of suits) {
+                    for (let i = 0; i < values.length; i++) {
+                        deck.push({ suit: s, value: values[i], rank: i + 2, color: (s === '♥' || s === '♦') ? 'red' : 'black' });
+                    }
+                }
+                deck.sort(() => Math.random() - 0.5);
+            }
+
+            function renderCards() {
+                const container = document.getElementById('vp-cards');
+                const holdContainer = document.getElementById('vp-hold-btns');
+                container.innerHTML = '';
+                holdContainer.innerHTML = '';
+
+                for(let i=0; i<5; i++) {
+                    // カード描画
+                    let cardHtml = '';
+                    if(hand[i]) {
+                        const c = hand[i];
+                        cardHtml = `
+                            <div class="w-20 h-32 bg-white rounded flex flex-col justify-between p-2 shadow-lg relative ${held[i] ? 'top-[-10px] border-2 border-yellow-400' : ''}" 
+                                 onclick="toggleHold(${i})">
+                                <div class="text-left text-${c.color}-600 font-bold leading-none">${c.value}</div>
+                                <div class="text-center text-3xl text-${c.color}-600">${c.suit}</div>
+                                <div class="text-right text-${c.color}-600 font-bold leading-none rotate-180">${c.value}</div>
+                                ${held[i] ? '<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-yellow-400 text-black text-xs font-bold px-1 rounded opacity-80 pointer-events-none">HELD</div>' : ''}
+                            </div>
+                        `;
+                    } else {
+                        cardHtml = `<div class="w-20 h-32 card-back rounded"></div>`;
+                    }
+                    container.innerHTML += cardHtml;
+
+                    // ホールドボタン（装飾用、クリックはカード本体で行う）
+                    holdContainer.innerHTML += `
+                        <div class="w-20 text-center text-xs text-yellow-400 font-bold opacity-${held[i] ? '100' : '0'} transition-opacity">HELD</div>
+                    `;
+                }
+            }
+
+            window.toggleHold = function(index) {
+                if(state !== 'DRAW') return;
+                held[index] = !held[index];
+                renderCards();
+            };
+
+            const btnDeal = document.getElementById('vp-btn-deal');
+            const msgBox = document.getElementById('vp-message');
+
+            btnDeal.onclick = () => {
+                if(state === 'IDLE') {
+                    // 最初のディール
+                    currentBet = parseInt(document.getElementById('vp-bet').value);
+                    if(balance < currentBet) return showMessage("残高不足", "error");
+                    
+                    updateBalance(-currentBet);
+                    initDeck();
+                    hand = [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()];
+                    held = [false, false, false, false, false];
+                    
+                    msgBox.innerText = "ホールドするカードを選んでください";
+                    btnDeal.innerText = "DRAW";
+                    state = 'DRAW';
+                    renderCards();
+                } else if(state === 'DRAW') {
+                    // ドロー（交換）
+                    for(let i=0; i<5; i++) {
+                        if(!held[i]) {
+                            hand[i] = deck.pop();
+                        }
+                    }
+                    renderCards();
+                    evaluateHand();
+                    btnDeal.innerText = "DEAL";
+                    state = 'IDLE';
+                }
+            };
+
+            function evaluateHand() {
+                // 役の判定ロジック（簡易的）
+                const ranks = hand.map(c => c.rank).sort((a,b) => a-b);
+                const suits = hand.map(c => c.suit);
+                
+                const isFlush = suits.every(s => s === suits[0]);
+                const isStraight = ranks.every((r, i) => i === 0 || r === ranks[i-1] + 1) || 
+                                   (ranks.join(',') === '2,3,4,5,14'); // A-5ストレート
+                                   
+                const counts = {};
+                ranks.forEach(r => counts[r] = (counts[r] || 0) + 1);
+                const countValues = Object.values(counts).sort((a,b) => b-a);
+                
+                let multiplier = 0;
+                let handName = "";
+
+                if (isFlush && isStraight && ranks[4] === 14 && ranks[0] === 10) { handName = "Royal Flush"; multiplier = 800; }
+                else if (isFlush && isStraight) { handName = "Straight Flush"; multiplier = 50; }
+                else if (countValues[0] === 4) { handName = "4 of a Kind"; multiplier = 25; }
+                else if (countValues[0] === 3 && countValues[1] === 2) { handName = "Full House"; multiplier = 9; }
+                else if (isFlush) { handName = "Flush"; multiplier = 6; }
+                else if (isStraight) { handName = "Straight"; multiplier = 4; }
+                else if (countValues[0] === 3) { handName = "3 of a Kind"; multiplier = 3; }
+                else if (countValues[0] === 2 && countValues[1] === 2) { handName = "Two Pair"; multiplier = 2; }
+                else if (countValues[0] === 2) {
+                    // Jacks or better check
+                    const pairRank = parseInt(Object.keys(counts).find(k => counts[k] === 2));
+                    if(pairRank >= 11) { // J=11
+                        handName = "Jacks or Better"; multiplier = 1;
+                    }
+                }
+
+                if(multiplier > 0) {
+                    const win = currentBet * multiplier;
+                    msgBox.innerText = `${handName}! ${win} 獲得!`;
+                    msgBox.className = "text-center text-xl font-bold h-8 mb-4 text-yellow-400 animate-pulse";
+                    updateBalance(win);
+                } else {
+                    msgBox.innerText = "Game Over";
+                    msgBox.className = "text-center text-xl font-bold h-8 mb-4 text-gray-400";
+                }
+            }
+
+            // 初期描画
+            renderCards();
+            currentGame = { cleanup: () => { window.toggleHold = null; }};
+        }
+
+        // ============================================================================
+        // 5. バカラ (プレイヤー or バンカー)
+        // ============================================================================
+        function initBaccarat() {
+            gameContainer.innerHTML = `
+                <div class="h-full flex flex-col p-6 bg-red-900 rounded-xl">
+                    <h2 class="text-3xl font-bold text-center text-gold-400 mb-6 text-yellow-500 border-b border-red-700 pb-2">BACCARAT</h2>
+                    
+                    <div class="flex justify-around mb-8">
+                        <!-- プレイヤー -->
+                        <div class="flex flex-col items-center w-1/2 border-r border-red-800">
+                            <h3 class="text-2xl text-blue-300 font-bold mb-2">PLAYER</h3>
+                            <div class="text-4xl font-mono text-white bg-black/50 px-4 py-2 rounded mb-4" id="bac-p-score">0</div>
+                            <div id="bac-p-cards" class="flex gap-2 min-h-[120px]"></div>
+                        </div>
+                        
+                        <!-- バンカー -->
+                        <div class="flex flex-col items-center w-1/2">
+                            <h3 class="text-2xl text-red-300 font-bold mb-2">BANKER</h3>
+                            <div class="text-4xl font-mono text-white bg-black/50 px-4 py-2 rounded mb-4" id="bac-b-score">0</div>
+                            <div id="bac-b-cards" class="flex gap-2 min-h-[120px]"></div>
+                        </div>
+                    </div>
+
+                    <div id="bac-result" class="text-center text-3xl font-bold text-yellow-400 h-12 mb-4"></div>
+
+                    <!-- ベッティングエリア -->
+                    <div class="bg-black/30 p-4 rounded-xl mt-auto">
+                        <div class="flex justify-center items-center gap-4 mb-4">
+                            <span class="text-white">BET AMOUNT:</span>
+                            <input type="number" id="bac-bet" value="100" class="w-24 px-2 py-1 text-black font-bold rounded">
+                        </div>
+                        
+                        <div class="flex gap-4 justify-center">
+                            <button class="btn-action bg-blue-700 hover:bg-blue-600 w-32" onclick="playBaccarat('player')">PLAYER (1:1)</button>
+                            <button class="btn-action bg-green-700 hover:bg-green-600 w-32" onclick="playBaccarat('tie')">TIE (8:1)</button>
+                            <button class="btn-action bg-red-700 hover:bg-red-600 w-32" onclick="playBaccarat('banker')">BANKER (1:0.95)</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const suits = ['♠', '♥', '♦', '♣'];
+            const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+            function getCardValue(val) {
+                if (['10', 'J', 'Q', 'K'].includes(val)) return 0;
+                if (val === 'A') return 1;
+                return parseInt(val);
+            }
+
+            function getRandomCard() {
+                const suit = suits[Math.floor(Math.random() * suits.length)];
+                const value = values[Math.floor(Math.random() * values.length)];
+                return { suit, value, points: getCardValue(value), color: (suit === '♥' || suit === '♦') ? 'red' : 'black' };
+            }
+
+            function calcScore(hand) {
+                let total = hand.reduce((sum, card) => sum + card.points, 0);
+                return total % 10;
+            }
+
+            function drawCardHTML(c) {
+                return `
+                    <div class="w-16 h-24 bg-white rounded flex flex-col justify-between p-1 shadow border border-gray-300">
+                        <div class="text-xs text-${c.color}-600 font-bold">${c.value}</div>
+                        <div class="text-center text-xl text-${c.color}-600">${c.suit}</div>
+                        <div class="text-xs text-${c.color}-600 font-bold text-right rotate-180">${c.value}</div>
+                    </div>
+                `;
+            }
+
+            window.playBaccarat = function(choice) {
+                const betAmt = parseInt(document.getElementById('bac-bet').value);
+                if(balance < betAmt) return showMessage("残高不足です", "error");
+                
+                updateBalance(-betAmt);
+                
+                // UIリセット
+                document.getElementById('bac-p-cards').innerHTML = '';
+                document.getElementById('bac-b-cards').innerHTML = '';
+                document.getElementById('bac-result').innerText = 'Dealing...';
+
+                // ディール
+                let pHand = [getRandomCard(), getRandomCard()];
+                let bHand = [getRandomCard(), getRandomCard()];
+
+                // 描画を少し遅延させて演出
+                setTimeout(() => {
+                    document.getElementById('bac-p-cards').innerHTML = drawCardHTML(pHand[0]) + drawCardHTML(pHand[1]);
+                    document.getElementById('bac-b-cards').innerHTML = drawCardHTML(bHand[0]) + drawCardHTML(bHand[1]);
+                    
+                    let pScore = calcScore(pHand);
+                    let bScore = calcScore(bHand);
+                    
+                    document.getElementById('bac-p-score').innerText = pScore;
+                    document.getElementById('bac-b-score').innerText = bScore;
+
+                    // サードカードのルール（簡略化：Pが5以下ならドロー、Bは複雑だがここでは5以下でドローとする）
+                    setTimeout(() => {
+                        let drawn = false;
+                        if(pScore <= 5 && bScore < 8 && pScore < 8) {
+                            pHand.push(getRandomCard());
+                            document.getElementById('bac-p-cards').innerHTML += drawCardHTML(pHand[2]);
+                            pScore = calcScore(pHand);
+                            document.getElementById('bac-p-score').innerText = pScore;
+                            drawn = true;
+                        }
+                        if(bScore <= 5 && pScore < 8 && bScore < 8) {
+                            bHand.push(getRandomCard());
+                            document.getElementById('bac-b-cards').innerHTML += drawCardHTML(bHand[2]);
+                            bScore = calcScore(bHand);
+                            document.getElementById('bac-b-score').innerText = bScore;
+                            drawn = true;
+                        }
+
+                        // 結果判定
+                        setTimeout(() => {
+                            let result = '';
+                            if(pScore > bScore) result = 'player';
+                            else if(bScore > pScore) result = 'banker';
+                            else result = 'tie';
+
+                            const resEl = document.getElementById('bac-result');
+                            
+                            if(choice === result) {
+                                let winAmt = 0;
+                                if(result === 'player') winAmt = betAmt * 2;
+                                if(result === 'banker') winAmt = betAmt * 1.95; // 手数料5%
+                                if(result === 'tie') winAmt = betAmt * 9; // ベット戻り含む
+
+                                resEl.innerText = `${result.toUpperCase()} WIN!`;
+                                resEl.className = "text-center text-3xl font-bold text-yellow-400 h-12 mb-4 animate-bounce";
+                                updateBalance(winAmt);
+                            } else {
+                                resEl.innerText = `${result.toUpperCase()} WINS. You Lose.`;
+                                resEl.className = "text-center text-3xl font-bold text-gray-400 h-12 mb-4";
+                            }
+                        }, drawn ? 500 : 0);
+                    }, 800);
+                }, 500);
+            };
+            
+            currentGame = { cleanup: () => { window.playBaccarat = null; }};
+        }
+
+        // ============================================================================
+        // 6. クラップス (サイコロ) - 簡易版
+        // ============================================================================
+        function initCraps() {
+            gameContainer.innerHTML = `
+                <div class="h-full flex flex-col p-6 bg-green-700 rounded-xl relative overflow-hidden">
+                    <!-- 背景のテーブル模様 -->
+                    <div class="absolute inset-0 opacity-20 pointer-events-none border-[20px] border-green-900 rounded-xl"></div>
+                    
+                    <h2 class="text-3xl font-bold text-center text-white mb-4 drop-shadow-md">CRAPS (Pass Line)</h2>
+                    
+                    <div class="flex-grow flex flex-col items-center justify-center">
+                        <div class="flex gap-4 mb-8" id="craps-dice-container">
+                            <div class="dice" id="craps-die1">🎲</div>
+                            <div class="dice" id="craps-die2">🎲</div>
+                        </div>
+                        
+                        <div class="text-4xl font-bold text-yellow-300 mb-2 h-12" id="craps-total"></div>
+                        <div class="text-xl text-white mb-8 bg-black/50 px-4 py-2 rounded-full h-10 flex items-center justify-center" id="craps-status">
+                            Roll to establish a Point
+                        </div>
+                        
+                        <div class="flex items-center gap-4 bg-black/40 p-4 rounded-xl backdrop-blur-sm">
+                            <div class="flex flex-col">
+                                <label class="text-xs text-gray-300 mb-1">Pass Line Bet</label>
+                                <input type="number" id="craps-bet" value="50" class="w-24 px-2 py-1 bg-gray-800 text-white rounded border border-gray-600">
+                            </div>
+                            <button id="craps-btn-roll" class="btn-action bg-red-600 border-red-400 text-xl px-8 py-3">ROLL DICE</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            let point = null;
+            const btnRoll = document.getElementById('craps-btn-roll');
+            const die1El = document.getElementById('craps-die1');
+            const die2El = document.getElementById('craps-die2');
+            const totalEl = document.getElementById('craps-total');
+            const statusEl = document.getElementById('craps-status');
+            const betInput = document.getElementById('craps-bet');
+
+            const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+
+            btnRoll.onclick = () => {
+                const bet = parseInt(betInput.value);
+                if(balance < bet && point === null) return showMessage("残高不足", "error");
+
+                if(point === null) updateBalance(-bet);
+
+                btnRoll.disabled = true;
+                
+                // アニメーション
+                let rolls = 0;
+                const rollInterval = setInterval(() => {
+                    die1El.innerText = diceFaces[Math.floor(Math.random() * 6)];
+                    die2El.innerText = diceFaces[Math.floor(Math.random() * 6)];
+                    die1El.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    die2El.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    rolls++;
+                    
+                    if(rolls > 15) {
+                        clearInterval(rollInterval);
+                        die1El.style.transform = 'rotate(0deg)';
+                        die2El.style.transform = 'rotate(0deg)';
+                        const d1 = Math.floor(Math.random() * 6) + 1;
+                        const d2 = Math.floor(Math.random() * 6) + 1;
+                        die1El.innerText = diceFaces[d1 - 1];
+                        die2El.innerText = diceFaces[d2 - 1];
+                        
+                        evaluateRoll(d1 + d2, bet);
+                        btnRoll.disabled = false;
+                    }
+                }, 50);
+            };
+
+            function evaluateRoll(total, bet) {
+                totalEl.innerText = total;
+                
+                if (point === null) {
+                    // Come Out Roll
+                    if (total === 7 || total === 11) {
+                        statusEl.innerText = "Natural! You Win!";
+                        statusEl.className = "text-xl text-white mb-8 bg-green-600 px-6 py-2 rounded-full h-10 flex items-center justify-center font-bold";
+                        updateBalance(bet * 2);
+                    } else if (total === 2 || total === 3 || total === 12) {
+                        statusEl.innerText = "Craps! You Lose.";
+                        statusEl.className = "text-xl text-white mb-8 bg-red-600 px-6 py-2 rounded-full h-10 flex items-center justify-center font-bold";
+                    } else {
+                        point = total;
+                        statusEl.innerHTML = `Point is <span class="text-yellow-400 font-bold ml-2 text-2xl">${point}</span>`;
+                        statusEl.className = "text-xl text-white mb-8 bg-blue-600 px-6 py-2 rounded-full h-10 flex items-center justify-center";
+                        betInput.disabled = true;
+                        btnRoll.innerText = "ROLL";
+                    }
+                } else {
+                    // Point Phase
+                    if (total === point) {
+                        statusEl.innerText = "Hit the Point! You Win!";
+                        statusEl.className = "text-xl text-white mb-8 bg-green-600 px-6 py-2 rounded-full h-10 flex items-center justify-center font-bold";
+                        updateBalance(bet * 2);
+                        resetGame();
+                    } else if (total === 7) {
+                        statusEl.innerText = "Seven Out! You Lose.";
+                        statusEl.className = "text-xl text-white mb-8 bg-red-600 px-6 py-2 rounded-full h-10 flex items-center justify-center font-bold";
+                        resetGame();
+                    } else {
+                        // 何もなし
+                    }
+                }
+            }
+
+            function resetGame() {
+                point = null;
+                betInput.disabled = false;
+                setTimeout(() => {
+                    statusEl.innerText = "Roll to establish a Point";
+                    statusEl.className = "text-xl text-white mb-8 bg-black/50 px-4 py-2 rounded-full h-10 flex items-center justify-center";
+                    btnRoll.innerText = "ROLL DICE";
+                    totalEl.innerText = "";
+                }, 2000);
+            }
+            
+            currentGame = {};
+        }
+
+        // ============================================================================
+        // 7. ハイ＆ロー
+        // ============================================================================
+        function initHiLo() {
+            gameContainer.innerHTML = `
+                <div class="h-full flex flex-col p-6 bg-gradient-to-b from-purple-900 to-indigo-900 rounded-xl">
+                    <h2 class="text-3xl font-bold text-center text-white mb-2">HI & LOW</h2>
+                    <p class="text-center text-purple-300 mb-8 text-sm">次のカードが今のカードより大きいか小さいか当てろ！</p>
+                    
+                    <div class="flex-grow flex flex-col items-center justify-center">
+                        <div class="flex gap-8 items-center mb-8">
+                            <div class="flex flex-col items-center">
+                                <span class="text-gray-300 text-sm mb-2">Current Card</span>
+                                <div id="hl-current-card" class="w-24 h-36 bg-white rounded-lg shadow-2xl flex items-center justify-center text-4xl">?</div>
+                            </div>
+                            
+                            <i class="fa-solid fa-arrow-right text-3xl text-purple-400"></i>
+                            
+                            <div class="flex flex-col items-center">
+                                <span class="text-gray-300 text-sm mb-2">Next Card</span>
+                                <div id="hl-next-card" class="w-24 h-36 card-back rounded-lg shadow-2xl"></div>
+                            </div>
+                        </div>
+
+                        <div id="hl-message" class="text-2xl font-bold text-yellow-400 h-8 mb-6"></div>
+
+                        <!-- コントロール群 -->
+                        <div id="hl-setup" class="flex items-center gap-4 bg-black/30 p-4 rounded-xl">
+                            <input type="number" id="hl-bet" value="100" class="w-24 px-2 py-2 bg-gray-800 text-white rounded">
+                            <button id="hl-btn-start" class="btn-action bg-blue-600">START GAME</button>
+                        </div>
+
+                        <div id="hl-play" class="hidden flex-col items-center gap-4 w-full max-w-md">
+                            <div class="flex justify-between w-full text-lg text-white bg-black/40 px-4 py-2 rounded">
+                                <div>Winnings: <span id="hl-winnings" class="text-green-400 font-bold">0</span></div>
+                                <div>Multiplier: <span id="hl-multi" class="text-yellow-400 font-bold">1.0x</span></div>
+                            </div>
+                            
+                            <div class="flex gap-4 w-full">
+                                <button class="btn-action bg-red-600 flex-1 py-4 text-xl flex items-center justify-center gap-2" onclick="guessHiLo('high')">
+                                    <i class="fa-solid fa-arrow-up"></i> HIGH
+                                </button>
+                                <button class="btn-action bg-blue-600 flex-1 py-4 text-xl flex items-center justify-center gap-2" onclick="guessHiLo('low')">
+                                    <i class="fa-solid fa-arrow-down"></i> LOW
+                                </button>
+                            </div>
+                            
+                            <button class="w-full mt-2 bg-green-700 hover:bg-green-600 text-white py-2 rounded font-bold" onclick="cashoutHiLo()">CASHOUT</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            let currentVal = 0;
+            let currentBet = 0;
+            let currentMultiplier = 1.0;
+            let isPlaying = false;
+
+            const ranks = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+            
+            function getRandomRank() {
+                return Math.floor(Math.random() * 13);
+            }
+
+            function drawCard(rankIndex) {
+                const suits = ['♠', '♥', '♦', '♣'];
+                const suit = suits[Math.floor(Math.random() * 4)];
+                const color = (suit === '♥' || suit === '♦') ? 'red' : 'black';
+                return `<div class="w-full h-full flex flex-col justify-between p-2 text-${color}-600">
+                            <div class="font-bold">${ranks[rankIndex]}</div>
+                            <div class="text-center text-4xl">${suit}</div>
+                            <div class="font-bold text-right rotate-180">${ranks[rankIndex]}</div>
+                        </div>`;
+            }
+
+            document.getElementById('hl-btn-start').onclick = () => {
+                currentBet = parseInt(document.getElementById('hl-bet').value);
+                if(balance < currentBet) return showMessage("残高不足", "error");
+                
+                updateBalance(-currentBet);
+                isPlaying = true;
+                currentMultiplier = 1.0;
+                
+                document.getElementById('hl-setup').classList.add('hidden');
+                document.getElementById('hl-play').classList.remove('hidden');
+                document.getElementById('hl-play').classList.add('flex');
+                
+                currentVal = getRandomRank();
+                document.getElementById('hl-current-card').innerHTML = drawCard(currentVal);
+                document.getElementById('hl-next-card').className = "w-24 h-36 card-back rounded-lg shadow-2xl";
+                document.getElementById('hl-next-card').innerHTML = '';
+                document.getElementById('hl-message').innerText = "High or Low?";
+                
+                updateHiLoDisplay();
+            };
+
+            function updateHiLoDisplay() {
+                document.getElementById('hl-winnings').innerText = Math.floor(currentBet * currentMultiplier);
+                document.getElementById('hl-multi').innerText = currentMultiplier.toFixed(2) + 'x';
+            }
+
+            window.guessHiLo = function(guess) {
+                if(!isPlaying) return;
+                
+                const nextVal = getRandomRank();
+                const nextCardEl = document.getElementById('hl-next-card');
+                nextCardEl.className = "w-24 h-36 bg-white rounded-lg shadow-2xl";
+                nextCardEl.innerHTML = drawCard(nextVal);
+
+                let win = false;
+                if(guess === 'high' && nextVal > currentVal) win = true;
+                if(guess === 'low' && nextVal < currentVal) win = true;
+                if(nextVal === currentVal) win = true; // 同じ数字はプレイヤー有利（セーフ）
+
+                if(win) {
+                    // 倍率計算（確率に基づく）
+                    let probHigh = (12 - currentVal) / 13;
+                    let probLow = currentVal / 13;
+                    
+                    let increase = 0;
+                    if(guess === 'high') {
+                        increase = probHigh > 0 ? 0.95 / probHigh : 1.1; // 簡略化
+                    } else {
+                        increase = probLow > 0 ? 0.95 / probLow : 1.1;
+                    }
+                    
+                    // 倍率上昇を少し抑える
+                    currentMultiplier += Math.max(0.1, (increase - 1) * 0.5);
+                    
+                    document.getElementById('hl-message').innerText = "CORRECT!";
+                    document.getElementById('hl-message').style.color = "#4ade80";
+                    
+                    setTimeout(() => {
+                        currentVal = nextVal;
+                        document.getElementById('hl-current-card').innerHTML = drawCard(currentVal);
+                        nextCardEl.className = "w-24 h-36 card-back rounded-lg shadow-2xl";
+                        nextCardEl.innerHTML = '';
+                        document.getElementById('hl-message').innerText = "Next?";
+                        document.getElementById('hl-message').style.color = "#facc15";
+                        updateHiLoDisplay();
+                    }, 1000);
+
+                } else {
+                    document.getElementById('hl-message').innerText = "WRONG! YOU LOSE.";
+                    document.getElementById('hl-message').style.color = "#ef4444";
+                    isPlaying = false;
+                    
+                    setTimeout(() => {
+                        document.getElementById('hl-setup').classList.remove('hidden');
+                        document.getElementById('hl-play').classList.add('hidden');
+                        document.getElementById('hl-play').classList.remove('flex');
+                        document.getElementById('hl-current-card').innerHTML = '?';
+                        nextCardEl.className = "w-24 h-36 card-back rounded-lg shadow-2xl";
+                        nextCardEl.innerHTML = '';
+                    }, 2000);
+                }
+            };
+
+            window.cashoutHiLo = function() {
+                if(!isPlaying) return;
+                const winAmt = Math.floor(currentBet * currentMultiplier);
+                updateBalance(winAmt);
+                showMessage(`${winAmt} コインをキャッシュアウトしました！`, "win");
+                isPlaying = false;
+                
+                document.getElementById('hl-setup').classList.remove('hidden');
+                document.getElementById('hl-play').classList.add('hidden');
+                document.getElementById('hl-play').classList.remove('flex');
+            };
+
+            currentGame = { cleanup: () => { window.guessHiLo = null; window.cashoutHiLo = null; }};
+        }
+
+        // ============================================================================
+        // 8. キノ (Keno)
+        // ============================================================================
+        function initKeno() {
+            gameContainer.innerHTML = `
+                <div class="h-full flex flex-col p-6 bg-slate-800 rounded-xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-3xl font-bold text-yellow-400">KENO</h2>
+                        <div class="text-gray-300">Pick 1 to 10 numbers</div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row gap-6 flex-grow">
+                        <!-- ボード -->
+                        <div class="flex-grow bg-slate-900 p-4 rounded-lg border border-slate-700">
+                            <div class="keno-board" id="keno-grid">
+                                <!-- JSで生成 (1-80) -->
+                            </div>
+                        </div>
+                        
+                        <!-- サイドパネル -->
+                        <div class="w-full md:w-64 flex flex-col gap-4">
+                            <div class="bg-slate-900 p-4 rounded-lg border border-slate-700">
+                                <div class="text-gray-400 text-sm mb-1">Selected: <span id="k-count" class="text-white font-bold">0</span>/10</div>
+                                <button class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded w-full mb-4" onclick="clearKeno()">CLEAR</button>
+                                
+                                <label class="text-xs text-gray-400 block mb-1">Bet Amount</label>
+                                <input type="number" id="keno-bet" value="50" class="w-full bg-slate-800 text-white px-2 py-1 border border-slate-600 rounded mb-4">
+                                
+                                <button id="keno-btn-play" class="btn-action w-full bg-green-600 border-green-500 py-3 text-lg" disabled>PLAY</button>
+                            </div>
+                            
+                            <div class="bg-slate-900 p-4 rounded-lg border border-slate-700 flex-grow">
+                                <div class="text-gray-400 text-sm mb-2 border-b border-slate-700 pb-1">Payout Table (Hits)</div>
+                                <div id="keno-payouts" class="text-sm font-mono text-gray-300">
+                                    Select numbers to see payouts.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="keno-message" class="text-center text-xl mt-4 h-8 font-bold text-yellow-400"></div>
+                </div>
+            `;
+
+            const grid = document.getElementById('keno-grid');
+            const countEl = document.getElementById('k-count');
+            const btnPlay = document.getElementById('keno-btn-play');
+            const payoutsDiv = document.getElementById('keno-payouts');
+            
+            let selectedNums = new Set();
+            let isPlaying = false;
+
+            // ボード生成
+            for(let i=1; i<=80; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'keno-number text-gray-400 hover:bg-slate-600 transition-colors';
+                cell.innerText = i;
+                cell.onclick = () => toggleKenoNum(i, cell);
+                grid.appendChild(cell);
+            }
+
+            function toggleKenoNum(num, el) {
+                if(isPlaying) return;
+                
+                if(selectedNums.has(num)) {
+                    selectedNums.delete(num);
+                    el.classList.remove('selected');
+                } else {
+                    if(selectedNums.size < 10) {
+                        selectedNums.add(num);
+                        el.classList.add('selected');
+                    }
+                }
+                updateKenoUI();
+            }
+
+            window.clearKeno = function() {
+                if(isPlaying) return;
+                selectedNums.clear();
+                document.querySelectorAll('.keno-number').forEach(el => {
+                    el.classList.remove('selected', 'drawn', 'hit');
+                });
+                updateKenoUI();
+                document.getElementById('keno-message').innerText = '';
+            };
+
+            function updateKenoUI() {
+                countEl.innerText = selectedNums.size;
+                btnPlay.disabled = selectedNums.size === 0;
+                
+                // 簡易ペイアウト表の更新
+                if(selectedNums.size === 0) {
+                    payoutsDiv.innerHTML = "Select numbers to see payouts.";
+                } else {
+                    let html = '';
+                    const size = selectedNums.size;
+                    // 適当な倍率設定
+                    if(size >= 1) html += `1 Hit: 1x<br>`;
+                    if(size >= 3) html += `2 Hits: 2x<br>3 Hits: ${size*2}x<br>`;
+                    if(size >= 5) html += `4 Hits: ${size*4}x<br>5 Hits: ${size*10}x<br>`;
+                    if(size >= 8) html += `...<br>All Hits: ${size*1000}x`;
+                    payoutsDiv.innerHTML = html;
+                }
+            }
+
+            btnPlay.onclick = () => {
+                const bet = parseInt(document.getElementById('keno-bet').value);
+                if(balance < bet) return showMessage("残高不足", "error");
+                
+                updateBalance(-bet);
+                isPlaying = true;
+                btnPlay.disabled = true;
+                document.getElementById('keno-message').innerText = "Drawing numbers...";
+
+                // 表示リセット
+                document.querySelectorAll('.keno-number').forEach(el => {
+                    el.classList.remove('drawn', 'hit');
+                });
+
+                // 20個の数字を抽選
+                let drawnNums = [];
+                while(drawnNums.length < 20) {
+                    let r = Math.floor(Math.random() * 80) + 1;
+                    if(!drawnNums.includes(r)) drawnNums.push(r);
+                }
+
+                // アニメーション表示
+                let i = 0;
+                let hits = 0;
+                const drawInterval = setInterval(() => {
+                    const num = drawnNums[i];
+                    const el = grid.children[num - 1];
+                    
+                    if(selectedNums.has(num)) {
+                        el.classList.add('hit');
+                        hits++;
+                    } else {
+                        el.classList.add('drawn');
+                    }
+                    
+                    i++;
+                    if(i >= 20) {
+                        clearInterval(drawInterval);
+                        finishKeno(hits, bet);
+                    }
+                }, 150);
+            };
+
+            function finishKeno(hits, bet) {
+                let multiplier = 0;
+                const size = selectedNums.size;
+                
+                // 簡易的なペイアウト計算
+                if(size === 1 && hits === 1) multiplier = 3;
+                else if(size > 1) {
+                    if(hits === size) multiplier = size * 50;
+                    else if(hits >= size - 1) multiplier = size * 5;
+                    else if(hits >= Math.floor(size / 2)) multiplier = 2;
+                }
+
+                if(multiplier > 0) {
+                    const win = bet * multiplier;
+                    updateBalance(win);
+                    document.getElementById('keno-message').innerText = `${hits} Hits! You Won ${win}!`;
+                } else {
+                    document.getElementById('keno-message').innerText = `${hits} Hits. Better luck next time.`;
+                    document.getElementById('keno-message').className = "text-center text-xl mt-4 h-8 font-bold text-gray-400";
+                }
+                
+                isPlaying = false;
+                updateKenoUI();
+            }
+
+            currentGame = { cleanup: () => { window.clearKeno = null; }};
+        }
+
+        // ============================================================================
+        // 9. ビンゴ (1人用簡易版)
+        // ============================================================================
+        function initBingo() {
+            gameContainer.innerHTML = `
+                <div class="h-full flex flex-col p-6 bg-pink-900 rounded-xl relative">
+                    <h2 class="text-3xl font-bold text-center text-white mb-2 drop-shadow-lg">BINGO PARTY</h2>
+                    
+                    <div class="flex gap-6 justify-center mt-4">
+                        <!-- ビンゴカード -->
+                        <div class="bg-white p-2 rounded-lg shadow-xl transform rotate-[-2deg]">
+                            <div class="grid grid-cols-5 text-center font-black text-2xl mb-2 text-pink-600">
+                                <div>B</div><div>I</div><div>N</div><div>G</div><div>O</div>
+                            </div>
+                            <div class="bingo-board" id="bingo-card"></div>
+                        </div>
+
+                        <!-- コントロールと表示 -->
+                        <div class="flex flex-col gap-4 w-64">
+                            <div class="bg-black/40 p-4 rounded-xl text-center">
+                                <div class="text-gray-300 text-sm mb-1">Current Call</div>
+                                <div id="bingo-call" class="text-5xl font-bold text-yellow-400 h-16 flex items-center justify-center bg-black/50 rounded-full border-4 border-gray-700">--</div>
+                            </div>
+                            
+                            <div class="flex-grow bg-black/40 p-2 rounded-xl overflow-y-auto h-32 border border-gray-700">
+                                <div class="text-xs text-gray-400 mb-1">Called Numbers:</div>
+                                <div id="bingo-history" class="text-sm text-gray-300 flex flex-wrap gap-1"></div>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <input type="number" id="bingo-bet" value="100" class="w-1/2 px-2 py-2 bg-gray-800 text-white rounded text-center">
+                                <button id="bingo-btn-play" class="btn-action w-1/2 bg-pink-600 border-pink-400">PLAY</button>
+                            </div>
+                            <div class="text-xs text-center text-gray-300">
+                                30球以内にビンゴで勝ち！
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ビンゴ演出用オーバーレイ -->
+                    <div id="bingo-overlay" class="absolute inset-0 flex items-center justify-center hidden pointer-events-none z-10">
+                        <div class="text-7xl font-black text-yellow-300 drop-shadow-[0_5px_5px_rgba(0,0,0,1)] animate-bounce rotate-[-10deg] border-4 border-yellow-500 p-4 bg-red-600/80 rounded-xl">BINGO!!</div>
+                    </div>
+                </div>
+            `;
+
+            let cardNumbers = [];
+            let calledNumbers = [];
+            let isPlaying = false;
+            let callInterval;
+
+            function generateCard() {
+                const card = document.getElementById('bingo-card');
+                card.innerHTML = '';
+                cardNumbers = Array(5).fill(null).map(() => []);
+
+                // B(1-15), I(16-30), N(31-45), G(46-60), O(61-75)
+                for(let col=0; col<5; col++) {
+                    let nums = [];
+                    while(nums.length < 5) {
+                        let r = Math.floor(Math.random() * 15) + 1 + (col * 15);
+                        if(!nums.includes(r)) nums.push(r);
+                    }
+                    cardNumbers[col] = nums;
+                }
+
+                // 中央はFREE
+                cardNumbers[2][2] = 'FREE';
+
+                // 描画 (行優先で出力するため転置)
+                for(let row=0; row<5; row++) {
+                    for(let col=0; col<5; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'bingo-cell border border-gray-300';
+                        cell.id = `b-cell-${row}-${col}`;
+                        
+                        if(row === 2 && col === 2) {
+                            cell.innerText = '★';
+                            cell.classList.add('marked', 'bg-pink-500');
+                        } else {
+                            cell.innerText = cardNumbers[col][row];
+                        }
+                        card.appendChild(cell);
+                    }
+                }
+            }
+
+            generateCard();
+
+            document.getElementById('bingo-btn-play').onclick = () => {
+                if(isPlaying) return;
+                
+                const bet = parseInt(document.getElementById('bingo-bet').value);
+                if(balance < bet) return showMessage("残高不足", "error");
+                
+                updateBalance(-bet);
+                isPlaying = true;
+                calledNumbers = [];
+                document.getElementById('bingo-history').innerHTML = '';
+                document.getElementById('bingo-overlay').classList.add('hidden');
+                document.getElementById('bingo-btn-play').disabled = true;
+                
+                generateCard(); // 新しいカード
+
+                let callCount = 0;
+                callInterval = setInterval(() => {
+                    callCount++;
+                    
+                    // 新しい数字をコール
+                    let newNum;
+                    do {
+                        newNum = Math.floor(Math.random() * 75) + 1;
+                    } while(calledNumbers.includes(newNum));
+                    
+                    calledNumbers.push(newNum);
+                    
+                    // UI更新
+                    let letter = '';
+                    if(newNum<=15) letter='B'; else if(newNum<=30) letter='I'; else if(newNum<=45) letter='N'; else if(newNum<=60) letter='G'; else letter='O';
+                    
+                    const displayTxt = `${letter}-${newNum}`;
+                    document.getElementById('bingo-call').innerText = displayTxt;
+                    
+                    const histSpan = document.createElement('span');
+                    histSpan.className = 'bg-gray-700 px-1 rounded';
+                    histSpan.innerText = newNum;
+                    document.getElementById('bingo-history').appendChild(histSpan);
+
+                    // カード上のチェック
+                    checkCard(newNum);
+
+                    // ビンゴ判定
+                    if(checkBingo()) {
+                        clearInterval(callInterval);
+                        handleBingoWin(bet);
+                    } else if (callCount >= 30) {
+                        // 30回で終了
+                        clearInterval(callInterval);
+                        isPlaying = false;
+                        document.getElementById('bingo-btn-play').disabled = false;
+                        document.getElementById('bingo-call').innerText = "OVER";
+                        document.getElementById('bingo-call').className = "text-3xl font-bold text-gray-400 h-16 flex items-center justify-center bg-black/50 rounded-full";
+                    }
+                }, 1000); // 1秒ごとにコール
+            };
+
+            function checkCard(num) {
+                for(let row=0; row<5; row++) {
+                    for(let col=0; col<5; col++) {
+                        if(cardNumbers[col][row] === num) {
+                            document.getElementById(`b-cell-${row}-${col}`).classList.add('marked');
+                        }
+                    }
+                }
+            }
+
+            function checkBingo() {
+                const marked = (r, c) => document.getElementById(`b-cell-${r}-${c}`).classList.contains('marked');
+                
+                // 横
+                for(let r=0; r<5; r++) {
+                    if(marked(r,0) && marked(r,1) && marked(r,2) && marked(r,3) && marked(r,4)) return true;
+                }
+                // 縦
+                for(let c=0; c<5; c++) {
+                    if(marked(0,c) && marked(1,c) && marked(2,c) && marked(3,c) && marked(4,c)) return true;
+                }
+                // 斜め
+                if(marked(0,0) && marked(1,1) && marked(2,2) && marked(3,3) && marked(4,4)) return true;
+                if(marked(0,4) && marked(1,3) && marked(2,2) && marked(3,1) && marked(4,0)) return true;
+
+                return false;
+            }
+
+            function handleBingoWin(bet) {
+                document.getElementById('bingo-overlay').classList.remove('hidden');
+                
+                // 勝金計算（早くビンゴするほど高配当）
+                let multiplier = 5; 
+                if(calledNumbers.length <= 10) multiplier = 50;
+                else if(calledNumbers.length <= 20) multiplier = 10;
+                
+                const win = bet * multiplier;
+                updateBalance(win);
+                showMessage(`BINGO!! ${win} コイン獲得！`, 'win');
+                
+                isPlaying = false;
+                document.getElementById('bingo-btn-play').disabled = false;
+            }
+
+            currentGame = { cleanup: () => clearInterval(callInterval) };
+        }
+
+        // ============================================================================
+        // 10. マインズ (Mines)
+        // ============================================================================
+        function initMines() {
+            gameContainer.innerHTML = `
+                <div class="h-full flex flex-col md:flex-row p-6 bg-[#0f1923] rounded-xl text-white">
+                    <!-- 左パネル：設定 -->
+                    <div class="w-full md:w-64 bg-[#1f2933] p-4 rounded-lg flex flex-col gap-4">
+                        <h2 class="text-2xl font-bold text-center text-green-400 mb-2 border-b border-gray-600 pb-2">MINES</h2>
+                        
+                        <div>
+                            <label class="text-sm text-gray-400 block mb-1">Bet Amount</label>
+                            <input type="number" id="mines-bet" value="100" class="w-full bg-[#323f4b] text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm text-gray-400 block mb-1">Mines Count</label>
+                            <select id="mines-count" class="w-full bg-[#323f4b] text-white px-3 py-2 rounded focus:outline-none">
+                                <option value="3">3 Mines</option>
+                                <option value="5" selected>5 Mines</option>
+                                <option value="10">10 Mines</option>
+                                <option value="15">15 Mines</option>
+                            </select>
+                        </div>
+
+                        <div class="mt-auto bg-[#1a202c] p-3 rounded text-sm text-center">
+                            Next Multiplier: <br>
+                            <span id="mines-next-multi" class="text-xl font-bold text-green-400">1.00x</span>
+                        </div>
+                        
+                        <button id="mines-btn-action" class="btn-action bg-green-600 border-green-500 py-3 mt-2">BET</button>
+                    </div>
+
+                    <!-- 右パネル：グリッド -->
+                    <div class="flex-grow flex items-center justify-center p-4">
+                        <div class="grid grid-cols-5 gap-2 w-full max-w-[400px] aspect-square" id="mines-grid">
+                            <!-- 5x5 = 25 cells -->
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const grid = document.getElementById('mines-grid');
+            const btnAction = document.getElementById('mines-btn-action');
+            const betInput = document.getElementById('mines-bet');
+            const countSelect = document.getElementById('mines-count');
+            const nextMultiDisplay = document.getElementById('mines-next-multi');
+
+            let isPlaying = false;
+            let currentBet = 0;
+            let minePositions = [];
+            let safeClicks = 0;
+            let currentMultiplier = 1.0;
+            let totalMines = 5;
+
+            // 初期グリッド生成
+            createGrid();
+
+            function createGrid() {
+                grid.innerHTML = '';
+                for(let i=0; i<25; i++) {
+                    const cell = document.createElement('button');
+                    cell.className = 'bg-[#323f4b] hover:bg-[#3e4c59] rounded-lg transition-colors flex items-center justify-center text-3xl shadow-sm border-b-4 border-[#1f2933]';
+                    cell.disabled = true; // 初期は非アクティブ
+                    cell.onclick = () => clickCell(i, cell);
+                    grid.appendChild(cell);
+                }
+            }
+
+            btnAction.onclick = () => {
+                if(!isPlaying) {
+                    // Start Game
+                    currentBet = parseInt(betInput.value);
+                    totalMines = parseInt(countSelect.value);
+                    if(balance < currentBet) return showMessage("残高不足", "error");
+
+                    updateBalance(-currentBet);
+                    isPlaying = true;
+                    safeClicks = 0;
+                    currentMultiplier = 1.0;
+                    
+                    // 地雷の配置
+                    minePositions = [];
+                    while(minePositions.length < totalMines) {
+                        let r = Math.floor(Math.random() * 25);
+                        if(!minePositions.includes(r)) minePositions.push(r);
+                    }
+
+                    // UI更新
+                    betInput.disabled = true;
+                    countSelect.disabled = true;
+                    btnAction.innerText = "CASHOUT (0.00)";
+                    btnAction.classList.replace('bg-green-600', 'bg-yellow-600');
+                    btnAction.classList.replace('border-green-500', 'border-yellow-500');
+                    
+                    // グリッドのリセットとアクティブ化
+                    Array.from(grid.children).forEach(cell => {
+                        cell.innerHTML = '';
+                        cell.className = 'bg-[#3e4c59] hover:bg-[#52606d] rounded-lg transition-colors flex items-center justify-center text-3xl shadow-md cursor-pointer border-b-4 border-[#1f2933] active:border-b-0 active:translate-y-1';
+                        cell.disabled = false;
+                    });
+                    
+                    updateNextMultiplier();
+
+                } else {
+                    // Cashout
+                    if(safeClicks > 0) {
+                        const winAmt = Math.floor(currentBet * currentMultiplier);
+                        updateBalance(winAmt);
+                        showMessage(`${winAmt} コイン獲得！`, "win");
+                    }
+                    endGame(true);
+                }
+            };
+
+            function clickCell(index, cellEl) {
+                if(!isPlaying) return;
+
+                cellEl.disabled = true;
+                cellEl.classList.remove('hover:bg-[#52606d]', 'cursor-pointer', 'active:border-b-0', 'active:translate-y-1', 'border-b-4');
+                cellEl.classList.add('bg-[#1f2933]'); // 押された状態
+
+                if(minePositions.includes(index)) {
+                    // ドカン
+                    cellEl.innerHTML = '<i class="fa-solid fa-bomb text-red-500"></i>';
+                    cellEl.classList.add('bg-red-900/50');
+                    showMessage("BOOM! 地雷を踏みました", "error");
+                    endGame(false);
+                } else {
+                    // セーフ
+                    cellEl.innerHTML = '<i class="fa-solid fa-gem text-green-400"></i>';
+                    safeClicks++;
+                    
+                    // 倍率計算（簡易的な階乗計算に基づく）
+                    currentMultiplier = calculateMultiplier(totalMines, safeClicks);
+                    
+                    btnAction.innerText = `CASHOUT (${Math.floor(currentBet * currentMultiplier)})`;
+                    
+                    if(safeClicks === 25 - totalMines) {
+                        // 全クリ
+                        const winAmt = Math.floor(currentBet * currentMultiplier);
+                        updateBalance(winAmt);
+                        showMessage(`PERFECT! ${winAmt} コイン獲得！`, "win");
+                        endGame(true);
+                    } else {
+                        updateNextMultiplier();
+                    }
+                }
+            }
+
+            function calculateMultiplier(mines, clicks) {
+                // nCr を用いた正確な倍率計算（ハウスエッジ1%と仮定）
+                // 倍率 = (25 C clicks) / ((25-mines) C clicks) * 0.99
+                let prob = 1.0;
+                for(let i=0; i<clicks; i++) {
+                    prob *= (25 - mines - i) / (25 - i);
+                }
+                return (1 / prob) * 0.99;
+            }
+
+            function updateNextMultiplier() {
+                const nextMulti = calculateMultiplier(totalMines, safeClicks + 1);
+                nextMultiDisplay.innerText = nextMulti.toFixed(2) + 'x';
+            }
+
+            function endGame(isWin) {
+                isPlaying = false;
+                betInput.disabled = false;
+                countSelect.disabled = false;
+                btnAction.innerText = "BET";
+                btnAction.classList.replace('bg-yellow-600', 'bg-green-600');
+                btnAction.classList.replace('border-yellow-500', 'border-green-500');
+                nextMultiDisplay.innerText = '1.00x';
+
+                // 全ての地雷を表示
+                Array.from(grid.children).forEach((cell, idx) => {
+                    cell.disabled = true;
+                    cell.classList.remove('cursor-pointer');
+                    if(minePositions.includes(idx) && cell.innerHTML === '') {
+                        cell.innerHTML = '<i class="fa-solid fa-bomb text-gray-500 opacity-50"></i>';
+                    } else if (!minePositions.includes(idx) && cell.innerHTML === '' && !isWin) {
+                        // 開けてない安全な場所
+                        cell.innerHTML = '<i class="fa-solid fa-gem text-gray-600 opacity-30"></i>';
+                    }
+                });
+            }
+
+            currentGame = {};
+        }
+
+        // --- 初期化処理 ---
+        window.onload = () => {
+            buildNav();
+            // 初期状態は少し待ってから所持金アニメーション
+            setTimeout(() => {
+                balanceDisplay.innerText = balance.toLocaleString();
+            }, 500);
+        };
+
+    </script>
+</body>
+</html>

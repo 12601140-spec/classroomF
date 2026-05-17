@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULTRA OBBY 3000 - V7</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Inter', sans-serif; touch-action: none; user-select: none; }
+        canvas { display: block; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .pointer-events-auto { pointer-events: auto; }
+        .blur-bg { backdrop-filter: blur(15px); background: rgba(0,0,0,0.6); }
+        .menu-btn { 
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            box-shadow: 0 6px 0 #1e3a8a, 0 12px 24px rgba(0,0,0,0.4);
+            transition: all 0.1s ease;
+        }
+        .menu-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #1e3a8a; }
+        .hud-card { background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.1); border-radius: 20px; backdrop-filter: blur(5px); }
+        .shop-item { transition: all 0.2s; }
+        .shop-item:hover { transform: scale(1.05); background: rgba(255,255,255,0.1); border-color: #eab308; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        .floating { animation: float 4s ease-in-out infinite; }
+        #save-popup { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .hotbar-slot { width: 50px; height: 50px; background: rgba(0,0,0,0.5); border: 2px solid #555; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; position: relative; }
+        .hotbar-slot.active { border-color: #ffd700; box-shadow: 0 0 10px #ffd700; }
+        .hotbar-key { position: absolute; top: -8px; left: -8px; background: #fff; color: #000; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        
+        /* スクロールバーのカスタマイズ */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(234, 179, 8, 0.8); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <!-- Title Screen -->
+        <div id="title-screen" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-auto transition-all duration-1000 bg-black/40 backdrop-blur-sm z-50">
+            <div class="mb-12 text-center floating">
+                <h1 class="text-6xl md:text-8xl font-black text-white italic tracking-tighter drop-shadow-[0_10px_10px_rgba(0,0,0,0.8)]">
+                    ULTRA<span class="text-blue-500">OBBY</span>
+                </h1>
+                <div class="bg-yellow-400 text-black font-black px-6 py-1 text-xl inline-block skew-x-[-15deg] mt-4 shadow-xl">全3,000ステージ完全制覇！</div>
+                <div class="text-white mt-4 font-bold text-sm bg-black/50 px-4 py-2 rounded-full border border-white/20 text-yellow-300">V7: アイテム20種類＆120パターン実装！</div>
+            </div>
+            
+            <div class="flex flex-col gap-4 w-80">
+                <button onclick="startGame(1)" class="menu-btn text-white font-black py-5 rounded-2xl text-xl flex items-center justify-center gap-4">
+                    <span class="text-2xl">👤</span> 1人でスタート
+                </button>
+                <button onclick="startGame(2)" class="bg-gradient-to-br from-purple-600 to-purple-900 text-white font-black py-5 rounded-2xl text-xl flex items-center justify-center gap-4 shadow-[0_6px_0_#4c1d95] active:translate-y-1 active:shadow-[0_2px_0_#4c1d95] transition-all">
+                    <span class="text-2xl">👥</span> 2人でスタート (画面分割)
+                </button>
+            </div>
+
+            <button onclick="toggleSettings()" class="absolute top-8 right-8 bg-white/10 hover:bg-white/20 p-4 rounded-full border border-white/20 text-white transition-all pointer-events-auto">
+                <span class="text-xl">⚙️ 設定</span>
+            </button>
+            
+            <div class="absolute bottom-8 text-white/80 font-bold text-sm text-center bg-black/50 p-4 rounded-xl backdrop-blur-md">
+                <span class="text-blue-400">1P操作:</span> [W][A][S][D] で移動 / [Space] でジャンプ / [1][2][3] でアイテム使用<br>
+                <span class="text-purple-400 mt-2 inline-block">2P操作:</span> [矢印キー] で移動 / [右Shift] でジャンプ / [4][5][6] でアイテム使用
+            </div>
+        </div>
+
+        <!-- Game HUD -->
+        <div id="game-ui" class="absolute inset-0 flex flex-col justify-between p-6 opacity-0 pointer-events-none transition-all duration-500">
+            <div class="flex justify-between items-start w-full pointer-events-none">
+                <!-- 1P HUD -->
+                <div id="p1-hud" class="hud-card p-4 text-white min-w-[220px] border-l-8 border-blue-500 pointer-events-auto flex flex-col gap-2">
+                    <div class="flex justify-between items-center">
+                        <div class="text-xs font-black text-blue-400 uppercase tracking-widest">1P 進捗</div>
+                        <div class="text-yellow-400 font-black text-base">💰 <span id="p1-coins">0</span></div>
+                    </div>
+                    <div class="text-3xl font-black italic">ステージ <span id="p1-stage">1</span></div>
+                    <div class="w-full bg-white/10 h-2 mt-1 rounded-full overflow-hidden">
+                        <div id="p1-progress" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <button onclick="openShop(1)" class="mt-3 w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black text-sm py-2.5 rounded-lg shadow-lg">🛒 アイテムショップ</button>
+                </div>
+                
+                <!-- Save Popup -->
+                <div id="save-popup" class="bg-green-500 text-white px-6 py-3 rounded-full font-black text-lg opacity-0 scale-50 pointer-events-none flex items-center gap-2 shadow-2xl border-4 border-green-400">
+                    <span>💾</span> セーブしました！ +10 💰
+                </div>
+
+                <!-- 2P HUD -->
+                <div id="p2-hud" class="hud-card p-4 text-white text-right min-w-[220px] border-r-8 border-purple-500 hidden pointer-events-auto flex flex-col gap-2">
+                    <div class="flex justify-between items-center flex-row-reverse">
+                        <div class="text-xs font-black text-purple-400 uppercase tracking-widest">2P 進捗</div>
+                        <div class="text-yellow-400 font-black text-base">💰 <span id="p2-coins">0</span></div>
+                    </div>
+                    <div class="text-3xl font-black italic">ステージ <span id="p2-stage">1</span></div>
+                    <div class="w-full bg-white/10 h-2 mt-1 rounded-full overflow-hidden flex justify-end">
+                        <div id="p2-progress" class="bg-purple-500 h-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <button onclick="openShop(2)" class="mt-3 w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black text-sm py-2.5 rounded-lg shadow-lg">🛒 アイテムショップ</button>
+                </div>
+            </div>
+
+            <!-- Hotbars (Inventory) -->
+            <div class="flex justify-between w-full pointer-events-none mb-2">
+                <div id="p1-hotbar" class="flex gap-3 pointer-events-auto">
+                    <!-- Slots generated by JS -->
+                </div>
+                <div id="p2-hotbar" class="flex gap-3 pointer-events-auto hidden">
+                    <!-- Slots generated by JS -->
+                </div>
+            </div>
+            
+            <button onclick="toggleSettings()" class="absolute top-6 right-[45%] bg-black/50 hover:bg-black/80 p-3 rounded-full border border-white/20 text-white transition-all pointer-events-auto">
+                <span class="text-xl">⚙️</span>
+            </button>
+        </div>
+
+        <!-- Shop Modal -->
+        <div id="shop-modal" class="absolute inset-0 flex items-center justify-center pointer-events-auto blur-bg hidden z-50">
+            <div class="bg-zinc-900 text-white rounded-3xl p-6 w-[800px] max-w-[95vw] border-2 border-yellow-500 shadow-[0_0_50px_rgba(234,179,8,0.3)] flex flex-col h-[85vh]">
+                <div class="flex justify-between items-center mb-4 shrink-0 border-b border-zinc-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-black italic text-yellow-400">ロブロックス・ショップ <span id="shop-player-id" class="text-lg text-gray-400 ml-2"></span></h2>
+                        <p class="text-sm text-zinc-400 mt-1">アイテムを買ってスロットに入れよう！キーボードの数字キーで使えるぞ。</p>
+                    </div>
+                    <div class="text-2xl font-black bg-black px-6 py-3 rounded-xl border border-yellow-500/50">所持金: 💰 <span id="shop-coins" class="text-yellow-400">0</span></div>
+                </div>
+                
+                <div id="shop-items-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 overflow-y-auto pr-4 pb-4 flex-grow">
+                    <!-- Items injected here -->
+                </div>
+
+                <button onclick="closeShop()" class="mt-6 w-full bg-red-600 hover:bg-red-500 text-white py-4 rounded-xl font-black text-xl shadow-lg shrink-0 border-b-4 border-red-800 active:translate-y-1 active:border-b-0">❌ ショップを閉じる</button>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settings-panel" class="absolute inset-0 flex items-center justify-center pointer-events-auto blur-bg hidden z-50">
+            <div class="bg-zinc-900 text-white rounded-3xl p-8 w-[400px] border border-white/10 shadow-2xl">
+                <h2 class="text-2xl font-black mb-6 italic text-center">⚙️ 設定</h2>
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-bold text-zinc-400 mb-2 uppercase flex justify-between">
+                            <span>描画距離 (軽くするには下げる)</span>
+                            <span id="dist-val" class="text-yellow-400">4 ステージ</span>
+                        </label>
+                        <input type="range" id="render-dist" min="2" max="10" value="4" oninput="document.getElementById('dist-val').innerText = this.value + ' ステージ'" class="w-full h-3 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <button onclick="toggleSettings()" class="w-full bg-white text-black py-4 rounded-xl font-black text-lg hover:bg-zinc-200">閉じる</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TOTAL_STAGES = 3000;
+        const STAGE_LEN = 40; 
+        
+        let scene, renderer, clock = new THREE.Clock();
+        let players = [];
+        let isGameStarted = false;
+        let numPlayers = 1;
+        let stageCache = new Map();
+        let activeStages = new Set();
+        let titleRotation = 0;
+        let currentShopPlayer = 1;
+        
+        // 新システム：全体の時間を制御するための変数（タイムストップやスロー用）
+        let gameTime = 0;
+        let globalTimeScale = 1.0;
+
+        const keys = {};
+        window.addEventListener('keydown', (e) => { keys[e.code] = true; checkItemHotkeys(e.code); });
+        window.addEventListener('keyup', (e) => keys[e.code] = false);
+
+        // --- 超絶拡張：20種類のアイテムデータ ---
+        const SHOP_DATA = [
+            // パッシブ・バフ系
+            { id: 'speed', name: 'スピードコイル', desc: '15秒間、移動速度が1.5倍に', price: 50, icon: '⚡', color: 'bg-blue-900' },
+            { id: 'jump', name: '重力コイル', desc: '15秒間、ジャンプ力が1.5倍に', price: 50, icon: '🌌', color: 'bg-indigo-900' },
+            { id: 'fusion', name: 'フュージョンコイル', desc: '15秒間、スピード＆ジャンプUP', price: 150, icon: '🧬', color: 'bg-purple-900' },
+            { id: 'double_jump', name: '天使の羽', desc: '30秒間、2段ジャンプが可能に', price: 300, icon: '👼', color: 'bg-pink-900' },
+            { id: 'dash', name: 'ダッシュブーツ', desc: '向いている方向へ一瞬で超高速移動', price: 100, icon: '💨', color: 'bg-sky-900' },
+            { id: 'trampoline', name: 'トランポリン', desc: 'その場で超特大ジャンプ！', price: 150, icon: '🚀', color: 'bg-orange-800' },
+            { id: 'fly', name: '魔法の絨毯', desc: '10秒間、空中で何度でもジャンプできる', price: 600, icon: '🧞‍♂️', color: 'bg-violet-900' },
+            
+            // 防御・回避系
+            { id: 'shield', name: 'フォースフィールド', desc: '1回だけ溶岩やバーでのミスを無効化', price: 200, icon: '🛡️', color: 'bg-cyan-900' },
+            { id: 'ghost', name: 'ゴーストマント', desc: '15秒間、赤いキルパーツをすり抜ける', price: 400, icon: '👻', color: 'bg-gray-700' },
+            { id: 'mini', name: 'ミニポーション', desc: '体が小さくなり狭い隙間を避けやすい', price: 100, icon: '🧪', color: 'bg-green-900' },
+            { id: 'giant', name: '巨大化ポーション', desc: '10秒間、巨大化して遠くまで飛べる！', price: 250, icon: '🍄', color: 'bg-red-800' },
+            { id: 'invincible', name: '無敵スター', desc: '10秒間、無敵化＆超高速移動！', price: 800, icon: '⭐', color: 'bg-yellow-700' },
+            
+            // ギミック干渉・攻略系
+            { id: 'path', name: 'ガラスの橋', desc: '足元に橋を出してショートカット', price: 250, icon: '🧱', color: 'bg-orange-900' },
+            { id: 'slow', name: 'スロー時計', desc: '15秒間、動くギミックが遅くなる', price: 300, icon: '🐢', color: 'bg-teal-900' },
+            { id: 'timestop', name: 'タイムストップ', desc: '8秒間、動くギミックを完全に停止！', price: 450, icon: '⏸️', color: 'bg-zinc-800' },
+            { id: 'skip', name: 'ステージスキップ', desc: '使った瞬間、次のステージへワープ', price: 500, icon: '⏩', color: 'bg-red-900' },
+            { id: 'portable_save', name: '携帯セーブパッド', desc: '今いる場所を即座に復活地点にする', price: 350, icon: '💾', color: 'bg-emerald-900' },
+            
+            // お金・その他
+            { id: 'lucky', name: 'ラッキーブロック', desc: '運試し！アイテムか大量のコインか…？', price: 200, icon: '❓', color: 'bg-yellow-800' },
+            { id: 'coinsack', name: 'コイン袋', desc: 'すぐに100コインもらえる（緊急用）', price: 80, icon: '袋', color: 'bg-amber-900' },
+            { id: 'double_coin', name: 'ゴールデンラジオ', desc: '獲得コインがずっと2倍になる', price: 1000, icon: '💰', color: 'bg-yellow-900' }
+        ];
+
+        class Player {
+            constructor(id, color, startX) {
+                this.id = id;
+                this.color = color;
+                this.respawnPoint = new THREE.Vector3(startX, 1.5, 5);
+                
+                this.baseScale = new THREE.Vector3(1.2, 2.2, 1.2);
+                const geo = new THREE.BoxGeometry(1, 1, 1);
+                const mat = new THREE.MeshPhongMaterial({ color: color, shininess: 80 });
+                this.mesh = new THREE.Mesh(geo, mat);
+                this.mesh.scale.copy(this.baseScale);
+                this.mesh.position.copy(this.respawnPoint);
+                scene.add(this.mesh);
+
+                this.camera = new THREE.PerspectiveCamera(70, 1, 0.1, 1000);
+                this.velocity = new THREE.Vector3();
+                this.isGrounded = false;
+                
+                this.currentStage = 1;
+                this.maxStageReached = 1;
+                this.coins = 0;
+                
+                this.inventory = [null, null, null];
+                this.activeEffects = new Set();
+                this.hasShield = false;
+                this.hasDoubleJump = false;
+                this.canDoubleJump = false;
+                this.canFly = false;
+                this.ghostMode = false;
+                this.coinMultiplier = 1;
+                
+                this.baseSpeed = 0.28;
+                this.baseJump = 0.38;
+                this.speed = this.baseSpeed;
+                this.jumpForce = this.baseJump;
+                this.gravity = 0.016;
+                this.jumpCooldown = 0;
+
+                this.shieldMesh = new THREE.Mesh(
+                    new THREE.SphereGeometry(1.5, 16, 16),
+                    new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true, transparent: true, opacity: 0 })
+                );
+                this.mesh.add(this.shieldMesh);
+
+                this.updateUI();
+                this.renderHotbar();
+            }
+
+            update(ctrl) {
+                // Movement
+                const moveX = (ctrl.right ? 1 : 0) - (ctrl.left ? 1 : 0);
+                const moveZ = (ctrl.down ? 1 : 0) - (ctrl.up ? 1 : 0);
+                
+                if (moveX !== 0 || moveZ !== 0) {
+                    const angle = Math.atan2(moveX, moveZ);
+                    const targetVX = Math.sin(angle) * this.speed;
+                    const targetVZ = Math.cos(angle) * this.speed;
+                    
+                    const accel = this.isGrounded ? 0.2 : 0.05; 
+                    this.velocity.x = THREE.MathUtils.lerp(this.velocity.x, targetVX, accel);
+                    this.velocity.z = THREE.MathUtils.lerp(this.velocity.z, targetVZ, accel);
+                    
+                    const currentRot = this.mesh.rotation.y;
+                    let diff = (angle + Math.PI) - currentRot;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    this.mesh.rotation.y += diff * 0.2;
+                } else {
+                    const friction = this.isGrounded ? 0.6 : 0.95;
+                    this.velocity.x *= friction;
+                    this.velocity.z *= friction;
+                }
+
+                // Gravity & Jump
+                this.velocity.y -= this.gravity;
+                if (this.jumpCooldown > 0) this.jumpCooldown--;
+
+                if (ctrl.jump && this.jumpCooldown <= 0) {
+                    if (this.isGrounded) {
+                        this.velocity.y = this.jumpForce;
+                        this.isGrounded = false;
+                        this.jumpCooldown = 10;
+                        if (this.hasDoubleJump) this.canDoubleJump = true;
+                    } else if (this.canFly) {
+                        this.velocity.y = this.jumpForce;
+                        this.jumpCooldown = 15;
+                        // 魔法の絨毯エフェクト
+                        const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.2, 4, 16), new THREE.MeshBasicMaterial({color: 0x8b5cf6, transparent: true, opacity: 0.8}));
+                        ring.position.copy(this.mesh.position).add(new THREE.Vector3(0, -1, 0));
+                        ring.rotation.x = Math.PI / 2;
+                        scene.add(ring);
+                        setTimeout(() => scene.remove(ring), 200);
+                    } else if (this.hasDoubleJump && this.canDoubleJump) {
+                        this.velocity.y = this.jumpForce * 0.8;
+                        this.canDoubleJump = false;
+                        this.jumpCooldown = 10;
+                        
+                        const ring = new THREE.Mesh(new THREE.RingGeometry(0.5, 1, 8), new THREE.MeshBasicMaterial({color: 0xffffff, side: THREE.DoubleSide}));
+                        ring.position.copy(this.mesh.position).add(new THREE.Vector3(0, -1, 0));
+                        ring.rotation.x = Math.PI / 2;
+                        scene.add(ring);
+                        setTimeout(() => scene.remove(ring), 200);
+                    }
+                }
+
+                this.mesh.position.add(this.velocity);
+                this.solveCollisions();
+
+                if (this.mesh.position.y < -20) this.respawn();
+
+                // Camera Logic
+                const camTargetPos = this.mesh.position.clone().add(new THREE.Vector3(0, 8, 14));
+                this.camera.position.lerp(camTargetPos, 0.15);
+                this.camera.lookAt(this.mesh.position.clone().add(new THREE.Vector3(0, 1, -2)));
+
+                // Stage Progress
+                const s = Math.max(1, Math.floor(Math.abs(this.mesh.position.z - 10) / STAGE_LEN) + 1);
+                if (s !== this.currentStage && s <= TOTAL_STAGES) {
+                    this.currentStage = s;
+                    this.updateUI();
+                }
+            }
+
+            solveCollisions() {
+                this.isGrounded = false;
+                const pPos = this.mesh.position;
+                const pSize = this.mesh.scale.clone();
+                const pBox = new THREE.Box3().setFromCenterAndSize(pPos, pSize);
+
+                activeStages.forEach(idx => {
+                    const group = stageCache.get(idx);
+                    if (!group) return;
+
+                    group.children.forEach(obj => {
+                        if (!obj.isObstacle || !obj.visible) return;
+                        if (this.ghostMode && obj.isKill) return;
+
+                        if (obj.isRotatingKill) {
+                            const localPPos = pPos.clone();
+                            obj.worldToLocal(localPPos);
+                            
+                            if (!obj.geometry.boundingBox) obj.geometry.computeBoundingBox();
+                            const localBox = obj.geometry.boundingBox.clone();
+                            localBox.expandByVector(new THREE.Vector3(pSize.x/2, pSize.y/2, pSize.z/2));
+                            
+                            if (localBox.containsPoint(localPPos)) {
+                                this.hitKillPart();
+                            }
+                            return; 
+                        }
+
+                        const oBox = new THREE.Box3().setFromObject(obj);
+                        if (pBox.intersectsBox(oBox)) {
+                            if (obj.isKill) {
+                                this.hitKillPart();
+                            } else if (obj.isSave) {
+                                const savePos = new THREE.Vector3();
+                                obj.getWorldPosition(savePos);
+                                if (this.respawnPoint.distanceTo(savePos) > 2) {
+                                    this.respawnPoint.copy(savePos).add(new THREE.Vector3(0, 2, 0));
+                                    
+                                    if (this.currentStage > this.maxStageReached) {
+                                        this.maxStageReached = this.currentStage;
+                                        this.coins += 10 * this.coinMultiplier;
+                                        this.updateUI();
+                                    }
+
+                                    showSavePopup();
+                                    obj.material.emissive.setHex(0x00ff00);
+                                    obj.material.color.setHex(0x00ff00);
+                                }
+                            } else {
+                                if (this.velocity.y <= 0 && (pPos.y - pSize.y/2 + 0.1) >= (oBox.max.y - 0.5)) {
+                                    pPos.y = oBox.max.y + pSize.y/2;
+                                    this.velocity.y = 0;
+                                    this.isGrounded = true;
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+
+            hitKillPart() {
+                if (this.hasShield) {
+                    this.hasShield = false;
+                    this.shieldMesh.material.opacity = 0;
+                    this.velocity.set(0, 0.5, 0); 
+                    const blink = setInterval(() => { this.mesh.visible = !this.mesh.visible; }, 100);
+                    setTimeout(() => { clearInterval(blink); this.mesh.visible = true; }, 1000);
+                    return;
+                }
+                this.respawn();
+            }
+
+            respawn() {
+                this.mesh.position.copy(this.respawnPoint);
+                this.velocity.set(0, 0, 0);
+                this.mesh.rotation.y = Math.PI;
+                if (this.activeEffects.has('mini')) {
+                    this.mesh.scale.copy(this.baseScale);
+                    this.activeEffects.delete('mini');
+                }
+                if (this.activeEffects.has('giant')) {
+                    this.mesh.scale.copy(this.baseScale);
+                    this.activeEffects.delete('giant');
+                }
+            }
+
+            updateUI() {
+                document.getElementById(`p${this.id}-stage`).innerText = this.currentStage;
+                document.getElementById(`p${this.id}-progress`).style.width = `${(this.currentStage/TOTAL_STAGES)*100}%`;
+                document.getElementById(`p${this.id}-coins`).innerText = this.coins;
+            }
+
+            renderHotbar() {
+                const bar = document.getElementById(`p${this.id}-hotbar`);
+                bar.innerHTML = '';
+                for (let i = 0; i < 3; i++) {
+                    const keyNum = this.id === 1 ? (i+1) : (i+4);
+                    const item = this.inventory[i];
+                    bar.innerHTML += `
+                        <div class="hotbar-slot ${item ? 'bg-zinc-800 border-zinc-500' : 'opacity-40'}">
+                            <div class="hotbar-key">${keyNum}</div>
+                            ${item ? `<span class="text-3xl">${SHOP_DATA.find(d => d.id === item).icon}</span>` : ''}
+                        </div>
+                    `;
+                }
+            }
+
+            giveItem(itemId) {
+                if (itemId === 'double_coin') {
+                    this.coinMultiplier = 2;
+                    return true;
+                }
+                const emptyIdx = this.inventory.findIndex(v => v === null);
+                if (emptyIdx !== -1) {
+                    this.inventory[emptyIdx] = itemId;
+                    this.renderHotbar();
+                    return true;
+                }
+                return false;
+            }
+
+            useItem(slotIndex) {
+                const itemId = this.inventory[slotIndex];
+                if (!itemId) return;
+
+                this.inventory[slotIndex] = null;
+                this.renderHotbar();
+
+                // アイテム効果 20種
+                switch(itemId) {
+                    case 'speed':
+                        this.speed = this.baseSpeed * 1.5;
+                        this.mesh.material.color.setHex(0xffff00);
+                        setTimeout(() => { this.speed = this.baseSpeed; this.mesh.material.color.setHex(this.color); }, 15000);
+                        break;
+                    case 'jump':
+                        this.jumpForce = this.baseJump * 1.5;
+                        this.mesh.material.color.setHex(0x00ffff);
+                        setTimeout(() => { this.jumpForce = this.baseJump; this.mesh.material.color.setHex(this.color); }, 15000);
+                        break;
+                    case 'fusion':
+                        this.speed = this.baseSpeed * 1.5;
+                        this.jumpForce = this.baseJump * 1.5;
+                        this.mesh.material.color.setHex(0xff00ff);
+                        setTimeout(() => { this.speed = this.baseSpeed; this.jumpForce = this.baseJump; this.mesh.material.color.setHex(this.color); }, 15000);
+                        break;
+                    case 'double_jump':
+                        this.hasDoubleJump = true;
+                        setTimeout(() => { this.hasDoubleJump = false; }, 30000);
+                        break;
+                    case 'dash':
+                        const rot = this.mesh.rotation.y;
+                        this.velocity.x += Math.sin(rot) * 3.0;
+                        this.velocity.z += Math.cos(rot) * 3.0;
+                        this.velocity.y += 0.2;
+                        break;
+                    case 'trampoline':
+                        this.velocity.y = this.baseJump * 3.5;
+                        break;
+                    case 'fly':
+                        this.canFly = true;
+                        setTimeout(() => { this.canFly = false; }, 10000);
+                        break;
+                    case 'shield':
+                        this.hasShield = true;
+                        this.shieldMesh.material.opacity = 0.5;
+                        break;
+                    case 'ghost':
+                        this.ghostMode = true;
+                        this.mesh.material.transparent = true;
+                        this.mesh.material.opacity = 0.3;
+                        setTimeout(() => { 
+                            this.ghostMode = false; 
+                            this.mesh.material.transparent = false; 
+                            this.mesh.material.opacity = 1.0; 
+                        }, 15000);
+                        break;
+                    case 'mini':
+                        this.mesh.scale.copy(this.baseScale).multiplyScalar(0.4);
+                        this.activeEffects.add('mini');
+                        break;
+                    case 'giant':
+                        this.mesh.scale.copy(this.baseScale).multiplyScalar(2.0);
+                        this.activeEffects.add('giant');
+                        setTimeout(() => {
+                            if(this.activeEffects.has('giant')){
+                                this.mesh.scale.copy(this.baseScale);
+                                this.activeEffects.delete('giant');
+                            }
+                        }, 10000);
+                        break;
+                    case 'invincible':
+                        this.speed = this.baseSpeed * 2.0;
+                        this.ghostMode = true;
+                        this.mesh.material.color.setHex(0xffff00);
+                        const starBlink = setInterval(() => { this.mesh.material.emissive.setHex(Math.random()*0xffffff); }, 100);
+                        setTimeout(() => { 
+                            this.speed = this.baseSpeed; 
+                            this.ghostMode = false; 
+                            clearInterval(starBlink);
+                            this.mesh.material.emissive.setHex(0x000000);
+                            this.mesh.material.color.setHex(this.color); 
+                        }, 10000);
+                        break;
+                    case 'path':
+                        const path = createPart(this.mesh.position.x, this.mesh.position.y - 1.5, this.mesh.position.z - 10, 3, 0.5, 20, 0xffffff);
+                        path.material.transparent = true; path.material.opacity = 0.5;
+                        scene.add(path);
+                        setTimeout(() => scene.remove(path), 10000);
+                        break;
+                    case 'slow':
+                        globalTimeScale = 0.3;
+                        setTimeout(() => { globalTimeScale = 1.0; }, 15000);
+                        break;
+                    case 'timestop':
+                        globalTimeScale = 0;
+                        setTimeout(() => { globalTimeScale = 1.0; }, 8000);
+                        break;
+                    case 'skip':
+                        this.respawnPoint.z -= STAGE_LEN;
+                        this.respawn();
+                        break;
+                    case 'portable_save':
+                        this.respawnPoint.copy(this.mesh.position).add(new THREE.Vector3(0, 1.5, 0));
+                        showSavePopup();
+                        break;
+                    case 'lucky':
+                        if(Math.random() > 0.5) {
+                            this.coins += Math.floor(Math.random() * 300) + 50;
+                            this.updateUI();
+                        } else {
+                            const ids = SHOP_DATA.map(d=>d.id).filter(id=>id!=='lucky' && id!=='double_coin');
+                            const rndId = ids[Math.floor(Math.random() * ids.length)];
+                            this.giveItem(rndId);
+                        }
+                        break;
+                    case 'coinsack':
+                        this.coins += 100;
+                        this.updateUI();
+                        break;
+                }
+            }
+        }
+
+        // --- Stage Generation System ---
+        function getSeedRand(seed) {
+            const x = Math.sin(seed) * 10000;
+            return x - Math.floor(x);
+        }
+
+        function createPart(x, y, z, w, h, d, col) {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshPhongMaterial({ color: col, shininess: 50 }));
+            mesh.position.set(x, y, z);
+            mesh.isObstacle = true;
+            return mesh;
+        }
+
+        function createKillPart(x, y, z, w, h, d) {
+            const mesh = createPart(x, y, z, w, h, d, 0xff0000);
+            mesh.isKill = true;
+            mesh.material.emissive.setHex(0xaa0000);
+            return mesh;
+        }
+
+        // ★ V7アップデート：120種類のギミックパターン分岐 ★
+        function createStageGroup(idx) {
+            const group = new THREE.Group();
+            const zBase = -idx * STAGE_LEN;
+            const seed = idx * 9.99;
+            const pattern = idx % 120; // 120種類に拡張！
+
+            const biome = Math.floor(idx / 50);
+            const hue = (biome * 0.17 + (idx % 10)*0.01) % 1.0;
+            const color = new THREE.Color().setHSL(hue, 0.8, 0.5);
+            const altColor = new THREE.Color().setHSL((hue + 0.5)%1.0, 0.8, 0.5);
+
+            // セーブパッド
+            const floor = createPart(0, -0.5, zBase, 16, 1, 10, 0x333333);
+            group.add(floor);
+            const btn = createPart(0, 0.1, zBase, 6, 0.2, 6, 0x005500);
+            btn.isSave = true;
+            btn.material.emissive.setHex(0x003300);
+            group.add(btn);
+
+            let curZ = zBase - 6.4;
+            const gap = 6.4; 
+
+            for (let i = 0; i < 5; i++) {
+                const sSeed = seed + i;
+                const r = getSeedRand(sSeed);
+                let p, k1, k2;
+
+                switch(pattern) {
+                    // 0-39: 基礎と少しの応用
+                    case 0: p = createPart(0, 0, curZ, 5, 0.5, 5, color); break;
+                    case 1: p = createPart((i%2===0?4:-4), 0, curZ, 4, 0.5, 4, color); break;
+                    case 2: p = createPart(0, 0, curZ, 10, 0.5, 4, color); k1 = createKillPart(0, 0.3, curZ, 10, 0.2, 1); group.add(k1); break;
+                    case 3: p = createPart(0, 0, curZ, 1.5, 0.5, 6, color); break;
+                    case 4: p = createPart(0, i * 1.5, curZ, 5, 0.5, 5, color); break;
+                    case 5: p = createPart(0, 0, curZ, 8, 0.5, 8, color); k1 = createKillPart(0, 1.2, curZ, 14, 0.5, 0.5); k1.isRotatingKill = true; k1.onUpdate = t => k1.rotation.y = t * 1.5 + i; group.add(k1); break;
+                    case 6: p = createPart(0, 0, curZ, 5, 0.5, 5, color); p.onUpdate = t => { const show = Math.sin(t*3+i)>0; p.visible=show; p.isObstacle=show; }; break;
+                    case 7: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.onUpdate = t => p.position.x = Math.sin(t*2+i)*6; break;
+                    case 8: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.onUpdate = t => p.position.y = Math.sin(t*2+i)*3; break;
+                    case 9: p = createPart(0, 0, curZ, 4, 4, 4, color); p.rotation.x = Math.PI/4; p.rotation.z = Math.PI/4; break;
+                    case 10: p = new THREE.Mesh(new THREE.CylinderGeometry(2,2,0.5,16), new THREE.MeshPhongMaterial({color: color})); p.position.set((r-0.5)*6,0,curZ); p.isObstacle=true; break;
+                    case 11: p = createPart(0, (r-0.5)*4, curZ, 4, 0.5, 4, color); break;
+                    case 12: p = createPart((i<3?-i*3:(i-5)*3), 0, curZ, 4, 0.5, 4, color); break;
+                    case 13: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createPart(0, 2, curZ, 6, 2, 0.5, color); group.add(k1); break;
+                    case 14: p = createPart(0, 0, curZ, 8, 0.5, 8, color); k1 = createKillPart(i%2===0?2:-2, 0.1, curZ, 4, 0.5, 8); group.add(k1); break;
+                    case 15: const w1 = Math.max(1, 5 - i); p = createPart(0, 0, curZ, w1, 0.5, w1, color); break;
+                    case 16: p = createPart(0, 0, curZ, 6, 0.5, 6, color); p.rotation.z = (i%2===0?0.3:-0.3); break;
+                    case 17: p = createPart(0, 0, curZ, 8, 0.5, 8, color); k1 = createKillPart(0, 1.2, curZ, 12, 0.4, 0.4); k1.isRotatingKill=true; k1.onUpdate=t=>k1.rotation.y=t*1.0; group.add(k1); break; 
+                    case 18: p = createPart(0, 0, curZ, 4, 0.5, 4, altColor); p.onUpdate = t => { p.position.x=Math.sin(t*1.5+i)*4; const show=Math.sin(t*1.5+i)>-0.3; p.visible=show; p.isObstacle=show; }; break; 
+                    case 19: p = createKillPart(0, -0.5, curZ, 14, 0.5, 6); k1 = createPart((r-0.5)*8, 0.5, curZ, 3, 0.8, 3, color); group.add(k1); break; 
+                    case 20: p = createPart((i%2===0?3:-3), 0, curZ, 4, 0.5, 4, color); p.rotation.x = 0.2; break;
+                    case 21: p = createPart(0, i*2.5, curZ, 6, 0.5, 6, color); break;
+                    case 22: p = createPart(0, 0, curZ, 2, 0.5, 8, color); k1 = createKillPart(0, 1.2, curZ, 10, 0.3, 0.3); k1.isRotatingKill=true; k1.onUpdate=t=>k1.rotation.y=t*1.2; group.add(k1); break;
+                    case 23: p = createPart(Math.sin(i)*5, i, curZ, 4, 0.5, 4, altColor); break;
+                    case 24: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createPart(0, 2.5, curZ, 6, 0.5, 6, color); group.add(k1); break;
+                    case 25: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.onUpdate = t => { p.position.x=Math.cos(t*2+i)*6; const show=Math.sin(t*2)>-0.5; p.visible=show; p.isObstacle=show; }; break;
+                    case 26: p = createPart((r-0.5)*10, (getSeedRand(sSeed+1)-0.5)*2, curZ, 3, 0.5, 3, color); break;
+                    case 27: p = createPart(0, 0, curZ, 8, 0.5, 8, color); k1 = createKillPart(0, 1.5, curZ, 8, 1, 0.5); group.add(k1); break;
+                    case 28: p = createPart(0, 0, curZ, 2, 0.5, 6, color); p.onUpdate = t => p.position.y=Math.sin(t*3+i)*2; break;
+                    case 29: p = createPart(0, 0, curZ, 0.8, 0.5, 8, altColor); break;
+                    case 30: p = createPart(0, 0, curZ, 6, 0.5, 2, color); k1 = createPart(0, 0, curZ, 2, 0.5, 6, color); group.add(k1); break;
+                    case 31: p = createPart(0, 0, curZ, 6, 0.5, 2, color); p.onUpdate = t => p.rotation.y=t; break;
+                    case 32: p = new THREE.Mesh(new THREE.SphereGeometry(2,16,16), new THREE.MeshPhongMaterial({color:color})); p.position.set(0,0,curZ); p.isObstacle=true; break;
+                    case 33: p = createPart(i%2==0?4:-4, i, curZ, 3, 0.5, 6, color); p.rotation.z = i%2==0?0.5:-0.5; break;
+                    case 34: p = createPart(0, 0, curZ, 10, 0.5, 6, color); k1 = createKillPart(0, 0.3, curZ, 10, 0.2, 0.5); group.add(k1); break; 
+                    case 35: p = createPart(0, 0, curZ, 6, 6, 6, color); break;
+                    case 36: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.onUpdate = t => p.position.y=Math.sin(t*5+i)*4; break;
+                    case 37: p = createPart(0, 0, curZ, 3, 1, 3, 0x00ff00); break;
+                    case 38: p = createPart((r-0.5)*12, 0, curZ, 4, 0.5, 4, color); break;
+                    case 39: p = createPart(0, 0, curZ, 3, 0.5, 6, color); k1 = createKillPart(0, 1.2, curZ, 10, 0.2, 0.2); k1.isRotatingKill=true; k1.onUpdate=t=>k1.rotation.y=t*2+i; group.add(k1); break;
+
+                    // 40-79: 難易度上昇、ダイナミック
+                    case 40: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.rotation.x = Math.PI/4; break; 
+                    case 41: p = createPart(Math.sin(i*2)*4, 0, curZ, 2.5, 0.5, 2.5, color); break; 
+                    case 42: p = createPart(0, 0, curZ, 8, 0.5, 8, color); k1 = createKillPart(0, 0.5, curZ, 5, 0.5, 5); group.add(k1); break; 
+                    case 43: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.onUpdate = t => { p.scale.x = 1 + Math.sin(t*4+i)*0.8; }; break; 
+                    case 44: p = createPart(0, i*1.2, curZ, 4, 0.5, 4, color); p.onUpdate = t => p.position.x=Math.sin(t*3+i)*5; break; 
+                    case 45: p = createPart(0, 0, curZ, 12, 0.5, 12, color); k1 = createKillPart(0, 1.2, curZ, 16, 0.5, 0.5); k1.isRotatingKill=true; k1.onUpdate=t=>k1.rotation.y=-t*1.8; group.add(k1); break; 
+                    case 46: p = createPart(i%2==0?5:-5, 0, curZ, 3, 0.5, 3, color); p.onUpdate = t => p.position.y=Math.sin(t*4)*2; break; 
+                    case 47: p = createPart(0, 0, curZ, 2, 0.5, 8, color); k1 = createKillPart(2, 1, curZ, 0.5, 2, 8); group.add(k1); break; 
+                    case 48: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.material.transparent = true; p.material.opacity = 0.5; break; 
+                    case 49: p = createPart((r-0.5)*6, (getSeedRand(sSeed+2)-0.5)*4, curZ, 2, 2, 2, color); break; 
+                    
+                    // ★ 50, 51: 難易度を緩和 ★
+                    case 50: p = createPart(0, 0, curZ, 8, 0.5, 8, color); k1 = createKillPart(0, 0.5, curZ, 1.5, 0.5, 8); k1.rotation.y = Math.PI/4; group.add(k1); break; 
+                    case 51: p = createPart(0, 0, curZ, 6, 0.5, 6, color); p.onUpdate = t => { p.rotation.x=Math.sin(t*1.2+i)*0.3; }; break; 
+                    
+                    case 52: p = createPart(0, 0, curZ, 8, 0.5, 8, color); k1 = createKillPart(Math.sin(i)*3, 0.5, curZ, 2, 0.5, 2); group.add(k1); break; 
+                    case 53: p = createPart(0, 0, curZ, 1.2, 0.5, 1.2, color); break; 
+                    case 54: p = createPart(0, 0, curZ, 10, 0.5, 4, color); p.onUpdate = t => p.position.x=Math.sin(t*5+i)*4; break; 
+                    case 55: p = createPart(0, 0, curZ, 4, 0.5, 4, color); k1 = createKillPart(0, 2, curZ, 4, 0.5, 4); k1.onUpdate=t=>k1.position.y=1+Math.abs(Math.sin(t*3+i))*2; group.add(k1); break; 
+                    case 56: p = createPart((i%2===0?6:-6), i*1.5, curZ, 4, 0.5, 4, color); break; 
+                    case 57: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createKillPart(0, 0.2, curZ, 6, 0.5, 6); k1.onUpdate=t=>{k1.visible=Math.sin(t*4+i)>0; k1.isObstacle=k1.visible;}; group.add(k1); break; 
+                    case 58: p = createPart(0, 0, curZ, 6, 0.5, 6, color); p.rotation.z = Math.PI/6; p.rotation.x = -Math.PI/6; break; 
+                    case 59: p = createPart(0, 0, curZ, 2, 0.5, 4, color); p.onUpdate = t => p.rotation.z=t*2; break; 
+                    case 60: p = createPart(0, 0, curZ, 8, 0.5, 8, color); k1 = createKillPart(0, 0.5, curZ, 8, 0.2, 1); k1.onUpdate=t=>k1.position.z=curZ+Math.sin(t*3+i)*3; group.add(k1); break; 
+                    case 61: p = createPart((r-0.5)*10, 0, curZ, 3, 0.5, 3, color); p.onUpdate = t => p.position.y=Math.sin(t*2+i)*3; break; 
+                    case 62: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createKillPart(0, 1.2, curZ, 10, 0.3, 0.3); k1.isRotatingKill=true; k1.onUpdate=t=>{k1.rotation.y=t*2; k1.rotation.z=Math.sin(t)*0.5;}; group.add(k1); break; 
+                    case 63: p = createPart(0, 0, curZ, 1.5, 0.5, 1.5, color); p.onUpdate = t => { p.position.x=Math.cos(t+i)*5; p.position.y=Math.sin(t+i)*3; }; break; 
+                    case 64: p = createPart(0, i, curZ, 4, 0.5, 4, color); k1 = createKillPart(0, i+1.5, curZ, 4, 0.2, 4); group.add(k1); break; 
+                    case 65: p = createPart(0, 0, curZ, 5, 0.5, 5, color); p.onUpdate = t => p.scale.setScalar(1+Math.sin(t*5+i)*0.5); break; 
+                    case 66: p = createPart(i%2==0?3:-3, 0, curZ, 4, 0.5, 4, color); k1 = createKillPart(i%2==0?-3:3, 0, curZ, 4, 0.5, 4); group.add(k1); break; 
+                    case 67: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createKillPart(0, 1, curZ, 1.5, 2, 1.5); group.add(k1); break; 
+                    case 68: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.onUpdate = t => { p.rotation.x=t; p.rotation.y=t; }; break; 
+                    case 69: p = createPart(0, 0, curZ, 8, 0.5, 8, color); k1 = createKillPart(0, 0.5, curZ, 1, 0.5, 8); k1.onUpdate=t=>k1.position.x=Math.sin(t*3)*3; group.add(k1); break; 
+                    case 70: p = createPart(0, 0, curZ, 2, 0.5, 2, color); p.onUpdate = t => { const show = (Math.floor(t*2)%5)===i; p.visible=show; p.isObstacle=show; }; break; 
+                    case 71: p = createPart(Math.sin(i*1.5)*6, i, curZ, 3, 0.5, 3, color); break; 
+                    case 72: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createKillPart(0, 2, curZ, 6, 0.5, 6); k1.onUpdate=t=>k1.position.y=1.5+Math.sin(t*4+i); group.add(k1); break; 
+                    case 73: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.rotation.z = Math.sin(i)*0.8; break; 
+                    case 74: p = createPart(0, 0, curZ, 12, 0.5, 12, color); k1 = createKillPart(0, 0.5, curZ, 10, 0.2, 10); group.add(k1); break; 
+                    case 75: p = createPart(0, 0, curZ, 3, 0.5, 3, color); p.onUpdate = t => { p.position.x=(r-0.5)*10*Math.sin(t); }; break; 
+                    case 76: p = createPart(0, i*1.5, curZ, 4, 0.5, 4, color); k1 = createKillPart(0, i*1.5+1.2, curZ, 6, 0.2, 0.2); k1.isRotatingKill=true; k1.onUpdate=t=>k1.rotation.y=t*2; group.add(k1); break; 
+                    case 77: p = createPart((i%2===0?2:-2), 0, curZ, 2, 0.5, 4, color); break; 
+                    case 78: p = createPart(0, 0, curZ, 8, 0.5, 8, color); k1 = createKillPart(0, 0.2, curZ, 8, 0.5, 8); k1.onUpdate=t=>{k1.visible=Math.random()>0.95; k1.isObstacle=k1.visible;}; group.add(k1); break; 
+                    case 79: p = createPart(0, -i*1.5, curZ, 5, 0.5, 5, color); break; 
+
+                    // 80-99: マスタークラス
+                    case 80: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.onUpdate=t=>{p.position.x=Math.sin(t*3+i)*4; p.position.y=Math.cos(t*3+i)*2;}; break; 
+                    case 81: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createKillPart(0, 1.2, curZ, 8, 0.2, 0.2); k1.isRotatingKill=true; k1.onUpdate=t=>k1.rotation.x=t*2; group.add(k1); break; 
+                    case 82: p = createPart(0, 0, curZ, 1.5, 0.5, 6, color); p.onUpdate = t => p.rotation.z=Math.sin(t*4+i)*0.5; break; 
+                    case 83: p = createPart((r-0.5)*8, (r-0.5)*4, curZ, 2, 0.5, 2, color); break; 
+                    case 84: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createKillPart(0, 0.1, curZ, 6, 0.5, 6); k1.onUpdate=t=>{ k1.position.x=Math.sin(t*5+i)*2; k1.position.z=curZ+Math.cos(t*5+i)*2; }; group.add(k1); break; 
+                    case 85: p = createPart(i%2==0?4:-4, i, curZ, 3, 0.5, 3, color); k1 = createKillPart(0, i, curZ, 6, 0.5, 0.5); group.add(k1); break; 
+                    case 86: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createKillPart(0, 2, curZ, 6, 0.5, 6); k1.onUpdate=t=>{ k1.position.y=1+Math.abs(Math.sin(t*8))*3; }; group.add(k1); break; 
+                    case 87: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.onUpdate=t=>{ p.rotation.y=t*3; p.scale.x=1+Math.sin(t*2)*0.5; }; break; 
+                    case 88: p = createPart(0, 0, curZ, 8, 0.5, 8, color); k1 = createKillPart(2, 0.5, curZ, 1, 0.5, 8); k2 = createKillPart(-2, 0.5, curZ, 1, 0.5, 8); k1.onUpdate=t=>k1.position.z=curZ+Math.sin(t*4)*3; k2.onUpdate=t=>k2.position.z=curZ+Math.cos(t*4)*3; group.add(k1); group.add(k2); break; 
+                    case 89: p = createPart(0, 0, curZ, 2, 0.5, 4, color); p.onUpdate=t=>{ p.position.x=Math.sin(t*2+i)*6; p.position.y=Math.sin(t*3+i)*3; }; break; 
+                    case 90: p = createPart(0, 0, curZ, 5, 0.5, 5, color); p.rotation.x = 0.5; p.rotation.z = (i%2==0?0.5:-0.5); break; 
+                    case 91: p = createPart(0, 0, curZ, 10, 0.5, 10, color); k1 = createKillPart(0, 0.5, curZ, 8, 0.5, 8); k1.rotation.y=Math.PI/4; group.add(k1); break; 
+                    case 92: p = createPart(0, 0, curZ, 4, 0.5, 4, color); k1 = createKillPart(0, 1.2, curZ, 6, 0.2, 0.2); k1.isRotatingKill=true; k1.onUpdate=t=>k1.rotation.y=t*4; group.add(k1); break; 
+                    case 93: p = createPart(0, 0, curZ, 3, 0.5, 3, color); p.onUpdate=t=>{ const s=Math.sin(t*10+i)>0; p.visible=s; p.isObstacle=s; }; break; 
+                    case 94: p = createPart(0, i*2, curZ, 2, 0.5, 2, color); break; 
+                    case 95: p = createPart(0, 0, curZ, 8, 0.5, 8, color); k1 = createKillPart(0, 0.5, curZ, 8, 0.5, 8); k1.onUpdate=t=>{ k1.scale.setScalar(0.2+Math.abs(Math.sin(t*3))*0.8); }; group.add(k1); break; 
+                    case 96: p = createPart(0, 0, curZ, 1, 0.5, 1, color); p.onUpdate=t=>p.position.x=Math.sin(t*4+i)*5; break; 
+                    case 97: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createKillPart(0, 1, curZ, 2, 2, 6); k1.onUpdate=t=>k1.position.x=Math.sin(t*5)*3; group.add(k1); break; 
+                    case 98: p = createPart((i%2==0?5:-5), 0, curZ, 3, 0.5, 3, color); p.onUpdate=t=>p.position.y=Math.sin(t*2+i)*4; break; 
+                    case 99: p = createPart(0, 0, curZ, 5, 0.5, 5, color); k1 = createKillPart(0, 1.2, curZ, 12, 0.2, 0.2); k1.isRotatingKill=true; k1.onUpdate=t=>k1.rotation.y=t*3; group.add(k1); k2 = createKillPart(0, 0.1, curZ, 5, 0.2, 5); k2.onUpdate=t=>{k2.visible=Math.sin(t*2)>0;k2.isObstacle=k2.visible;}; group.add(k2); break;
+
+                    // --- 100-119: V7 新規拡張ギミック (20パターン追加) ---
+                    case 100: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.onUpdate = t => { p.visible=Math.sin(t*8+i)>0; p.isObstacle=p.visible; }; break; // 高速ストロボ点滅
+                    case 101: p = createPart(Math.sin(i)*5, Math.cos(i)*2, curZ, 3, 0.5, 3, color); break; // トルネードステップ
+                    case 102: p = createPart(0, 0, curZ, 1, 0.5, 6, color); k1 = createKillPart(0, 1.5, curZ, 4, 0.2, 0.2); k1.onUpdate=t=>k1.position.y=1.5+Math.sin(t*3+i); group.add(k1); break; // 極細綱渡り＋上下するバー
+                    case 103: p = createPart(0, 0, curZ, 8, 0.5, 8, color); p.rotation.z = Math.PI/8; break; // 大傾斜
+                    case 104: p = createPart(i%2==0?4:-4, i, curZ, 3, 0.5, 3, color); k1 = createKillPart(0, 0, curZ, 2, 8, 8); group.add(k1); break; // V字ウォールジャンプ風（中央が死の壁）
+                    case 105: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.onUpdate=t=>{ const show=(t*2+i)%5<1; p.visible=show; p.isObstacle=show; }; break; // 一瞬だけ現れる床
+                    case 106: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createKillPart(0, 2, curZ, 6, 4, 1); k1.onUpdate=t=>k1.position.y=3+Math.sin(t*2+i)*2.5; group.add(k1); break; // ギロチンドア
+                    case 107: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.onUpdate=t=>p.position.y=Math.sin(t*2+curZ*0.1)*3; break; // ウェーブ床
+                    case 108: p = createPart(i%2==0?2:-2, 0, curZ, 4, 0.5, 4, color); k1 = createKillPart(i%2==0?-2:2, 0, curZ, 4, 0.5, 4); group.add(k1); break; // 左右2択（片方が溶岩）
+                    case 109: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createKillPart(0, 0.5, curZ, 6, 0.5, 1); group.add(k1); break; // ハードル走
+                    case 110: p = createPart(0, i*0.8, curZ, 2, 0.5, 2, color); break; // 小さな階段
+                    case 111: p = createPart(0, 0, curZ, 8, 0.5, 8, color); k1 = createKillPart(0, 0.5, curZ, 0.5, 0.5, 8); k2 = createKillPart(0, 0.5, curZ, 8, 0.5, 0.5); group.add(k1); group.add(k2); break; // クロスバー溶岩（4つに分かれた安全地帯）
+                    case 112: p = createPart(0, 0, curZ, 3, 0.5, 3, color); p.onUpdate=t=>{ p.position.x=Math.sin(t*3+i)*5; p.position.y=Math.cos(t*3+i)*2; }; break; // 複雑な軌道で動く小さな床
+                    case 113: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createKillPart(-3, 1, curZ, 4, 2, 2); k1.onUpdate=t=>k1.position.x=-4+Math.abs(Math.sin(t*4+i))*3; group.add(k1); break; // 横から飛び出すピストン
+                    case 114: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.material.transparent=true; p.onUpdate=t=>p.material.opacity=0.1+Math.max(0, Math.sin(t*3+i))*0.5; break; // おぼろげな半透明の床
+                    case 115: p = createPart(0, 0, curZ, 4, 0.5, 4, color); k1 = createKillPart(0, 3, curZ, 0.5, 6, 0.5); k1.onUpdate=t=>{ k1.rotation.z=Math.sin(t*2+i)*1.5; }; group.add(k1); break; // 振り子キルパーツ
+                    case 116: p = createPart(0, 0, curZ, 4, 0.5, 4, color); p.onUpdate=t=>p.scale.setScalar(0.5+Math.abs(Math.sin(t*2+i))); break; // 鼓動する（大きさが変わる）足場
+                    case 117: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createKillPart(0, 0.1, curZ, 6, 0.2, 6); k1.onUpdate=t=>{ k1.visible=Math.random()>0.8; k1.isObstacle=k1.visible; }; group.add(k1); break; // ランダムノイズで一瞬出る溶岩
+                    case 118: p = createPart(0, 0, curZ, 4, 0.5, 4, color); k1 = createKillPart(0, 1.5, curZ, 2, 0.5, 2); k1.onUpdate=t=>{ k1.position.x=Math.sin(t*4+i)*3; k1.position.y=1.5+Math.cos(t*4+i)*2; }; group.add(k1); break; // プレイヤーの周りを飛ぶようなガード
+                    case 119: p = createPart(0, 0, curZ, 6, 0.5, 6, color); k1 = createKillPart(0, 1, curZ, 8, 0.5, 0.5); k2 = createKillPart(0, 1, curZ, 0.5, 0.5, 8); k1.isRotatingKill=true; k2.isRotatingKill=true; k1.onUpdate=t=>k1.rotation.y=t*1.5; k2.onUpdate=t=>k2.rotation.y=t*1.5; group.add(k1); group.add(k2); break; // ボス級：巨大十字回転プロペラ
+                }
+                
+                if(p) group.add(p);
+                curZ -= gap; 
+            }
+
+            return group;
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x05050a);
+            scene.fog = new THREE.Fog(0x05050a, 10, 80);
+
+            renderer = new THREE.WebGLRenderer({ antialias: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            document.body.appendChild(renderer.domElement);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambient);
+            const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+            sun.position.set(20, 50, 20);
+            scene.add(sun);
+
+            window.addEventListener('resize', () => renderer.setSize(window.innerWidth, window.innerHeight));
+
+            generateShopUI();
+            animate();
+        }
+
+        function startGame(mode) {
+            numPlayers = mode;
+            isGameStarted = true;
+            document.getElementById('title-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('title-screen').style.display = 'none';
+                document.getElementById('game-ui').style.opacity = '1';
+                if(numPlayers === 2) {
+                    document.getElementById('p2-hud').style.display = 'flex';
+                    document.getElementById('p2-hotbar').style.display = 'flex';
+                }
+            }, 500);
+
+            players.push(new Player(1, 0x3b82f6, numPlayers === 2 ? -4 : 0));
+            if (numPlayers === 2) players.push(new Player(2, 0xa855f7, 4));
+        }
+
+        function generateShopUI() {
+            const container = document.getElementById('shop-items-container');
+            container.innerHTML = '';
+            SHOP_DATA.forEach(item => {
+                container.innerHTML += `
+                    <div class="shop-item bg-zinc-800 p-4 rounded-2xl border border-zinc-700 flex flex-col items-center text-center cursor-pointer relative shadow-lg" onclick="buyItem('${item.id}')">
+                        <div class="w-16 h-16 ${item.color} rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner border-2 border-white/10">${item.icon}</div>
+                        <div class="font-black text-sm text-white leading-tight mb-1">${item.name}</div>
+                        <div class="text-[11px] text-zinc-400 h-10 flex items-center">${item.desc}</div>
+                        <div class="mt-auto w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-2 rounded-xl text-sm border border-yellow-600 shadow-[0_3px_0_#ca8a04] active:translate-y-1 active:shadow-none transition-all">
+                            💰 ${item.price}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function openShop(playerId) {
+            currentShopPlayer = playerId;
+            document.getElementById('shop-player-id').innerText = `(${playerId}P のショップ)`;
+            document.getElementById('shop-coins').innerText = players[playerId-1].coins;
+            document.getElementById('shop-modal').classList.remove('hidden');
+        }
+
+        function closeShop() {
+            document.getElementById('shop-modal').classList.add('hidden');
+        }
+
+        function buyItem(itemId) {
+            const player = players[currentShopPlayer - 1];
+            const itemDef = SHOP_DATA.find(i => i.id === itemId);
+            
+            if (player.coins >= itemDef.price) {
+                if (player.giveItem(itemId)) {
+                    player.coins -= itemDef.price;
+                    document.getElementById('shop-coins').innerText = player.coins;
+                    player.updateUI();
+                    
+                    const el = document.getElementById('shop-coins');
+                    el.style.color = '#00ff00';
+                    setTimeout(() => el.style.color = '', 300);
+                } else {
+                    alert("スロットがいっぱいです！先にアイテムを使ってください。");
+                }
+            } else {
+                const el = document.getElementById('shop-coins');
+                el.style.color = '#ff0000';
+                setTimeout(() => el.style.color = '', 300);
+            }
+        }
+
+        function checkItemHotkeys(code) {
+            if (!isGameStarted) return;
+            if (code === 'Digit1') players[0].useItem(0);
+            if (code === 'Digit2') players[0].useItem(1);
+            if (code === 'Digit3') players[0].useItem(2);
+            if (numPlayers === 2 && players[1]) {
+                if (code === 'Digit4') players[1].useItem(0);
+                if (code === 'Digit5') players[1].useItem(1);
+                if (code === 'Digit6') players[1].useItem(2);
+            }
+        }
+
+        function toggleSettings() {
+            const el = document.getElementById('settings-panel');
+            el.classList.toggle('hidden');
+        }
+
+        function showSavePopup() {
+            const el = document.getElementById('save-popup');
+            el.style.opacity = '1';
+            el.style.transform = 'scale(1)';
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'scale(0.5)';
+            }, 1000);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            
+            // タイムストップ・スロー機能のために独自の時間を進める
+            if (isGameStarted) {
+                gameTime += delta * globalTimeScale;
+            } else {
+                gameTime += delta; // タイトル画面は常に動かす
+            }
+
+            if (!isGameStarted) {
+                titleRotation += 0.003;
+                const dummyCam = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
+                dummyCam.position.set(Math.sin(titleRotation)*40, 30, Math.cos(titleRotation)*40 - 20);
+                dummyCam.lookAt(0, 0, -20);
+                
+                if (activeStages.size < 3) {
+                    for(let i=0; i<3; i++) {
+                        const s = createStageGroup(i);
+                        scene.add(s); activeStages.add(i); stageCache.set(i, s);
+                    }
+                }
+                
+                activeStages.forEach(idx => {
+                    const s = stageCache.get(idx);
+                    if(s) s.children.forEach(c => { if(c.onUpdate) c.onUpdate(gameTime); });
+                });
+
+                renderer.render(scene, dummyCam);
+                return;
+            }
+
+            // Player Updates
+            players[0].update({ up: keys['KeyW'], down: keys['KeyS'], left: keys['KeyA'], right: keys['KeyD'], jump: keys['Space'] });
+
+            if (numPlayers === 2 && players[1]) {
+                players[1].update({ up: keys['ArrowUp'], down: keys['ArrowDown'], left: keys['ArrowLeft'], right: keys['ArrowRight'], jump: keys['ShiftRight'] });
+            }
+
+            // Render Distance Logic
+            const viewDist = parseInt(document.getElementById('render-dist').value);
+            const neededStages = new Set();
+            players.forEach(p => {
+                const centerIdx = Math.max(0, Math.floor(Math.abs(p.mesh.position.z) / STAGE_LEN));
+                for(let i = -1; i <= viewDist; i++) {
+                    const idx = centerIdx + i;
+                    if (idx >= 0 && idx < TOTAL_STAGES) neededStages.add(idx);
+                }
+            });
+
+            neededStages.forEach(idx => {
+                if (!activeStages.has(idx)) {
+                    const s = createStageGroup(idx);
+                    scene.add(s); stageCache.set(idx, s); activeStages.add(idx);
+                }
+            });
+
+            activeStages.forEach(idx => {
+                if (!neededStages.has(idx)) {
+                    const s = stageCache.get(idx);
+                    scene.remove(s); activeStages.delete(idx);
+                    s.children.forEach(c => { 
+                        if(c.material) c.material.dispose(); 
+                        if(c.geometry) c.geometry.dispose(); 
+                    });
+                } else {
+                    const s = stageCache.get(idx);
+                    if(s) s.children.forEach(c => { if(c.onUpdate) c.onUpdate(gameTime); }); // gameTimeを渡す
+                }
+            });
+
+            // Split Screen Rendering
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            if (numPlayers === 1) {
+                players[0].camera.aspect = w / h;
+                players[0].camera.updateProjectionMatrix();
+                renderer.setViewport(0, 0, w, h);
+                renderer.setScissorTest(false);
+                renderer.render(scene, players[0].camera);
+            } else {
+                renderer.setScissorTest(true);
+                players[0].camera.aspect = (w / 2) / h;
+                players[0].camera.updateProjectionMatrix();
+                renderer.setViewport(0, 0, w / 2, h);
+                renderer.setScissor(0, 0, w / 2, h);
+                renderer.render(scene, players[0].camera);
+                
+                players[1].camera.aspect = (w / 2) / h;
+                players[1].camera.updateProjectionMatrix();
+                renderer.setViewport(w / 2, 0, w / 2, h);
+                renderer.setScissor(w / 2, 0, w / 2, h);
+                renderer.render(scene, players[1].camera);
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

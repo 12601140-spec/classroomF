@@ -1,0 +1,2360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Paint Shooter 3D - 携帯対応完全版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@800&display=swap');
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #1a202c;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #game-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* カラフルなUIの装飾 */
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.5);
+            transition: transform 0.1s;
+        }
+        .btn-primary:active { transform: scale(0.95); }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5);
+            transition: transform 0.1s;
+        }
+        .btn-secondary:active { transform: scale(0.95); }
+
+        .panel {
+            background: rgba(30, 41, 59, 0.85);
+            border: 2px solid #475569;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        /* 仮想ジョイスティックとHUD */
+        #hud {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: none; pointer-events: none;
+        }
+        #hud.active { display: block; pointer-events: auto; }
+
+        .touch-zone {
+            position: absolute;
+            width: 50%; height: 100%;
+            top: 0;
+            /* background: rgba(255,0,0,0.1); Debug */
+        }
+        #left-touch-zone { left: 0; }
+        #right-touch-zone { right: 0; }
+
+        #joystick-base {
+            position: absolute; width: 120px; height: 120px;
+            background: rgba(255,255,255,0.2); border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.4);
+            transform: translate(-50%, -50%);
+            display: none; pointer-events: none;
+        }
+        #joystick-stick {
+            position: absolute; width: 50px; height: 50px;
+            background: rgba(255,255,255,0.8); border-radius: 50%;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .action-btn {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            border: 2px solid rgba(255,255,255,0.6);
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; color: white; text-shadow: 1px 1px 2px black;
+        }
+        .action-btn:active { background: rgba(255,255,255,0.6); transform: scale(0.9); }
+        
+        #btn-shoot { right: 20px; bottom: 40px; width: 80px; height: 80px; font-size: 1.2rem; background: rgba(239, 68, 68, 0.5); }
+        #btn-jump { right: 120px; bottom: 20px; width: 60px; height: 60px; }
+        #btn-sub { right: 40px; bottom: 140px; width: 60px; height: 60px; background: rgba(59, 130, 246, 0.5); }
+        #btn-special { right: 110px; bottom: 100px; width: 70px; height: 70px; background: rgba(245, 158, 11, 0.5); border-color: gold; display: none;}
+        #btn-special.ready { display: flex; animation: pulse 1s infinite; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        /* ゲージ類 */
+        #ink-gauge-container {
+            position: absolute; top: 20px; right: 20px; width: 150px; height: 20px;
+            background: rgba(0,0,0,0.5); border: 2px solid white; border-radius: 10px; overflow: hidden;
+        }
+        #ink-gauge { height: 100%; background: #06b6d4; width: 100%; transition: width 0.1s; }
+        
+        #hp-gauge-container {
+            position: absolute; top: 50px; right: 20px; width: 150px; height: 15px;
+            background: rgba(0,0,0,0.5); border: 1px solid white; border-radius: 7.5px; overflow: hidden;
+        }
+        #hp-gauge { height: 100%; background: #10b981; width: 100%; transition: width 0.1s; }
+
+        #special-gauge-container {
+            position: absolute; top: 20px; left: 20px; width: 150px; height: 30px;
+            background: rgba(0,0,0,0.5); border: 2px solid gold; border-radius: 15px; overflow: hidden;
+        }
+        #special-gauge { height: 100%; background: gold; width: 0%; transition: width 0.2s; }
+        #special-text { position: absolute; width:100%; text-align:center; top:4px; font-size:12px; font-weight:bold; color:black; }
+
+        #score-board {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 20px; font-size: 1.5rem; font-weight: bold; text-shadow: 2px 2px 4px black;
+        }
+        .score-a { color: #3b82f6; }
+        .score-b { color: #f97316; }
+        #time-display { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); font-size: 2rem; font-weight: bold; text-shadow: 2px 2px 4px black; color: white; }
+
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 20px; height: 20px; pointer-events: none;
+        }
+        #crosshair::before, #crosshair::after {
+            content: ''; position: absolute; background: white;
+        }
+        #crosshair::before { top: 9px; left: 0; width: 20px; height: 2px; }
+        #crosshair::after { top: 0; left: 9px; width: 2px; height: 20px; }
+
+        .list-container {
+            max-height: 60vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .list-container::-webkit-scrollbar { width: 8px; }
+        .list-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        .list-container::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+
+        .item-card {
+            background: rgba(255,255,255,0.1); border: 2px solid transparent; transition: all 0.2s;
+        }
+        .item-card.selected { border-color: #10b981; background: rgba(16,185,129,0.2); }
+        
+        #damage-overlay {
+            position: absolute; inset: 0; background: radial-gradient(circle, transparent 50%, rgba(239,68,68,0.8) 100%);
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        
+        #message-banner {
+            position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%) scale(0);
+            font-size: 4rem; font-weight: bold; text-shadow: 0 4px 10px rgba(0,0,0,0.8);
+            color: white; text-align: center; white-space: nowrap; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #message-banner.show { transform: translate(-50%, -50%) scale(1); }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="ui-layer">
+        <!-- 1. ホーム画面 -->
+        <div id="screen-home" class="screen active justify-center items-center">
+            <h1 class="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] mb-2 italic transform -rotate-2">
+                PAINT SHOOTER
+            </h1>
+            <p class="text-2xl text-white font-bold mb-10 drop-shadow-md">3D Mobile Edition</p>
+            
+            <div class="flex flex-col gap-4 w-64">
+                <button class="btn-primary text-white font-bold py-4 px-6 rounded-full text-xl shadow-lg" onclick="app.showScreen('battle-select')">
+                    🎮 バトルへ！
+                </button>
+                <button class="panel text-white font-bold py-3 px-6 rounded-full text-lg shadow-lg hover:bg-slate-700 transition" onclick="app.showScreen('locker')">
+                    👕 更衣室 (ブキ・ギア)
+                </button>
+                <button class="panel text-white font-bold py-3 px-6 rounded-full text-lg shadow-lg hover:bg-slate-700 transition" onclick="app.showScreen('shop')">
+                    🛒 ショップ
+                </button>
+            </div>
+            
+            <div class="absolute top-4 right-4 panel py-2 px-4 flex items-center gap-2">
+                <span class="text-yellow-400 text-xl">🪙</span>
+                <span id="home-coins" class="text-white font-bold text-xl">0</span>
+            </div>
+        </div>
+
+        <!-- 2. バトル選択画面 -->
+        <div id="screen-battle-select" class="screen justify-center items-center">
+            <div class="panel w-11/12 md:w-2/3 max-w-2xl p-6 relative">
+                <button class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold" onclick="app.showScreen('home')">✕</button>
+                <h2 class="text-3xl font-bold text-white mb-6 text-center">バトルモード選択</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="item-card p-4 rounded-xl cursor-pointer text-center" onclick="app.selectMode('turf_war')" id="mode-turf_war">
+                        <div class="text-4xl mb-2">🎨</div>
+                        <h3 class="text-xl font-bold text-white">ナワバリバトル</h3>
+                        <p class="text-sm text-gray-300 mt-2">床をたくさん塗ったチームの勝ち！</p>
+                    </div>
+                    <div class="item-card p-4 rounded-xl cursor-pointer text-center" onclick="app.selectMode('splat_zones')" id="mode-splat_zones">
+                        <div class="text-4xl mb-2">🚩</div>
+                        <h3 class="text-xl font-bold text-white">エリア確保</h3>
+                        <p class="text-sm text-gray-300 mt-2">中央の指定エリアを塗り続けろ！</p>
+                    </div>
+                    <div class="item-card p-4 rounded-xl cursor-pointer text-center" onclick="app.selectMode('deathmatch')" id="mode-deathmatch">
+                        <div class="text-4xl mb-2">⚔️</div>
+                        <h3 class="text-xl font-bold text-white">デスマッチ</h3>
+                        <p class="text-sm text-gray-300 mt-2">相手をたくさん倒したチームの勝ち！</p>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <p class="text-yellow-300 mb-4 text-sm">※ステージは全5種からランダムで決定されます。</p>
+                    <button class="btn-primary text-white font-bold py-3 px-10 rounded-full text-2xl shadow-lg w-full md:w-auto" onclick="app.startBattle()">
+                        マッチング開始！
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 更衣室 (ロッカー) -->
+        <div id="screen-locker" class="screen justify-center items-center">
+             <div class="panel w-11/12 md:w-3/4 max-w-4xl p-6 relative h-5/6 flex flex-col">
+                <button class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold z-10" onclick="app.showScreen('home')">✕</button>
+                <h2 class="text-3xl font-bold text-white mb-4 text-center">更衣室</h2>
+                
+                <div class="flex flex-col md:flex-row gap-6 flex-1 min-h-0">
+                    <!-- 左: カテゴリとリスト -->
+                    <div class="w-full md:w-1/2 flex flex-col">
+                        <div class="flex gap-2 mb-4">
+                            <button class="flex-1 py-2 bg-slate-700 text-white rounded font-bold tab-btn" onclick="app.switchLockerTab('weapon')">ブキ</button>
+                            <button class="flex-1 py-2 bg-slate-800 text-gray-400 rounded font-bold tab-btn" onclick="app.switchLockerTab('skin')">スキン(色)</button>
+                            <button class="flex-1 py-2 bg-slate-800 text-gray-400 rounded font-bold tab-btn" onclick="app.switchLockerTab('hat')">アタマ</button>
+                        </div>
+                        <div id="locker-list" class="list-container flex-1 bg-slate-800 p-2 rounded-lg grid grid-cols-2 gap-2 content-start">
+                            <!-- JSで生成 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 右: 詳細と装備 -->
+                    <div class="w-full md:w-1/2 bg-slate-800 rounded-lg p-4 flex flex-col items-center justify-center relative">
+                        <div id="locker-preview-container" class="w-full h-48 bg-slate-900 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+                            <!-- 簡易3Dプレビュー用キャンバス（今回は省略しテキスト表示） -->
+                            <div class="text-6xl" id="locker-icon-preview">🔫</div>
+                        </div>
+                        <h3 id="locker-item-name" class="text-2xl font-bold text-white mb-2">アイテム名</h3>
+                        <div id="locker-item-desc" class="text-gray-300 text-sm mb-4 text-center h-16">説明文...</div>
+                        
+                        <div id="locker-weapon-stats" class="w-full mb-4 hidden">
+                            <div class="flex items-center text-xs text-white mb-1"><span class="w-12">射程:</span><div class="flex-1 bg-gray-700 h-2 rounded"><div id="stat-range" class="bg-blue-500 h-full rounded" style="width: 50%"></div></div></div>
+                            <div class="flex items-center text-xs text-white mb-1"><span class="w-12">攻撃:</span><div class="flex-1 bg-gray-700 h-2 rounded"><div id="stat-damage" class="bg-red-500 h-full rounded" style="width: 50%"></div></div></div>
+                            <div class="flex items-center text-xs text-white mb-1"><span class="w-12">連射:</span><div class="flex-1 bg-gray-700 h-2 rounded"><div id="stat-fire" class="bg-green-500 h-full rounded" style="width: 50%"></div></div></div>
+                            <div class="mt-2 text-xs text-yellow-300 text-center">サブ: <span id="stat-sub">ボム</span> | ウルト: <span id="stat-special">チャクチ</span></div>
+                        </div>
+
+                        <button id="btn-equip" class="btn-primary text-white font-bold py-3 px-8 rounded-full text-xl mt-auto w-full" onclick="app.equipSelectedItem()">
+                            装備する
+                        </button>
+                    </div>
+                </div>
+             </div>
+        </div>
+
+        <!-- 4. ショップ -->
+        <div id="screen-shop" class="screen justify-center items-center">
+             <div class="panel w-11/12 md:w-3/4 max-w-4xl p-6 relative h-5/6 flex flex-col">
+                <button class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold z-10" onclick="app.showScreen('home')">✕</button>
+                
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-3xl font-bold text-white">ショップ</h2>
+                    <div class="panel py-1 px-3 flex items-center gap-2">
+                        <span class="text-yellow-400 text-xl">🪙</span>
+                        <span id="shop-coins" class="text-white font-bold text-xl">0</span>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col md:flex-row gap-6 flex-1 min-h-0">
+                    <div class="w-full md:w-1/2 flex flex-col">
+                        <div class="flex gap-2 mb-4">
+                            <button class="flex-1 py-2 bg-slate-700 text-white rounded font-bold shop-tab-btn" onclick="app.switchShopTab('weapon')">ブキ</button>
+                            <button class="flex-1 py-2 bg-slate-800 text-gray-400 rounded font-bold shop-tab-btn" onclick="app.switchShopTab('hat')">アタマ</button>
+                        </div>
+                        <div id="shop-list" class="list-container flex-1 bg-slate-800 p-2 rounded-lg grid grid-cols-1 gap-2 content-start">
+                            <!-- JSで生成 -->
+                        </div>
+                    </div>
+                    
+                    <div class="w-full md:w-1/2 bg-slate-800 rounded-lg p-4 flex flex-col items-center justify-center">
+                        <div class="text-8xl mb-4" id="shop-icon-preview">🛒</div>
+                        <h3 id="shop-item-name" class="text-2xl font-bold text-white mb-2 text-center">アイテムを選択</h3>
+                        <p id="shop-item-desc" class="text-gray-300 text-sm mb-6 text-center h-16"></p>
+                        <div id="shop-price-container" class="text-2xl font-bold text-yellow-400 mb-6 hidden">
+                            🪙 <span id="shop-item-price">0</span>
+                        </div>
+                        <button id="btn-buy" class="btn-secondary text-white font-bold py-3 px-8 rounded-full text-xl mt-auto w-full opacity-50 cursor-not-allowed" disabled onclick="app.buySelectedItem()">
+                            購入する
+                        </button>
+                    </div>
+                </div>
+             </div>
+        </div>
+
+        <!-- 5. HUD (ゲームプレイ中) -->
+        <div id="hud">
+            <div id="damage-overlay"></div>
+            
+            <div id="score-board">
+                <div class="bg-blue-900/80 px-4 py-1 rounded border-2 border-blue-500"><span class="score-a" id="score-a-val">0.0%</span></div>
+                <div class="bg-orange-900/80 px-4 py-1 rounded border-2 border-orange-500"><span class="score-b" id="score-b-val">0.0%</span></div>
+            </div>
+            <div id="time-display">3:00</div>
+
+            <div id="ink-gauge-container"><div id="ink-gauge"></div></div>
+            <div id="hp-gauge-container"><div id="hp-gauge"></div></div>
+            
+            <div id="special-gauge-container">
+                <div id="special-gauge"></div>
+                <div id="special-text">SPECIAL</div>
+            </div>
+
+            <div id="crosshair"></div>
+
+            <!-- タッチ入力ゾーン -->
+            <div id="left-touch-zone" class="touch-zone"></div>
+            <div id="right-touch-zone" class="touch-zone"></div>
+
+            <!-- 仮想ジョイスティック UI -->
+            <div id="joystick-base"><div id="joystick-stick"></div></div>
+
+            <!-- アクションボタン -->
+            <div id="btn-shoot" class="action-btn pointer-events-auto">撃つ</div>
+            <div id="btn-jump" class="action-btn pointer-events-auto">Jump</div>
+            <div id="btn-sub" class="action-btn pointer-events-auto text-sm">Sub</div>
+            <div id="btn-special" class="action-btn pointer-events-auto text-sm text-center flex-col leading-tight"><span class="text-xs">ULT</span><span id="btn-special-name" class="text-[10px]"></span></div>
+        </div>
+
+        <!-- 6. リザルト画面 -->
+        <div id="screen-result" class="screen justify-center items-center">
+            <div class="panel w-11/12 md:w-1/2 p-8 text-center flex flex-col items-center">
+                <h2 id="result-title" class="text-5xl font-black text-white mb-2 drop-shadow-lg transform -rotate-2">WIN!</h2>
+                <p id="result-subtitle" class="text-xl text-gray-300 mb-8">ナワバリバトル</p>
+                
+                <div class="flex justify-around w-full mb-8">
+                    <div class="text-center">
+                        <p class="text-blue-400 font-bold text-xl mb-2">自チーム</p>
+                        <p id="result-score-a" class="text-4xl font-bold text-white">45.2%</p>
+                    </div>
+                    <div class="text-4xl font-black text-gray-500 mt-6">VS</div>
+                    <div class="text-center">
+                        <p class="text-orange-400 font-bold text-xl mb-2">敵チーム</p>
+                        <p id="result-score-b" class="text-4xl font-bold text-white">42.1%</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 p-4 rounded-lg w-full mb-8 text-left">
+                    <h4 class="text-white font-bold mb-2 border-b border-gray-600 pb-1">あなたの成績</h4>
+                    <div class="flex justify-between text-gray-300"><span>キル:</span><span id="result-kills" class="font-bold text-white">0</span></div>
+                    <div class="flex justify-between text-gray-300"><span>デス:</span><span id="result-deaths" class="font-bold text-white">0</span></div>
+                    <div class="flex justify-between text-gray-300"><span>塗りポイント:</span><span id="result-paint" class="font-bold text-white">0</span></div>
+                    <div class="flex justify-between text-yellow-400 mt-2 font-bold border-t border-gray-600 pt-1"><span>獲得コイン:</span><span>+<span id="result-coins">0</span></span></div>
+                </div>
+
+                <button class="btn-primary text-white font-bold py-3 px-10 rounded-full text-2xl shadow-lg w-full" onclick="app.showScreen('home')">
+                    ホームへ戻る
+                </button>
+            </div>
+        </div>
+
+        <!-- メッセージバナー -->
+        <div id="message-banner">GAME SET!</div>
+    </div>
+
+<script>
+/**
+ * 巨大なゲームスクリプト
+ * アーキテクチャ:
+ * 1. データベース (武器、ステージ等)
+ * 2. システム (状態管理、UI、セーブデータ)
+ * 3. エンジン (Three.jsラッパー、入力、A*経路探索、塗りシステム)
+ * 4. ゲームオブジェクト (Player, AI, Bullet)
+ * 5. メインループ
+ */
+
+// ==========================================
+// 1. データベース (Databases)
+// ==========================================
+const DB = {
+    // 武器10種 (見た目、攻撃方法が全て異なる)
+    Weapons: {
+        shooter: { id:'shooter', name:'わかばシューター風', desc:'初心者向け。ブレるが塗りが強くインク消費が少ない。', type:'shooter', damage:28, range:60, fireRate:0.1, inkCost:0.8, spread:0.15, bulletSpeed: 40, sub:'splat_bomb', special:'splashdown', price:0, stats:[30, 20, 80], icon:'🔫', model:'gun_short' },
+        standard: { id:'standard', name:'スプラシューター風', desc:'標準的な性能。バランスが良い。', type:'shooter', damage:35, range:80, fireRate:0.12, inkCost:1.0, spread:0.05, bulletSpeed: 50, sub:'suction_bomb', special:'missile', price:500, stats:[50, 50, 60], icon:'🔫', model:'gun_std' },
+        roller: { id:'roller', name:'スプラローラー風', desc:'移動しながら太く塗れる。振ると近接大ダメージ。', type:'roller', damage:120, range:30, fireRate:0.8, inkCost:10, spread:0.3, bulletSpeed: 30, sub:'suction_bomb', special:'splashdown', price:1000, stats:[20, 100, 20], icon:'🧻', model:'roller' },
+        charger: { id:'charger', name:'スプラチャージャー風', desc:'長押しでチャージ。超長射程で一撃必殺。', type:'charger', damage:160, range:200, fireRate:1.2, inkCost:18, spread:0.0, bulletSpeed: 150, sub:'splat_bomb', special:'inkstorm', price:1500, stats:[100, 100, 10], icon:'🦯', model:'sniper' },
+        blaster: { id:'blaster', name:'ホットブラスター風', desc:'一定距離で爆発する弾。障害物裏の敵に。', type:'blaster', damage:80, range:60, fireRate:0.6, inkCost:8, spread:0.0, bulletSpeed: 30, sub:'quick_bomb', special:'splashdown', price:1800, stats:[40, 80, 30], icon:'🎺', model:'blaster' },
+        slosher: { id:'slosher', name:'バケットスロッシャー風', desc:'放物線を描いてインクを撒く。壁裏に強い。', type:'slosher', damage:70, range:70, fireRate:0.7, inkCost:7, spread:0.1, bulletSpeed: 40, sub:'splat_bomb', special:'missile', price:2000, stats:[45, 70, 35], icon:'🪣', model:'bucket' },
+        splatling: { id:'splatling', name:'スプラスピナー風', desc:'チャージ後に高速連射。射程と火力を両立。', type:'splatling', damage:32, range:100, fireRate:0.05, inkCost:0.5, spread:0.08, bulletSpeed: 60, sub:'suction_bomb', special:'inkstorm', price:2500, stats:[70, 30, 100], icon:'🛢️', model:'gatling' },
+        brush: { id:'brush', name:'パブロ風', desc:'超近接・超連射。移動速度が非常に速い。', type:'brush', damage:20, range:25, fireRate:0.08, inkCost:0.5, spread:0.4, bulletSpeed: 20, sub:'quick_bomb', special:'splashdown', price:2200, stats:[10, 15, 100], icon:'🖌️', model:'brush' },
+        dualie: { id:'dualie', name:'スパッタリー風', desc:'2丁拳銃。射程は短いがDPS最強。ダッシュ可能。', type:'dualie', damage:36, range:50, fireRate:0.08, inkCost:0.8, spread:0.1, bulletSpeed: 45, sub:'quick_bomb', special:'missile', price:2800, stats:[25, 40, 90], icon:'🔫🔫', model:'dual' },
+        bow: { id:'bow', name:'トライストリンガー風', desc:'3方向に同時発射。チャージで集弾。', type:'bow', damage:35, range:120, fireRate:0.8, inkCost:12, spread:0.2, bulletSpeed: 80, sub:'splat_bomb', special:'inkstorm', price:3000, stats:[80, 40, 30], icon:'🏹', model:'bow' }
+    },
+    // サブウェポン
+    Subs: {
+        splat_bomb: { id:'splat_bomb', name:'スプラッシュボム', cost: 70, type:'throw', delay: 1.0, damage: 150, radius: 25 },
+        suction_bomb: { id:'suction_bomb', name:'キューバンボム', cost: 70, type:'throw', delay: 2.0, damage: 180, radius: 30 },
+        quick_bomb: { id:'quick_bomb', name:'クイックボム', cost: 40, type:'throw', delay: 0, damage: 60, radius: 15 } // 着発
+    },
+    // スペシャル
+    Specials: {
+        splashdown: { id:'splashdown', name:'スーパーチャクチ', points: 180, desc:'飛び上がって周囲を大爆発で塗る。' },
+        missile: { id:'missile', name:'マルチミサイル', points: 200, desc:'敵全員の位置にミサイルを落とす。' },
+        inkstorm: { id:'inkstorm', name:'アメフラシ', points: 190, desc:'前方に雨雲を投げ、広範囲を塗り続ける。' }
+    },
+    // スキン（色）
+    Skins: {
+        blue: { id:'blue', name:'ブルー', color:0x3b82f6, price:0, icon:'🟦' },
+        red: { id:'red', name:'レッド', color:0xef4444, price:500, icon:'🟥' },
+        green: { id:'green', name:'グリーン', color:0x10b981, price:800, icon:'🟩' },
+        yellow: { id:'yellow', name:'イエロー', color:0xfacc15, price:800, icon:'🟨' },
+        purple: { id:'purple', name:'パープル', color:0xa855f7, price:1200, icon:'🟪' },
+        pink: { id:'pink', name:'ネオンピンク', color:0xec4899, price:1500, icon:'💖' }
+    },
+    // アタマ（アクセサリー）
+    Hats: {
+        none: { id:'none', name:'なし', price:0, icon:'👤' },
+        cap: { id:'cap', name:'ベースボールキャップ', price:300, icon:'🧢' },
+        headphone: { id:'headphone', name:'スタジオヘッドホン', price:600, icon:'🎧' },
+        glasses: { id:'glasses', name:'クロブチレトロ', price:400, icon:'👓' },
+        helmet: { id:'helmet', name:'サイクルメット', price:800, icon:'🪖' },
+        bandana: { id:'bandana', name:'ヤキフグサンバイザー', price:1000, icon:'👲' }
+    },
+    // ステージ (5種類, 0:空き, 1:低い壁, 2:高い壁)
+    // 簡略化のため、20x20のグリッド (1セル=10単位、計200x200の広さ)
+    Stages: [
+        { id: 'stage1', name: 'デカライン高架下風',
+          map: [
+            "22222222222222222222",
+            "20000000022000000002",
+            "20110000000000001102",
+            "20110022200222001102",
+            "20000022200222000002",
+            "20020000000000002002",
+            "20020011111111002002",
+            "20020010000001002002",
+            "20000010222201000002",
+            "22000000222200000022",
+            "22000000222200000022",
+            "20000010222201000002",
+            "20020010000001002002",
+            "20020011111111002002",
+            "20020000000000002002",
+            "20000022200222000002",
+            "20110022200222001102",
+            "20110000000000001102",
+            "20000000022000000002",
+            "22222222222222222222"
+          ]
+        },
+        { id: 'stage2', name: 'ハコフグ倉庫風',
+          map: [
+            "22222222222222222222",
+            "20000000000000000002",
+            "20222001111110022202",
+            "20222001000010022202",
+            "20000001022010000002",
+            "20000001022010000002",
+            "21111001000010011112",
+            "20001000000000010002",
+            "20001002222220010002",
+            "20000002222220000002",
+            "20000002222220000002",
+            "20001002222220010002",
+            "20001000000000010002",
+            "21111001000010011112",
+            "20000001022010000002",
+            "20000001022010000002",
+            "20222001000010022202",
+            "20222001111110022202",
+            "20000000000000000002",
+            "22222222222222222222"
+          ]
+        },
+        { id: 'stage3', name: 'Bバスパーク風',
+          map: [
+            "22222222222222222222",
+            "20000022200222000002",
+            "20000000000000000002",
+            "20011100000000111002",
+            "20010100222200101002",
+            "20011100222200111002",
+            "22000000000000000022",
+            "22000000111100000022",
+            "22002200122100220022",
+            "20002200122100220002",
+            "20002200122100220002",
+            "22002200122100220022",
+            "22000000111100000022",
+            "22000000000000000022",
+            "20011100222200111002",
+            "20010100222200101002",
+            "20011100000000111002",
+            "20000000000000000002",
+            "20000022200222000002",
+            "22222222222222222222"
+          ]
+        },
+        { id: 'stage4', name: 'アロワナモール風', // 細長い
+          map: [
+            "22222222222222222222",
+            "22220000222200002222",
+            "22220000222200002222",
+            "22200000022000000222",
+            "22001100000000110022",
+            "22001210000001210022",
+            "20001110011001110002",
+            "20000000022000000002",
+            "20011000222200011002",
+            "20022000222200022002",
+            "20022000222200022002",
+            "20011000222200011002",
+            "20000000022000000002",
+            "20001110011001110002",
+            "22001210000001210022",
+            "22001100000000110022",
+            "22200000022000000222",
+            "22220000222200002222",
+            "22220000222200002222",
+            "22222222222222222222"
+          ]
+        },
+        { id: 'stage5', name: 'モズク農園風', // グリッド
+          map: [
+            "22222222222222222222",
+            "20000002200220000002",
+            "20111002200220011102",
+            "20101000000000010102",
+            "20111001100110011102",
+            "20000001000010000002",
+            "22200111022011100222",
+            "22200100022000100222",
+            "20000002222220000002",
+            "20001002222220010002",
+            "20001002222220010002",
+            "20000002222220000002",
+            "22200100022000100222",
+            "22200111022011100222",
+            "20000001000010000002",
+            "20111001100110011102",
+            "20101000000000010102",
+            "20111002200220011102",
+            "20000002200220000002",
+            "22222222222222222222"
+          ]
+        }
+    ]
+};
+
+// ==========================================
+// 2. セーブデータ & アプリケーションステート
+// ==========================================
+const SaveData = {
+    coins: 1000,
+    ownedWeapons: ['shooter'],
+    ownedSkins: ['blue', 'red'],
+    ownedHats: ['none'],
+    equip: {
+        weapon: 'shooter',
+        skin: 'blue',
+        hat: 'none'
+    },
+    load() {
+        const data = localStorage.getItem('paint_shooter_save');
+        if(data) {
+            const parsed = JSON.parse(data);
+            Object.assign(this, parsed);
+        }
+    },
+    save() {
+        localStorage.setItem('paint_shooter_save', JSON.stringify(this));
+    }
+};
+
+const AppState = {
+    currentScreen: 'home',
+    lockerTab: 'weapon',
+    shopTab: 'weapon',
+    selectedLockerItem: null,
+    selectedShopItem: null,
+    selectedMode: 'turf_war', // turf_war, splat_zones, deathmatch
+};
+
+// ==========================================
+// 3. ユーティリティ
+// ==========================================
+const Utils = {
+    rand: (min, max) => Math.random() * (max - min) + min,
+    randInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
+    distance2D: (x1, z1, x2, z2) => Math.sqrt((x1-x2)**2 + (z1-z2)**2),
+    distanceSq2D: (x1, z1, x2, z2) => (x1-x2)**2 + (z1-z2)**2,
+    lerp: (a, b, t) => a + (b - a) * t,
+    clamp: (val, min, max) => Math.max(min, Math.min(max, val)),
+    hexToRgb: (hex) => {
+        return {
+            r: (hex >> 16) & 255,
+            g: (hex >> 8) & 255,
+            b: hex & 255
+        };
+    },
+    // 色の距離（RGB空間）
+    colorDistanceSq: (c1, c2) => {
+        return (c1.r - c2.r)**2 + (c1.g - c2.g)**2 + (c1.b - c2.b)**2;
+    }
+};
+
+// ==========================================
+// 4. A* 経路探索アルゴリズム (CPU用)
+// ==========================================
+class AStar {
+    constructor(grid) {
+        this.grid = grid; // 2D array [row][col], 0: walkable, >0: obstacle
+        this.rows = grid.length;
+        this.cols = grid[0].length;
+    }
+    
+    findPath(startRow, startCol, endRow, endCol) {
+        if(startRow < 0 || startRow >= this.rows || startCol < 0 || startCol >= this.cols) return null;
+        if(endRow < 0 || endRow >= this.rows || endCol < 0 || endCol >= this.cols) return null;
+        if(this.grid[endRow][endCol] > 0) {
+            // 目的地が壁なら最も近い空きマスを探す（簡易版）
+            let found = false;
+            for(let r=-1; r<=1; r++){
+                for(let c=-1; c<=1; c++){
+                    let nr = endRow+r, nc = endCol+c;
+                    if(nr>=0 && nr<this.rows && nc>=0 && nc<this.cols && this.grid[nr][nc] === 0) {
+                        endRow = nr; endCol = nc; found = true; break;
+                    }
+                }
+                if(found) break;
+            }
+            if(!found) return null;
+        }
+
+        const openList = [];
+        const closedList = Array(this.rows).fill(0).map(()=>Array(this.cols).fill(false));
+        const nodes = Array(this.rows).fill(0).map(()=>Array(this.cols).fill(null));
+        
+        const startNode = { r:startRow, c:startCol, g:0, h:0, f:0, parent:null };
+        openList.push(startNode);
+        nodes[startRow][startCol] = startNode;
+
+        const dirs = [[-1,0],[1,0],[0,-1],[0,1]]; // 上下左右のみ
+
+        let iterations = 0;
+        while(openList.length > 0 && iterations < 500) {
+            iterations++;
+            // lowest f
+            let lowestIdx = 0;
+            for(let i=1; i<openList.length; i++){
+                if(openList[i].f < openList[lowestIdx].f) lowestIdx = i;
+            }
+            let curr = openList.splice(lowestIdx, 1)[0];
+            closedList[curr.r][curr.c] = true;
+
+            // Goal reached
+            if(curr.r === endRow && curr.c === endCol) {
+                let path = [];
+                let temp = curr;
+                while(temp.parent) {
+                    path.push({r:temp.r, c:temp.c});
+                    temp = temp.parent;
+                }
+                return path.reverse();
+            }
+
+            for(let d of dirs) {
+                let nr = curr.r + d[0];
+                let nc = curr.c + d[1];
+
+                if(nr>=0 && nr<this.rows && nc>=0 && nc<this.cols) {
+                    if(closedList[nr][nc] || this.grid[nr][nc] > 0) continue;
+                    
+                    let gScore = curr.g + 1;
+                    let neighbor = nodes[nr][nc];
+                    
+                    if(!neighbor) {
+                        neighbor = { r:nr, c:nc, g:0, h:0, f:0, parent:null };
+                        nodes[nr][nc] = neighbor;
+                        openList.push(neighbor);
+                    } else if(gScore >= neighbor.g) {
+                        continue;
+                    }
+
+                    neighbor.parent = curr;
+                    neighbor.g = gScore;
+                    neighbor.h = Math.abs(nr - endRow) + Math.abs(nc - endCol);
+                    neighbor.f = neighbor.g + neighbor.h;
+                }
+            }
+        }
+        return null; // Path not found
+    }
+}
+
+// ==========================================
+// 5. ゲームエンジン (Three.js ラッパー & システム)
+// ==========================================
+class GameEngine {
+    constructor() {
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x87CEEB); // 空色
+        // this.scene.fog = new THREE.FogExp2(0x87CEEB, 0.002);
+        
+        this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera.position.set(0, 15, 30);
+        
+        this.renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: false });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // パフォーマンスのため最大2
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        // ライティング
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        this.scene.add(ambientLight);
+        
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(50, 100, 50);
+        dirLight.castShadow = true;
+        dirLight.shadow.camera.left = -100; dirLight.shadow.camera.right = 100;
+        dirLight.shadow.camera.top = 100; dirLight.shadow.camera.bottom = -100;
+        dirLight.shadow.mapSize.width = 1024; dirLight.shadow.mapSize.height = 1024;
+        this.scene.add(dirLight);
+
+        // Resize
+        window.addEventListener('resize', () => {
+            this.camera.aspect = window.innerWidth / window.innerHeight;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 共通マテリアル等
+        this.materials = {
+            bulletA: new THREE.MeshBasicMaterial({ color: 0x3b82f6 }),
+            bulletB: new THREE.MeshBasicMaterial({ color: 0xf97316 }),
+            wall1: new THREE.MeshLambertMaterial({ color: 0x9ca3af }), // 低い壁
+            wall2: new THREE.MeshLambertMaterial({ color: 0x4b5563 })  // 高い壁
+        };
+
+        this.geometries = {
+            bullet: new THREE.SphereGeometry(1, 4, 4),
+            box: new THREE.BoxGeometry(1, 1, 1),
+            cylinder: new THREE.CylinderGeometry(1, 1, 1, 8)
+        };
+
+        // ペイントキャンバス
+        this.paintCanvas = document.createElement('canvas');
+        this.paintCanvasSize = 1024;
+        this.paintCanvas.width = this.paintCanvasSize;
+        this.paintCanvas.height = this.paintCanvasSize;
+        this.paintCtx = this.paintCanvas.getContext('2d', { willReadFrequently: true });
+        this.paintTexture = new THREE.CanvasTexture(this.paintCanvas);
+        this.paintTexture.magFilter = THREE.NearestFilter; // ドット感
+        
+        // 床
+        this.floorSize = 200; // 200x200 units
+        const floorGeo = new THREE.PlaneGeometry(this.floorSize, this.floorSize);
+        const floorMat = new THREE.MeshLambertMaterial({ map: this.paintTexture });
+        this.floorMesh = new THREE.Mesh(floorGeo, floorMat);
+        this.floorMesh.rotation.x = -Math.PI / 2;
+        this.floorMesh.receiveShadow = true;
+        this.scene.add(this.floorMesh);
+
+        this.obstacles = []; // 壁のバウンディングボックスリスト (衝突判定用)
+
+        // ゲーム内オブジェクト
+        this.players = [];
+        this.bullets = [];
+        this.bombs = [];
+        this.particles = [];
+
+        this.localPlayer = null;
+        
+        this.state = 'idle'; // idle, playing, end
+        this.timeLimit = 180;
+        this.timer = 0;
+        this.score = { A: 0, B: 0 }; // 面積 or キル数
+        this.mode = 'turf_war';
+        
+        this.clock = new THREE.Clock();
+
+        // A*
+        this.navGrid = [];
+        this.pathfinder = null;
+
+        // エリア確保用メッシュ
+        const zoneGeo = new THREE.PlaneGeometry(40, 40); // 半径20相当の正方形
+        const zoneMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
+        this.splatZoneMesh = new THREE.Mesh(zoneGeo, zoneMat);
+        this.splatZoneMesh.rotation.x = -Math.PI / 2;
+        this.splatZoneMesh.position.y = 0.1; // 床の少し上
+        this.splatZoneMesh.visible = false;
+        this.scene.add(this.splatZoneMesh);
+
+        // チームカラー設定
+        this.teamColors = {
+            A: { hex: 0x3b82f6, str: '#3b82f6' }, // 青
+            B: { hex: 0xf97316, str: '#f97316' }  // オレンジ
+        };
+        this.teamColorRGB = {
+            A: Utils.hexToRgb(this.teamColors.A.hex),
+            B: Utils.hexToRgb(this.teamColors.B.hex)
+        };
+    }
+
+    resetPaint() {
+        this.paintCtx.fillStyle = '#cbd5e1'; // 初期床色
+        this.paintCtx.fillRect(0, 0, this.paintCanvasSize, this.paintCanvasSize);
+        
+        // グリッド線描画 (雰囲気)
+        this.paintCtx.strokeStyle = 'rgba(0,0,0,0.1)';
+        this.paintCtx.lineWidth = 1;
+        for(let i=0; i<this.paintCanvasSize; i+=32) {
+            this.paintCtx.beginPath(); this.paintCtx.moveTo(i, 0); this.paintCtx.lineTo(i, this.paintCanvasSize); this.paintCtx.stroke();
+            this.paintCtx.beginPath(); this.paintCtx.moveTo(0, i); this.paintCtx.lineTo(this.paintCanvasSize, i); this.paintCtx.stroke();
+        }
+        
+        this.paintTexture.needsUpdate = true;
+    }
+
+    buildStage(stageData) {
+        // 既存の壁を削除
+        for(let obs of this.obstacles) {
+            this.scene.remove(obs.mesh);
+        }
+        this.obstacles = [];
+        this.navGrid = [];
+
+        const map = stageData.map;
+        const rows = map.length;
+        const cols = map[0].length;
+        const cellSize = this.floorSize / rows; // 10
+
+        for(let r=0; r<rows; r++) {
+            this.navGrid[r] = [];
+            for(let c=0; c<cols; c++) {
+                let val = parseInt(map[r][c]);
+                this.navGrid[r][c] = val; // 0:空き, 1:低壁, 2:高壁
+
+                if(val > 0) {
+                    let h = val === 1 ? 15 : 30; // 高さ
+                    let mesh = new THREE.Mesh(this.geometries.box, val === 1 ? this.materials.wall1 : this.materials.wall2);
+                    mesh.scale.set(cellSize, h, cellSize);
+                    
+                    // 座標計算 (中心が0,0)
+                    let x = (c - cols/2 + 0.5) * cellSize;
+                    let z = (r - rows/2 + 0.5) * cellSize;
+                    mesh.position.set(x, h/2, z);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    this.scene.add(mesh);
+
+                    // AABB
+                    let box = new THREE.Box3().setFromObject(mesh);
+                    this.obstacles.push({ mesh: mesh, box: box, type: val });
+                }
+            }
+        }
+        this.pathfinder = new AStar(this.navGrid);
+    }
+
+    // 床を塗る
+    paint(x, z, radius, team) {
+        if(this.state !== 'playing') return;
+        
+        // ワールド座標からCanvasUV座標へ
+        let u = (x / this.floorSize) + 0.5;
+        let v = (z / this.floorSize) + 0.5;
+        
+        if(u < 0 || u > 1 || v < 0 || v > 1) return;
+
+        let cx = u * this.paintCanvasSize;
+        let cy = v * this.paintCanvasSize;
+        let cRadius = (radius / this.floorSize) * this.paintCanvasSize;
+
+        this.paintCtx.fillStyle = team === 'A' ? this.teamColors.A.str : this.teamColors.B.str;
+        
+        // ランダムなしぶきを描画
+        this.paintCtx.beginPath();
+        this.paintCtx.arc(cx, cy, cRadius, 0, Math.PI*2);
+        this.paintCtx.fill();
+
+        for(let i=0; i<3; i++) {
+            let sx = cx + (Math.random() - 0.5) * cRadius * 2;
+            let sy = cy + (Math.random() - 0.5) * cRadius * 2;
+            let sr = Math.random() * cRadius * 0.5;
+            this.paintCtx.beginPath();
+            this.paintCtx.arc(sx, sy, sr, 0, Math.PI*2);
+            this.paintCtx.fill();
+        }
+
+        this.paintTexture.needsUpdate = true;
+    }
+
+    // 面積計算 (重いので数秒に1回)
+    calculatePaintScore() {
+        const imgData = this.paintCtx.getImageData(0, 0, this.paintCanvasSize, this.paintCanvasSize).data;
+        let countA = 0, countB = 0;
+        const total = (this.paintCanvasSize * this.paintCanvasSize);
+        
+        // サンプリング（全ピクセル見ると重いので 4x4 ピクセルごとにチェック）
+        const step = 4;
+        let samples = 0;
+
+        for(let i=0; i<imgData.length; i+=(4 * step * step)) {
+            let r = imgData[i], g = imgData[i+1], b = imgData[i+2];
+            let c = {r,g,b};
+            
+            // 背景色(cbd5e1 = 203,213,225)との距離
+            let dBg = Utils.colorDistanceSq(c, {r:203, g:213, b:225});
+            if(dBg > 1000) {
+                let dA = Utils.colorDistanceSq(c, this.teamColorRGB.A);
+                let dB = Utils.colorDistanceSq(c, this.teamColorRGB.B);
+                if(dA < dB) countA++;
+                else countB++;
+            }
+            samples++;
+        }
+
+        return {
+            A: (countA / samples) * 100,
+            B: (countB / samples) * 100
+        };
+    }
+
+    checkCollision(pos, radius) {
+        // ステージ境界
+        let halfSize = this.floorSize / 2 - radius;
+        if(pos.x < -halfSize) pos.x = -halfSize;
+        if(pos.x > halfSize) pos.x = halfSize;
+        if(pos.z < -halfSize) pos.z = -halfSize;
+        if(pos.z > halfSize) pos.z = halfSize;
+
+        // 障害物
+        let playerBox = new THREE.Box3(
+            new THREE.Vector3(pos.x - radius, pos.y, pos.z - radius),
+            new THREE.Vector3(pos.x + radius, pos.y + 15, pos.z + radius)
+        );
+
+        let hitBox = null;
+        for(let obs of this.obstacles) {
+            if(playerBox.intersectsBox(obs.box)) {
+                hitBox = obs.box;
+                break;
+            }
+        }
+        return hitBox;
+    }
+
+    // 簡単なRaycast (弾用)
+    raycastWall(start, end) {
+        let line = new THREE.Line3(start, end);
+        for(let obs of this.obstacles) {
+            // Box3.intersectLine は Three.js r128 にあるが簡易的にAABB判定
+            if(obs.box.containsPoint(end)) return true;
+        }
+        return false;
+    }
+
+    addBullet(bullet) { this.bullets.push(bullet); this.scene.add(bullet.mesh); }
+    addParticle(p) { this.particles.push(p); this.scene.add(p.mesh); }
+    addBomb(b) { this.bombs.push(b); this.scene.add(b.mesh); }
+
+    worldToGrid(x, z) {
+        let c = Math.floor((x + this.floorSize/2) / (this.floorSize / this.navGrid[0].length));
+        let r = Math.floor((z + this.floorSize/2) / (this.floorSize / this.navGrid.length));
+        return {r: Utils.clamp(r, 0, this.navGrid.length-1), c: Utils.clamp(c, 0, this.navGrid[0].length-1)};
+    }
+    gridToWorld(r, c) {
+        let cellSize = this.floorSize / this.navGrid.length;
+        let x = (c - this.navGrid[0].length/2 + 0.5) * cellSize;
+        let z = (r - this.navGrid.length/2 + 0.5) * cellSize;
+        return {x, z};
+    }
+
+    getSafeSpawnPos(team) {
+        let startR = team === 'A' ? 1 : this.navGrid.length - 2;
+        let dirR = team === 'A' ? 1 : -1;
+        
+        let candidates = [];
+        for (let r = startR; r >= 0 && r < this.navGrid.length; r += dirR) {
+            for (let c = 1; c < this.navGrid[0].length - 1; c++) {
+                if (this.navGrid[r][c] === 0) {
+                    // 少しばらけさせるためにセル内でランダムオフセット
+                    let basePos = this.gridToWorld(r, c);
+                    let offset = (this.floorSize / this.navGrid.length) * 0.4;
+                    basePos.x += (Math.random() - 0.5) * offset;
+                    basePos.z += (Math.random() - 0.5) * offset;
+                    candidates.push(basePos);
+                }
+            }
+            if (candidates.length >= 6) break; // 十分な候補が見つかれば終了
+        }
+        
+        if (candidates.length > 0) {
+            let pos = candidates[Math.floor(Math.random() * candidates.length)];
+            return new THREE.Vector3(pos.x, 0, pos.z);
+        }
+        
+        let zPos = team === 'A' ? -this.floorSize/2 + 20 : this.floorSize/2 - 20;
+        return new THREE.Vector3((Math.random()-0.5)*40, 0, zPos);
+    }
+}
+
+const engine = new GameEngine();
+
+// ==========================================
+// 6. 入力管理 (Virtual Joystick)
+// ==========================================
+const Input = {
+    move: { x: 0, y: 0 }, // -1.0 to 1.0
+    lookDelta: { x: 0, y: 0 },
+    buttons: { shoot: false, jump: false, sub: false, special: false },
+    
+    joystickData: { active: false, id: null, originX: 0, originY: 0, currX: 0, currY: 0 },
+    lookData: { active: false, id: null, lastX: 0, lastY: 0 },
+
+    init() {
+        const leftZone = document.getElementById('left-touch-zone');
+        const rightZone = document.getElementById('right-touch-zone');
+        const joyBase = document.getElementById('joystick-base');
+        const joyStick = document.getElementById('joystick-stick');
+
+        // 左: 移動
+        leftZone.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            this.joystickData.active = true;
+            this.joystickData.id = touch.identifier;
+            this.joystickData.originX = touch.clientX;
+            this.joystickData.originY = touch.clientY;
+            
+            joyBase.style.display = 'block';
+            joyBase.style.left = touch.clientX + 'px';
+            joyBase.style.top = touch.clientY + 'px';
+            joyStick.style.transform = 'translate(-50%, -50%)';
+            this.updateJoyStick(touch.clientX, touch.clientY);
+        });
+
+        const handleLeftMove = (e) => {
+            e.preventDefault();
+            for(let i=0; i<e.changedTouches.length; i++) {
+                if(e.changedTouches[i].identifier === this.joystickData.id) {
+                    this.updateJoyStick(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+                    break;
+                }
+            }
+        };
+
+        const handleLeftEnd = (e) => {
+            for(let i=0; i<e.changedTouches.length; i++) {
+                if(e.changedTouches[i].identifier === this.joystickData.id) {
+                    this.joystickData.active = false;
+                    this.joystickData.id = null;
+                    joyBase.style.display = 'none';
+                    this.move.x = 0; this.move.y = 0;
+                    break;
+                }
+            }
+        };
+
+        leftZone.addEventListener('touchmove', handleLeftMove);
+        leftZone.addEventListener('touchend', handleLeftEnd);
+        leftZone.addEventListener('touchcancel', handleLeftEnd);
+
+        // 右: 視点
+        rightZone.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            this.lookData.active = true;
+            this.lookData.id = touch.identifier;
+            this.lookData.lastX = touch.clientX;
+            this.lookData.lastY = touch.clientY;
+        });
+
+        const handleRightMove = (e) => {
+            e.preventDefault();
+            for(let i=0; i<e.changedTouches.length; i++) {
+                if(e.changedTouches[i].identifier === this.lookData.id) {
+                    let dx = e.changedTouches[i].clientX - this.lookData.lastX;
+                    let dy = e.changedTouches[i].clientY - this.lookData.lastY;
+                    // 感度調整 (- が指の動く方向と同じになるノンリバース操作)
+                    this.lookDelta.x -= dx * 0.005; 
+                    this.lookDelta.y += dy * 0.005; // Yは + がスマホの直感的な操作
+                    this.lookData.lastX = e.changedTouches[i].clientX;
+                    this.lookData.lastY = e.changedTouches[i].clientY;
+                    break;
+                }
+            }
+        };
+
+        const handleRightEnd = (e) => {
+            for(let i=0; i<e.changedTouches.length; i++) {
+                if(e.changedTouches[i].identifier === this.lookData.id) {
+                    this.lookData.active = false;
+                    this.lookData.id = null;
+                    break;
+                }
+            }
+        };
+
+        rightZone.addEventListener('touchmove', handleRightMove);
+        rightZone.addEventListener('touchend', handleRightEnd);
+        rightZone.addEventListener('touchcancel', handleRightEnd);
+
+        // ボタン類
+        const bindBtn = (id, key) => {
+            const el = document.getElementById(id);
+            el.addEventListener('touchstart', (e)=>{ e.preventDefault(); this.buttons[key] = true; });
+            el.addEventListener('touchend', (e)=>{ e.preventDefault(); this.buttons[key] = false; });
+        };
+        bindBtn('btn-shoot', 'shoot');
+        bindBtn('btn-jump', 'jump');
+        bindBtn('btn-sub', 'sub');
+        bindBtn('btn-special', 'special');
+    },
+
+    updateJoyStick(cx, cy) {
+        let dx = cx - this.joystickData.originX;
+        let dy = cy - this.joystickData.originY;
+        let distance = Math.sqrt(dx*dx + dy*dy);
+        let maxDist = 60; // Base radius
+        
+        if(distance > maxDist) {
+            dx = (dx / distance) * maxDist;
+            dy = (dy / distance) * maxDist;
+        }
+
+        const joyStick = document.getElementById('joystick-stick');
+        joyStick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+        this.move.x = dx / maxDist;
+        this.move.y = dy / maxDist; // 前後
+    },
+    
+    consumeLookDelta() {
+        let d = {x: this.lookDelta.x, y: this.lookDelta.y};
+        this.lookDelta.x = 0; this.lookDelta.y = 0;
+        return d;
+    }
+};
+
+// ==========================================
+// 7. 3Dモデル生成ユーティリティ
+// ==========================================
+const ModelBuilder = {
+    // スキン色を適用したマテリアル
+    getMat(hex) { return new THREE.MeshLambertMaterial({color: hex}); },
+    
+    // 武器モデル構築 (軽量化のため基本図形の組み合わせ)
+    createWeapon(modelType, colorHex) {
+        const group = new THREE.Group();
+        const matMain = this.getMat(colorHex);
+        const matDark = new THREE.MeshLambertMaterial({color: 0x333333});
+        
+        if(modelType === 'gun_short' || modelType === 'gun_std') {
+            let body = new THREE.Mesh(engine.geometries.box, matMain);
+            body.scale.set(1.5, 2, 4); body.position.set(0,0,1); group.add(body);
+            let barrel = new THREE.Mesh(engine.geometries.cylinder, matDark);
+            barrel.scale.set(0.8, 4, 0.8); barrel.rotation.x = Math.PI/2; barrel.position.set(0,0,-2); group.add(barrel);
+            let tank = new THREE.Mesh(engine.geometries.cylinder, matMain);
+            tank.scale.set(1.2, 2.5, 1.2); tank.position.set(0,2.5,2); group.add(tank);
+            if(modelType === 'gun_std') { body.scale.set(1.5,2,5); barrel.scale.set(0.8,5,0.8); barrel.position.z=-2.5; }
+        }
+        else if(modelType === 'roller') {
+            let handle = new THREE.Mesh(engine.geometries.cylinder, matDark);
+            handle.scale.set(0.5, 8, 0.5); handle.rotation.x = Math.PI/2; group.add(handle);
+            let arm = new THREE.Mesh(engine.geometries.box, matDark);
+            arm.scale.set(5, 0.5, 1); arm.position.set(0, 0, -4); group.add(arm);
+            let roll = new THREE.Mesh(engine.geometries.cylinder, matMain);
+            roll.scale.set(2, 6, 2); roll.rotation.z = Math.PI/2; roll.position.set(0, 0, -4.5); group.add(roll);
+        }
+        else if(modelType === 'sniper') {
+            let body = new THREE.Mesh(engine.geometries.box, matMain);
+            body.scale.set(1.2, 1.5, 6); body.position.set(0,0,1); group.add(body);
+            let barrel = new THREE.Mesh(engine.geometries.cylinder, matDark);
+            barrel.scale.set(0.4, 10, 0.4); barrel.rotation.x = Math.PI/2; barrel.position.set(0,0,-5); group.add(barrel);
+            let scope = new THREE.Mesh(engine.geometries.cylinder, matDark);
+            scope.scale.set(0.6, 2, 0.6); scope.rotation.x = Math.PI/2; scope.position.set(0,1.5,0); group.add(scope);
+        }
+        else if(modelType === 'blaster') {
+            let body = new THREE.Mesh(engine.geometries.box, matMain);
+            body.scale.set(2, 2, 4); body.position.set(0,0,1); group.add(body);
+            let barrel = new THREE.Mesh(engine.geometries.cylinder, matDark);
+            barrel.scale.set(1.5, 3, 1.5); barrel.rotation.x = Math.PI/2; barrel.position.set(0,0,-2.5); group.add(barrel);
+        }
+        else if(modelType === 'bucket') {
+            let b = new THREE.Mesh(engine.geometries.cylinder, matMain);
+            b.scale.set(2, 3, 1.5); b.rotation.x = Math.PI/2; group.add(b); // テーパーがないのでCylinderで代用
+            let handle = new THREE.Mesh(engine.geometries.box, matDark);
+            handle.scale.set(0.5, 1, 4); handle.position.set(0, 2, 0); group.add(handle);
+        }
+        else if(modelType === 'gatling') {
+            let body = new THREE.Mesh(engine.geometries.cylinder, matMain);
+            body.scale.set(3, 6, 3); body.rotation.x = Math.PI/2; group.add(body);
+            let handle = new THREE.Mesh(engine.geometries.box, matDark);
+            handle.scale.set(1, 4, 1); handle.position.set(0, -3, 2); group.add(handle);
+        }
+        else if(modelType === 'brush') {
+            let handle = new THREE.Mesh(engine.geometries.cylinder, matDark);
+            handle.scale.set(0.3, 6, 0.3); handle.rotation.x = Math.PI/2; group.add(handle);
+            let head = new THREE.Mesh(engine.geometries.box, matMain);
+            head.scale.set(2, 1, 3); head.position.set(0, 0, -4); group.add(head);
+        }
+        else if(modelType === 'dual') { // 片手分
+            let body = new THREE.Mesh(engine.geometries.box, matMain);
+            body.scale.set(1, 1.5, 3); group.add(body);
+            let barrel1 = new THREE.Mesh(engine.geometries.cylinder, matDark);
+            barrel1.scale.set(0.3, 2, 0.3); barrel1.rotation.x = Math.PI/2; barrel1.position.set(-0.3,0,-2); group.add(barrel1);
+            let barrel2 = new THREE.Mesh(engine.geometries.cylinder, matDark);
+            barrel2.scale.set(0.3, 2, 0.3); barrel2.rotation.x = Math.PI/2; barrel2.position.set(0.3,0,-2); group.add(barrel2);
+        }
+        else if(modelType === 'bow') {
+            let center = new THREE.Mesh(engine.geometries.box, matDark);
+            center.scale.set(1, 1, 3); group.add(center);
+            let arc1 = new THREE.Mesh(engine.geometries.box, matMain);
+            arc1.scale.set(5, 0.5, 0.5); arc1.position.set(2.5, 0, 0); arc1.rotation.y = -Math.PI/6; group.add(arc1);
+            let arc2 = new THREE.Mesh(engine.geometries.box, matMain);
+            arc2.scale.set(5, 0.5, 0.5); arc2.position.set(-2.5, 0, 0); arc2.rotation.y = Math.PI/6; group.add(arc2);
+        }
+        else { // fallback
+            let body = new THREE.Mesh(engine.geometries.box, matMain);
+            body.scale.set(1,1,2); group.add(body);
+        }
+        
+        group.scale.set(0.5, 0.5, 0.5); // 全体サイズ調整
+        return group;
+    },
+
+    createPlayer(teamColorHex, hatId) {
+        const group = new THREE.Group();
+        const matBody = new THREE.MeshLambertMaterial({color: 0xffeebb}); // 肌色
+        const matShirt = this.getMat(teamColorHex); // チームカラーシャツ
+        const matHair = this.getMat(teamColorHex);
+
+        // 頭
+        let head = new THREE.Mesh(new THREE.SphereGeometry(2, 16, 16), matHair);
+        head.position.y = 5; group.add(head);
+        
+        // 胴体
+        let body = new THREE.Mesh(engine.geometries.box, matShirt);
+        body.scale.set(3, 4, 2); body.position.y = 2; group.add(body);
+
+        // 右腕 (武器持つ用)
+        let rArm = new THREE.Group();
+        rArm.position.set(2, 3, 0);
+        let rArmMesh = new THREE.Mesh(engine.geometries.box, matBody);
+        rArmMesh.scale.set(1, 3, 1); rArmMesh.position.y = -1.5;
+        rArm.add(rArmMesh);
+        group.add(rArm);
+        group.rightArm = rArm; // 参照保持
+
+        // 帽子
+        if(hatId && hatId !== 'none') {
+            let hatMat = new THREE.MeshLambertMaterial({color: 0x111111});
+            if(hatId === 'cap') {
+                let cap = new THREE.Mesh(new THREE.SphereGeometry(2.1, 16, 16, 0, Math.PI*2, 0, Math.PI/2), hatMat);
+                cap.position.y = 5.2; group.add(cap);
+                let brim = new THREE.Mesh(engine.geometries.box, hatMat);
+                brim.scale.set(3, 0.2, 2); brim.position.set(0, 5.2, 1.5); group.add(brim);
+            }
+            // 他の帽子も簡易的に
+            else {
+                let h = new THREE.Mesh(engine.geometries.box, hatMat);
+                h.scale.set(4.5, 1, 4.5); h.position.y = 7; group.add(h);
+            }
+        }
+
+        group.traverse(child => { if(child.isMesh) { child.castShadow=true; child.receiveShadow=true; } });
+        return group;
+    }
+};
+
+// ==========================================
+// 8. ゲームエンティティ
+// ==========================================
+class Player {
+    constructor(isLocal, team, weaponId, skinId, hatId, startPos) {
+        this.isLocal = isLocal;
+        this.team = team;
+        
+        this.weaponData = DB.Weapons[weaponId];
+        this.subData = DB.Subs[this.weaponData.sub];
+        this.specialData = DB.Specials[this.weaponData.special];
+        
+        let colorHex = team === 'A' ? engine.teamColors.A.hex : engine.teamColors.B.hex;
+        // スキン色が指定されていれば上書き（ただしチーム識別のために若干調整するのが普通だが、今回はそのまま）
+        if(isLocal) { colorHex = DB.Skins[skinId].color; engine.teamColors.A.hex = colorHex; engine.teamColors.A.str = '#'+colorHex.toString(16).padStart(6,'0'); engine.teamColorRGB.A = Utils.hexToRgb(colorHex); }
+        
+        this.mesh = ModelBuilder.createPlayer(colorHex, hatId);
+        this.mesh.position.copy(startPos);
+        engine.scene.add(this.mesh);
+
+        // 武器を手に持たせる
+        this.weaponMesh = ModelBuilder.createWeapon(this.weaponData.model, colorHex);
+        this.weaponMesh.position.set(0, -3, 2); // 腕の先
+        this.mesh.rightArm.add(this.weaponMesh);
+        
+        this.radius = 2;
+        this.speed = 30; // base speed
+        
+        // ステータス
+        this.hp = 100;
+        this.ink = 100;
+        this.specialPoints = 0;
+        
+        // 状態
+        this.isDead = false;
+        this.respawnTimer = 0;
+        this.jumpVelocity = 0;
+        this.isGrounded = true;
+        this.fireCooldown = 0;
+        this.chargeAmount = 0;
+        
+        // 統計
+        this.kills = 0;
+        this.deaths = 0;
+        this.paintPoints = 0;
+
+        // Yaw(Y軸回転), Pitch(X軸回転)
+        this.yaw = isLocal ? 0 : (team==='B' ? Math.PI : 0);
+        this.pitch = 0;
+
+        if(isLocal) {
+            document.getElementById('btn-special-name').innerText = this.specialData.name;
+        }
+    }
+
+    update(dt) {
+        if(this.isDead) {
+            this.respawnTimer -= dt;
+            if(this.respawnTimer <= 0) this.respawn();
+            return;
+        }
+
+        // インク回復
+        this.ink = Utils.clamp(this.ink + dt * 20, 0, 100);
+        if(this.fireCooldown > 0) this.fireCooldown -= dt;
+
+        let moveV = new THREE.Vector3();
+        let isShooting = false;
+        let isJumping = false;
+        let useSub = false;
+        let useSpecial = false;
+
+        // 入力処理
+        if(this.isLocal) {
+            // 視点
+            let dLook = Input.consumeLookDelta();
+            this.yaw += dLook.x;
+            this.pitch = Utils.clamp(this.pitch + dLook.y, -Math.PI/3, Math.PI/3);
+
+            // カメラ位置更新
+            engine.camera.position.x = this.mesh.position.x - Math.sin(this.yaw) * 20;
+            engine.camera.position.z = this.mesh.position.z - Math.cos(this.yaw) * 20;
+            engine.camera.position.y = this.mesh.position.y + 15 + Math.sin(this.pitch)*10;
+            engine.camera.lookAt(this.mesh.position.x, this.mesh.position.y + 5, this.mesh.position.z);
+
+            // 移動 (カメラの向き基準)
+            let forward = new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw)).normalize();
+            // 左側の移動で左右が反転しないよう、右方向ベクトルを修正
+            let right = new THREE.Vector3(-Math.cos(this.yaw), 0, Math.sin(this.yaw)).normalize();
+            
+            moveV.add(forward.multiplyScalar(-Input.move.y));
+            moveV.add(right.multiplyScalar(Input.move.x));
+
+            isShooting = Input.buttons.shoot;
+            isJumping = Input.buttons.jump;
+            if(Input.buttons.sub) { useSub = true; Input.buttons.sub = false; } // trigger once
+            if(Input.buttons.special) { useSpecial = true; Input.buttons.special = false; }
+
+            // HUD更新
+            document.getElementById('ink-gauge').style.width = this.ink + '%';
+            document.getElementById('hp-gauge').style.width = this.hp + '%';
+            let spRatio = Math.min(this.specialPoints / this.specialData.points, 1);
+            document.getElementById('special-gauge').style.width = (spRatio * 100) + '%';
+            
+            const spBtn = document.getElementById('btn-special');
+            if(spRatio >= 1) spBtn.classList.add('ready');
+            else spBtn.classList.remove('ready');
+        } else {
+            // AI処理 (子クラスで上書き)
+            this.updateAI(dt, moveV, (shoot)=>{ isShooting=shoot; }, (jmp)=>{ isJumping=jmp; });
+        }
+
+        // 向きの更新
+        this.mesh.rotation.y = this.yaw;
+        // 腕のピッチ
+        this.mesh.rightArm.rotation.x = -this.pitch;
+
+        // 移動適用
+        if(moveV.lengthSq() > 0) {
+            moveV.normalize();
+            let speedMod = this.speed;
+            if(isShooting) speedMod *= 0.6; // 射撃中減速
+            if(this.weaponData.type === 'roller' && isShooting) speedMod = this.speed * 1.2; // ローラー前進
+            if(this.weaponData.type === 'brush' && isShooting) speedMod = this.speed * 1.5; // パブロダッシュ
+            
+            // 床の色による減速 (敵インク上だと遅い)
+            let u = (this.mesh.position.x / engine.floorSize) + 0.5;
+            let v = (this.mesh.position.z / engine.floorSize) + 0.5;
+            let px = Math.floor(u * engine.paintCanvasSize);
+            let py = Math.floor(v * engine.paintCanvasSize);
+            if(px>=0 && px<engine.paintCanvasSize && py>=0 && py<engine.paintCanvasSize) {
+                let idx = (py * engine.paintCanvasSize + px) * 4;
+                let data = engine.paintCtx.getImageData(px, py, 1, 1).data; // 重いので注意だが1pxならOK
+                let c = {r:data[0], g:data[1], b:data[2]};
+                let myCol = engine.teamColorRGB[this.team];
+                let enCol = engine.teamColorRGB[this.team==='A'?'B':'A'];
+                if(Utils.colorDistanceSq(c, enCol) < 2000) speedMod *= 0.3; // 敵インク
+            }
+
+            let nextPos = this.mesh.position.clone();
+            nextPos.x += moveV.x * speedMod * dt;
+            nextPos.z += moveV.z * speedMod * dt;
+
+            // 衝突判定
+            let hit = engine.checkCollision(nextPos, this.radius);
+            if(!hit) {
+                this.mesh.position.x = nextPos.x;
+                this.mesh.position.z = nextPos.z;
+            } else {
+                // 滑らせる処理（簡易）
+                let testX = this.mesh.position.clone(); testX.x = nextPos.x;
+                if(!engine.checkCollision(testX, this.radius)) this.mesh.position.x = nextPos.x;
+                let testZ = this.mesh.position.clone(); testZ.z = nextPos.z;
+                if(!engine.checkCollision(testZ, this.radius)) this.mesh.position.z = nextPos.z;
+            }
+        }
+
+        // ジャンプ
+        if(isJumping && this.isGrounded) {
+            this.jumpVelocity = 25;
+            this.isGrounded = false;
+        }
+        if(!this.isGrounded) {
+            this.jumpVelocity -= 60 * dt; // 重力
+            this.mesh.position.y += this.jumpVelocity * dt;
+            if(this.mesh.position.y <= 0) {
+                this.mesh.position.y = 0;
+                this.isGrounded = true;
+                this.jumpVelocity = 0;
+            }
+        }
+
+        // アクション
+        if(isShooting) this.handleFire(dt);
+        else {
+            // チャージ武器の解放
+            if((this.weaponData.type === 'charger' || this.weaponData.type === 'splatling' || this.weaponData.type === 'bow') && this.chargeAmount > 0) {
+                this.releaseCharge();
+            }
+            this.chargeAmount = 0;
+            if(this.weaponData.type === 'roller') this.isRollerRolling = false;
+        }
+
+        if(useSub) this.fireSub();
+        if(useSpecial) this.fireSpecial();
+    }
+
+    handleFire(dt) {
+        const w = this.weaponData;
+        if(this.ink < w.inkCost) return; // インク切れ
+
+        if(w.type === 'charger' || w.type === 'splatling' || w.type === 'bow') {
+            // チャージ
+            this.chargeAmount = Math.min(this.chargeAmount + dt, 1.0);
+            this.ink -= w.inkCost * dt; // チャージ中少し消費
+            return;
+        }
+
+        if(w.type === 'roller') {
+            // 押し始めに振る、その後は転がす
+            if(this.fireCooldown <= 0 && !this.isRollerRolling) {
+                this.shootProjectile(5, 0.5, w.range*0.5); // 飛沫複数
+                this.ink -= w.inkCost;
+                this.fireCooldown = w.fireRate;
+                this.isRollerRolling = true;
+            } else if(this.isRollerRolling && this.isGrounded) {
+                // 転がし塗り
+                engine.paint(this.mesh.position.x, this.mesh.position.z, 8, this.team);
+                this.ink -= w.inkCost * dt * 2;
+                // ローラー轢き判定
+                this.checkMeleeDamage(w.damage, 10);
+            }
+            return;
+        }
+
+        if(this.fireCooldown <= 0) {
+            let count = w.type === 'dualie' ? 2 : 1;
+            this.shootProjectile(count, w.spread, w.range);
+            this.ink -= w.inkCost;
+            this.fireCooldown = w.fireRate;
+            
+            // パブロの近接判定
+            if(w.type === 'brush') {
+                engine.paint(this.mesh.position.x + Math.sin(this.yaw)*10, this.mesh.position.z + Math.cos(this.yaw)*10, 8, this.team);
+                this.checkMeleeDamage(w.damage, 15);
+            }
+        }
+    }
+
+    releaseCharge() {
+        const w = this.weaponData;
+        if(this.chargeAmount < 0.2) return; // チャージ不足
+        
+        let power = this.chargeAmount;
+        if(w.type === 'charger') {
+            this.shootProjectile(1, 0, w.range * power, w.damage * power, w.bulletSpeed * 2);
+            this.ink -= w.inkCost;
+        } else if(w.type === 'splatling') {
+            // スピナーは専用の連射ステートに移行すべきだが、簡易的に一気に弾を生成
+            let bullets = Math.floor(20 * power);
+            for(let i=0; i<bullets; i++) {
+                setTimeout(() => { if(!this.isDead) this.shootProjectile(1, w.spread, w.range); }, i * 50);
+            }
+            this.ink -= w.inkCost * power;
+        } else if(w.type === 'bow') {
+            // 3方向
+            this.shootProjectile(1, 0, w.range * power, w.damage * power);
+            let pYaw = this.yaw; this.yaw += 0.2; this.shootProjectile(1, 0, w.range * power, w.damage * power);
+            this.yaw = pYaw - 0.2; this.shootProjectile(1, 0, w.range * power, w.damage * power);
+            this.yaw = pYaw;
+            this.ink -= w.inkCost;
+        }
+    }
+
+    shootProjectile(count, spread, range, overrideDamage=null, overrideSpeed=null) {
+        for(let i=0; i<count; i++) {
+            let yOffset = count === 2 ? (i===0?-0.1:0.1) : 0; // Dualie
+            let finalYaw = this.yaw + (Math.random() - 0.5) * spread;
+            let finalPitch = this.pitch + (Math.random() - 0.5) * spread;
+
+            let dir = new THREE.Vector3(
+                Math.sin(finalYaw) * Math.cos(finalPitch),
+                -Math.sin(finalPitch),
+                Math.cos(finalYaw) * Math.cos(finalPitch)
+            ).normalize();
+
+            // 発射位置 (武器の先端付近)
+            let origin = this.mesh.position.clone();
+            origin.y += 5; // 目の高さ
+            origin.add(dir.clone().multiplyScalar(5));
+
+            let b = new Bullet(
+                origin, dir, 
+                overrideSpeed || this.weaponData.bulletSpeed, 
+                range, 
+                overrideDamage || this.weaponData.damage, 
+                this
+            );
+            engine.addBullet(b);
+        }
+    }
+
+    fireSub() {
+        if(this.ink < this.subData.cost) return;
+        this.ink -= this.subData.cost;
+        
+        let dir = new THREE.Vector3(Math.sin(this.yaw), -Math.sin(this.pitch)+0.5, Math.cos(this.yaw)).normalize();
+        let origin = this.mesh.position.clone(); origin.y += 5;
+        
+        let b = new Bomb(origin, dir.multiplyScalar(40), this.subData, this);
+        engine.addBomb(b);
+    }
+
+    fireSpecial() {
+        if(this.specialPoints < this.specialData.points) return;
+        this.specialPoints = 0; // リセット
+        
+        const sp = this.specialData.id;
+        if(sp === 'splashdown') {
+            this.jumpVelocity = 50; // 高く飛ぶ
+            this.isGrounded = false;
+            // 簡易実装: 着地時に爆発させるためフラグ
+            this.pendingSplashdown = true;
+        }
+        else if(sp === 'missile') {
+            // 敵全員にミサイル（爆弾）を降らす
+            engine.players.forEach(p => {
+                if(p.team !== this.team && !p.isDead) {
+                    for(let i=0; i<4; i++) {
+                        setTimeout(() => {
+                            let origin = p.mesh.position.clone();
+                            origin.y += 100;
+                            origin.x += (Math.random()-0.5)*20;
+                            origin.z += (Math.random()-0.5)*20;
+                            let dir = new THREE.Vector3(0, -1, 0);
+                            let b = new Bomb(origin, dir.multiplyScalar(60), DB.Subs.splat_bomb, this); // ボム流用
+                            engine.addBomb(b);
+                        }, i*200);
+                    }
+                }
+            });
+        }
+        else if(sp === 'inkstorm') {
+            // アメフラシ (ボムを投げて、着弾点で雨を降らす...簡易実装)
+            let dir = new THREE.Vector3(Math.sin(this.yaw), 0.5, Math.cos(this.yaw)).normalize();
+            let origin = this.mesh.position.clone(); origin.y += 5;
+            let b = new Bomb(origin, dir.multiplyScalar(30), {type:'storm', delay:5, damage:5, radius:40}, this);
+            engine.addBomb(b);
+        }
+    }
+
+    checkMeleeDamage(dmg, radius) {
+        engine.players.forEach(p => {
+            if(p !== this && p.team !== this.team && !p.isDead) {
+                if(Utils.distanceSq2D(this.mesh.position.x, this.mesh.position.z, p.mesh.position.x, p.mesh.position.z) < radius*radius) {
+                    p.takeDamage(dmg, this);
+                }
+            }
+        });
+    }
+
+    takeDamage(amount, attacker) {
+        if(this.isDead) return;
+        this.hp -= amount;
+        
+        if(this.isLocal) {
+            let overlay = document.getElementById('damage-overlay');
+            overlay.style.opacity = 1.0 - (this.hp / 100);
+        }
+
+        // 被弾エフェクト
+        createSplatter(this.mesh.position, engine.teamColors[attacker.team].hex);
+
+        if(this.hp <= 0) {
+            this.die(attacker);
+        }
+    }
+
+    die(attacker) {
+        this.isDead = true;
+        this.mesh.visible = false;
+        this.respawnTimer = 5.0; // 5秒リスポーン
+        
+        // 爆発して敵色に塗られる
+        engine.paint(this.mesh.position.x, this.mesh.position.z, 20, attacker.team);
+        createSplatter(this.mesh.position, engine.teamColors[attacker.team].hex, 20);
+
+        // キル・デス数の更新（全キャラクター共通）
+        attacker.kills++;
+        attacker.specialPoints += 10;
+        this.deaths++;
+
+        if(this.isLocal) {
+            document.getElementById('damage-overlay').style.opacity = 0;
+            // リスポーンUI等を出せるが今回は省略
+        }
+    }
+
+    respawn() {
+        this.isDead = false;
+        this.mesh.visible = true;
+        this.hp = 100;
+        this.ink = 100;
+        
+        let spawnPos = engine.getSafeSpawnPos(this.team);
+        this.mesh.position.copy(spawnPos);
+        this.yaw = this.team === 'A' ? 0 : Math.PI;
+    }
+
+    // AI用オーバーライド
+    updateAI() {}
+}
+
+// ------------------------------------------
+// CPU AI クラス
+// ------------------------------------------
+class AIPlayer extends Player {
+    constructor(team, weaponId, startPos) {
+        super(false, team, weaponId, 'blue', 'none', startPos); // スキン適当
+        this.state = 'WANDER'; // WANDER, ATTACK
+        this.target = null;
+        this.path = null;
+        this.pathIdx = 0;
+        this.stateTimer = 0;
+        this.aimPitchOffset = 0;
+    }
+
+    updateAI(dt, moveV, setShoot, setJump) {
+        this.stateTimer -= dt;
+
+        // 索敵
+        if(this.stateTimer <= 0) {
+            this.stateTimer = 1.0; // 1秒ごとに思考更新
+            this.target = null;
+            let closestDist = Infinity;
+            
+            for(let p of engine.players) {
+                if(p.team !== this.team && !p.isDead) {
+                    let d = Utils.distanceSq2D(this.mesh.position.x, this.mesh.position.z, p.mesh.position.x, p.mesh.position.z);
+                    if(d < 10000 && d < closestDist) { // 距離100以内
+                        closestDist = d;
+                        this.target = p;
+                    }
+                }
+            }
+
+            if(this.target) {
+                this.state = 'ATTACK';
+                this.path = null;
+            } else {
+                this.state = 'WANDER';
+                // 新しいパスを生成
+                let startGrid = engine.worldToGrid(this.mesh.position.x, this.mesh.position.z);
+                let er = Utils.randInt(0, engine.navGrid.length-1);
+                let ec = Utils.randInt(0, engine.navGrid[0].length-1);
+                this.path = engine.pathfinder.findPath(startGrid.r, startGrid.c, er, ec);
+                this.pathIdx = 0;
+            }
+        }
+
+        // 行動
+        if(this.state === 'ATTACK' && this.target && !this.target.isDead) {
+            // 敵の方を向く
+            let dx = this.target.mesh.position.x - this.mesh.position.x;
+            let dz = this.target.mesh.position.z - this.mesh.position.z;
+            let targetYaw = Math.atan2(dx, dz);
+            
+            // スムーズな回転
+            let diff = targetYaw - this.yaw;
+            while(diff < -Math.PI) diff += Math.PI*2;
+            while(diff > Math.PI) diff -= Math.PI*2;
+            this.yaw += diff * 5 * dt;
+
+            // 射程内なら撃つ、遠ければ近づく
+            let dist = Math.sqrt(dx*dx + dz*dz);
+            if(dist < this.weaponData.range) {
+                setShoot(true);
+                // 上下エイム
+                let dy = this.target.mesh.position.y - this.mesh.position.y;
+                this.pitch = -Math.atan2(dy, dist);
+            } else {
+                // 向いている方向へ進む
+                moveV.x = Math.sin(this.yaw);
+                moveV.z = Math.cos(this.yaw);
+            }
+            
+            // たまにサブやスペシャル
+            if(Math.random() < 0.01 && this.ink > this.subData.cost) this.fireSub();
+        } 
+        else if(this.state === 'WANDER') {
+            if(this.path && this.pathIdx < this.path.length) {
+                let nextNode = this.path[this.pathIdx];
+                let wp = engine.gridToWorld(nextNode.r, nextNode.c);
+                let dx = wp.x - this.mesh.position.x;
+                let dz = wp.z - this.mesh.position.z;
+                let dist = Math.sqrt(dx*dx + dz*dz);
+
+                if(dist < 5) {
+                    this.pathIdx++;
+                } else {
+                    let targetYaw = Math.atan2(dx, dz);
+                    let diff = targetYaw - this.yaw;
+                    while(diff < -Math.PI) diff += Math.PI*2;
+                    while(diff > Math.PI) diff -= Math.PI*2;
+                    this.yaw += diff * 5 * dt;
+                    // 向いている方向へ進む
+                    moveV.x = Math.sin(this.yaw);
+                    moveV.z = Math.cos(this.yaw);
+                }
+
+                // 塗りながら進む (ローラー以外はたまに撃つ)
+                if(this.weaponData.type === 'roller') setShoot(true);
+                else if(Math.random() < 0.3) {
+                    setShoot(true);
+                    this.pitch = -0.2; // 少し下を向く
+                }
+            } else {
+                this.stateTimer = 0; // パス終了で再計算
+            }
+        }
+    }
+}
+
+// ------------------------------------------
+// 弾クラス
+// ------------------------------------------
+class Bullet {
+    constructor(pos, dir, speed, range, damage, owner) {
+        this.mesh = new THREE.Mesh(engine.geometries.bullet, engine.materials['bullet'+owner.team]);
+        this.mesh.position.copy(pos);
+        this.dir = dir;
+        this.speed = speed;
+        this.range = range;
+        this.damage = damage;
+        this.owner = owner;
+        this.traveled = 0;
+        this.active = true;
+        
+        // ブラスター用
+        this.isBlaster = owner.weaponData.type === 'blaster';
+    }
+
+    update(dt) {
+        if(!this.active) return;
+        
+        let dist = this.speed * dt;
+        
+        // 重力（スロッシャーなどは強めにする等の工夫も可）
+        if(this.owner.weaponData.type === 'slosher') {
+            this.dir.y -= 2.0 * dt;
+        } else if(this.owner.weaponData.type === 'bow') {
+            this.dir.y -= 1.0 * dt;
+        }
+
+        let nextPos = this.mesh.position.clone().add(this.dir.clone().multiplyScalar(dist));
+        
+        // 壁判定 (簡易)
+        if(engine.raycastWall(this.mesh.position, nextPos)) {
+            this.explode(nextPos);
+            return;
+        }
+
+        // 床判定
+        if(nextPos.y <= 0) {
+            nextPos.y = 0;
+            this.explode(nextPos);
+            return;
+        }
+
+        // キャラクター判定
+        for(let p of engine.players) {
+            if(p !== this.owner && p.team !== this.owner.team && !p.isDead) {
+                // 円柱判定
+                let dy = nextPos.y - p.mesh.position.y;
+                if(dy >= 0 && dy <= 6) { // 身長内
+                    if(Utils.distanceSq2D(nextPos.x, nextPos.z, p.mesh.position.x, p.mesh.position.z) < (p.radius+1)**2) {
+                        p.takeDamage(this.damage, this.owner);
+                        this.explode(nextPos, true); // direct hit
+                        return;
+                    }
+                }
+            }
+        }
+
+        this.mesh.position.copy(nextPos);
+        this.traveled += dist;
+
+        if(this.traveled >= this.range) {
+            this.explode(this.mesh.position);
+        }
+    }
+
+    explode(pos, directHit = false) {
+        this.active = false;
+        engine.scene.remove(this.mesh);
+        
+        let paintRadius = 8;
+        let pDmg = this.damage;
+
+        if(this.isBlaster) {
+            paintRadius = 15;
+            pDmg = directHit ? this.damage : this.damage * 0.6; // 爆風ダメージ減衰
+            createSplatter(pos, engine.teamColors[this.owner.team].hex, 10);
+            
+            // 爆風ダメージ判定
+            engine.players.forEach(p => {
+                if(p.team !== this.owner.team && !p.isDead) {
+                    if(Utils.distanceSq2D(pos.x, pos.z, p.mesh.position.x, p.mesh.position.z) < 20*20) {
+                        p.takeDamage(pDmg, this.owner);
+                    }
+                }
+            });
+        }
+
+        if(pos.y <= 5 || this.isBlaster) { // 床に近い、またはブラスターなら塗る
+             engine.paint(pos.x, pos.z, paintRadius, this.owner.team);
+             if(this.owner.isLocal) this.owner.paintPoints += 1;
+        }
+    }
+}
+
+// ------------------------------------------
+// ボムクラス
+// ------------------------------------------
+class Bomb {
+    constructor(pos, vel, data, owner) {
+        this.mesh = new THREE.Mesh(new THREE.BoxGeometry(2,2,2), engine.materials['bullet'+owner.team]);
+        this.mesh.position.copy(pos);
+        this.vel = vel;
+        this.data = data;
+        this.owner = owner;
+        this.timer = data.delay;
+        this.active = true;
+    }
+    update(dt) {
+        if(!this.active) return;
+        
+        this.vel.y -= 60 * dt; // 重力
+        this.mesh.position.add(this.vel.clone().multiplyScalar(dt));
+        this.mesh.rotation.x += 10*dt;
+        this.mesh.rotation.y += 10*dt;
+
+        // 床バウンド・停止
+        if(this.mesh.position.y <= 1) {
+            this.mesh.position.y = 1;
+            this.vel.x *= 0.5; this.vel.z *= 0.5;
+            this.vel.y = 0;
+            if(this.data.id === 'quick_bomb') this.timer = 0; // 即爆発
+        }
+
+        // 壁反射 (簡易)
+        let hit = engine.checkCollision(this.mesh.position, 1);
+        if(hit) {
+            this.vel.x *= -0.5; this.vel.z *= -0.5;
+        }
+
+        this.timer -= dt;
+        if(this.timer <= 0) this.explode();
+    }
+    explode() {
+        this.active = false;
+        engine.scene.remove(this.mesh);
+        
+        let pos = this.mesh.position;
+        let r = this.data.radius;
+        
+        if(this.data.type === 'storm') {
+            // アメフラシ処理 (簡易: 10秒間その場に判定を残す。今回は一瞬塗るだけにする)
+            engine.paint(pos.x, pos.z, r, this.owner.team);
+            return;
+        }
+
+        engine.paint(pos.x, pos.z, r, this.owner.team);
+        createSplatter(pos, engine.teamColors[this.owner.team].hex, 20);
+
+        engine.players.forEach(p => {
+            if(p.team !== this.owner.team && !p.isDead) {
+                let distSq = Utils.distanceSq2D(pos.x, pos.z, p.mesh.position.x, p.mesh.position.z);
+                if(distSq < r*r) {
+                    // 中心に近いほど大ダメージ
+                    let dmg = (1 - Math.sqrt(distSq)/r) * this.data.damage + 30; 
+                    p.takeDamage(dmg, this.owner);
+                }
+            }
+        });
+    }
+}
+
+// パーティクルエフェクト
+function createSplatter(pos, colorHex, count=5) {
+    const mat = new THREE.MeshBasicMaterial({color: colorHex});
+    for(let i=0; i<count; i++) {
+        let p = new THREE.Mesh(engine.geometries.bullet, mat);
+        p.position.copy(pos);
+        p.vel = new THREE.Vector3((Math.random()-0.5)*20, Math.random()*20, (Math.random()-0.5)*20);
+        p.life = 0.5 + Math.random()*0.5;
+        engine.addParticle({mesh: p, vel: p.vel, life: p.life});
+    }
+}
+
+
+// ==========================================
+// 9. ゲームマネージャー (メインループ・状態管理)
+// ==========================================
+const app = {
+    init() {
+        SaveData.load();
+        this.updateHomeUI();
+        Input.init();
+
+        // メインループ開始
+        this.animate();
+    },
+
+    showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(`screen-${id}`).classList.add('active');
+        AppState.currentScreen = id;
+
+        if(id === 'locker') this.renderLocker();
+        if(id === 'shop') this.renderShop();
+    },
+
+    updateHomeUI() {
+        document.getElementById('home-coins').innerText = SaveData.coins;
+    },
+
+    // --- ロッカー関連 ---
+    switchLockerTab(tab) {
+        AppState.lockerTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('bg-slate-700', 'text-white'); b.classList.add('bg-slate-800', 'text-gray-400');
+        });
+        event.target.classList.remove('bg-slate-800', 'text-gray-400');
+        event.target.classList.add('bg-slate-700', 'text-white');
+        this.renderLocker();
+    },
+    renderLocker() {
+        const list = document.getElementById('locker-list');
+        list.innerHTML = '';
+        
+        let items, owned, currentEquip;
+        if(AppState.lockerTab === 'weapon') { items = DB.Weapons; owned = SaveData.ownedWeapons; currentEquip = SaveData.equip.weapon; }
+        else if(AppState.lockerTab === 'skin') { items = DB.Skins; owned = SaveData.ownedSkins; currentEquip = SaveData.equip.skin; }
+        else { items = DB.Hats; owned = SaveData.ownedHats; currentEquip = SaveData.equip.hat; }
+
+        owned.forEach(id => {
+            const item = items[id];
+            const div = document.createElement('div');
+            div.className = `item-card p-2 rounded cursor-pointer text-center flex flex-col items-center justify-center h-24 ${id === currentEquip ? 'selected' : ''}`;
+            div.innerHTML = `<div class="text-3xl">${item.icon}</div><div class="text-xs text-white mt-1 font-bold truncate w-full">${item.name}</div>`;
+            div.onclick = () => this.selectLockerItem(id, item);
+            list.appendChild(div);
+        });
+        
+        if(owned.length > 0) this.selectLockerItem(owned[0], items[owned[0]]);
+    },
+    selectLockerItem(id, item) {
+        AppState.selectedLockerItem = id;
+        document.getElementById('locker-icon-preview').innerText = item.icon;
+        document.getElementById('locker-item-name').innerText = item.name;
+        document.getElementById('locker-item-desc').innerText = item.desc || '';
+        
+        const stats = document.getElementById('locker-weapon-stats');
+        if(AppState.lockerTab === 'weapon') {
+            stats.classList.remove('hidden');
+            document.getElementById('stat-range').style.width = item.stats[0]+'%';
+            document.getElementById('stat-damage').style.width = item.stats[1]+'%';
+            document.getElementById('stat-fire').style.width = item.stats[2]+'%';
+            document.getElementById('stat-sub').innerText = DB.Subs[item.sub].name;
+            document.getElementById('stat-special').innerText = DB.Specials[item.special].name;
+        } else {
+            stats.classList.add('hidden');
+        }
+    },
+    equipSelectedItem() {
+        if(!AppState.selectedLockerItem) return;
+        SaveData.equip[AppState.lockerTab] = AppState.selectedLockerItem;
+        SaveData.save();
+        this.renderLocker(); // 再描画で選択枠更新
+        this.showMessage('装備を変更しました！');
+    },
+
+    // --- ショップ関連 ---
+    switchShopTab(tab) {
+        AppState.shopTab = tab;
+        document.querySelectorAll('.shop-tab-btn').forEach(b => {
+            b.classList.remove('bg-slate-700', 'text-white'); b.classList.add('bg-slate-800', 'text-gray-400');
+        });
+        event.target.classList.remove('bg-slate-800', 'text-gray-400');
+        event.target.classList.add('bg-slate-700', 'text-white');
+        document.getElementById('shop-coins').innerText = SaveData.coins;
+        this.renderShop();
+    },
+    renderShop() {
+        const list = document.getElementById('shop-list');
+        list.innerHTML = '';
+        
+        let items, owned;
+        if(AppState.shopTab === 'weapon') { items = DB.Weapons; owned = SaveData.ownedWeapons; }
+        else { items = DB.Hats; owned = SaveData.ownedHats; } // スキンはガチャや別枠想定だが今回は省略
+
+        Object.values(items).forEach(item => {
+            if(item.price === 0) return; // 初期装備は非表示
+            const isOwned = owned.includes(item.id);
+            const div = document.createElement('div');
+            div.className = `item-card p-3 rounded cursor-pointer flex items-center gap-3 ${isOwned ? 'opacity-50' : ''}`;
+            div.innerHTML = `
+                <div class="text-3xl">${item.icon}</div>
+                <div class="flex-1">
+                    <div class="text-sm text-white font-bold">${item.name}</div>
+                    <div class="text-xs text-yellow-400">${isOwned ? '所持済' : '🪙 ' + item.price}</div>
+                </div>
+            `;
+            if(!isOwned) div.onclick = () => this.selectShopItem(item);
+            list.appendChild(div);
+        });
+        AppState.selectedShopItem = null;
+        document.getElementById('btn-buy').disabled = true;
+        document.getElementById('btn-buy').classList.add('opacity-50');
+    },
+    selectShopItem(item) {
+        AppState.selectedShopItem = item;
+        document.getElementById('shop-icon-preview').innerText = item.icon;
+        document.getElementById('shop-item-name').innerText = item.name;
+        document.getElementById('shop-item-desc').innerText = item.desc || '';
+        document.getElementById('shop-price-container').classList.remove('hidden');
+        document.getElementById('shop-item-price').innerText = item.price;
+        
+        const btn = document.getElementById('btn-buy');
+        if(SaveData.coins >= item.price) {
+            btn.disabled = false; btn.classList.remove('opacity-50');
+        } else {
+            btn.disabled = true; btn.classList.add('opacity-50');
+        }
+    },
+    buySelectedItem() {
+        const item = AppState.selectedShopItem;
+        if(!item || SaveData.coins < item.price) return;
+        
+        SaveData.coins -= item.price;
+        if(AppState.shopTab === 'weapon') SaveData.ownedWeapons.push(item.id);
+        else SaveData.ownedHats.push(item.id);
+        
+        SaveData.save();
+        this.updateHomeUI();
+        document.getElementById('shop-coins').innerText = SaveData.coins;
+        this.renderShop();
+        this.showMessage('購入しました！');
+    },
+
+    // --- バトル関連 ---
+    selectMode(mode) {
+        AppState.selectedMode = mode;
+        document.querySelectorAll('#screen-battle-select .item-card').forEach(c => c.classList.remove('selected'));
+        document.getElementById(`mode-${mode}`).classList.add('selected');
+    },
+    startBattle() {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('hud').classList.add('active');
+        
+        // ステージランダム選択
+        const stageData = DB.Stages[Utils.randInt(0, DB.Stages.length-1)];
+        engine.buildStage(stageData);
+        engine.resetPaint();
+        
+        // エンティティリセット
+        engine.players.forEach(p => engine.scene.remove(p.mesh));
+        engine.bullets.forEach(b => engine.scene.remove(b.mesh));
+        engine.bombs.forEach(b => engine.scene.remove(b.mesh));
+        engine.players = []; engine.bullets = []; engine.bombs = []; engine.particles = [];
+        
+        // プレイヤー生成
+        let spawnPosA = engine.getSafeSpawnPos('A');
+        engine.localPlayer = new Player(true, 'A', SaveData.equip.weapon, SaveData.equip.skin, SaveData.equip.hat, spawnPosA);
+        engine.players.push(engine.localPlayer);
+        
+        // 味方CPU
+        for(let i=0; i<3; i++) {
+            const wId = Object.keys(DB.Weapons)[Utils.randInt(0, 9)];
+            engine.players.push(new AIPlayer('A', wId, engine.getSafeSpawnPos('A')));
+        }
+        // 敵CPU
+        for(let i=0; i<4; i++) {
+            const wId = Object.keys(DB.Weapons)[Utils.randInt(0, 9)];
+            engine.players.push(new AIPlayer('B', wId, engine.getSafeSpawnPos('B')));
+        }
+
+        engine.state = 'playing';
+        engine.mode = AppState.selectedMode;
+        engine.timeLimit = engine.mode === 'deathmatch' ? 180 : 180; // 3分
+        engine.timer = engine.timeLimit;
+        engine.score = {A:0, B:0};
+        
+        // エリア確保の枠の表示切り替え
+        engine.splatZoneMesh.visible = (engine.mode === 'splat_zones');
+
+        this.showMessage('START!', 1500);
+    },
+
+    endBattle() {
+        engine.state = 'end';
+        Input.move.x = 0; Input.move.y = 0;
+        
+        document.getElementById('hud').classList.remove('active');
+        
+        // スコア最終計算
+        let scoreA = 0, scoreB = 0;
+        let subtitle = "";
+        
+        if(engine.mode === 'turf_war') {
+            let finalScores = engine.calculatePaintScore();
+            scoreA = finalScores.A.toFixed(1);
+            scoreB = finalScores.B.toFixed(1);
+            subtitle = "ナワバリバトル";
+        } else if(engine.mode === 'deathmatch') {
+            scoreA = engine.score.A;
+            scoreB = engine.score.B;
+            subtitle = "デスマッチ";
+        } else {
+            // エリア (簡易的にエリア内塗りでスコア加算されているとする)
+            scoreA = Math.floor(engine.score.A);
+            scoreB = Math.floor(engine.score.B);
+            subtitle = "エリア確保";
+        }
+
+        let isWin = parseFloat(scoreA) > parseFloat(scoreB);
+        let titleEl = document.getElementById('result-title');
+        titleEl.innerText = isWin ? "YOU WIN!" : (scoreA===scoreB ? "DRAW" : "YOU LOSE...");
+        titleEl.className = `text-6xl font-black mb-2 drop-shadow-lg transform -rotate-2 ${isWin ? 'text-yellow-400' : 'text-gray-400'}`;
+        
+        document.getElementById('result-subtitle').innerText = subtitle;
+        document.getElementById('result-score-a').innerText = engine.mode === 'turf_war' ? scoreA+'%' : scoreA;
+        document.getElementById('result-score-b').innerText = engine.mode === 'turf_war' ? scoreB+'%' : scoreB;
+        
+        let p = engine.localPlayer;
+        document.getElementById('result-kills').innerText = p.kills;
+        document.getElementById('result-deaths').innerText = p.deaths;
+        document.getElementById('result-paint').innerText = p.paintPoints;
+        
+        // 報酬
+        let reward = (isWin ? 500 : 100) + p.kills * 10 + Math.floor(p.paintPoints / 10);
+        document.getElementById('result-coins').innerText = reward;
+        SaveData.coins += reward;
+        SaveData.save();
+        this.updateHomeUI();
+
+        this.showScreen('result');
+    },
+
+    showMessage(text, duration=2000) {
+        const banner = document.getElementById('message-banner');
+        banner.innerText = text;
+        banner.classList.add('show');
+        setTimeout(() => banner.classList.remove('show'), duration);
+    },
+
+    // --- メインループ ---
+    animate() {
+        requestAnimationFrame(() => this.animate());
+        const dt = Math.min(engine.clock.getDelta(), 0.1); // max 0.1s step
+
+        if(engine.state === 'playing') {
+            // タイマー更新
+            engine.timer -= dt;
+            let m = Math.floor(engine.timer / 60);
+            let s = Math.floor(engine.timer % 60);
+            document.getElementById('time-display').innerText = `${m}:${s.toString().padStart(2,'0')}`;
+
+            if(engine.timer <= 0) {
+                this.showMessage('FINISH!', 2000);
+                setTimeout(() => this.endBattle(), 2000);
+                engine.state = 'end'; // prevent further updates
+            }
+
+            // モード別ルール処理
+            if(engine.mode === 'splat_zones') {
+                // 中央エリア(半径20)の塗りを毎秒チェック (重いので簡易計算)
+                if(Math.floor(engine.timer*10) % 10 === 0) { // 約1秒に1回
+                    let rArea = 20;
+                    let u = 0.5, v = 0.5; // 中心
+                    let px = Math.floor(u * engine.paintCanvasSize);
+                    let py = Math.floor(v * engine.paintCanvasSize);
+                    let data = engine.paintCtx.getImageData(px, py, 1, 1).data;
+                    let c = {r:data[0], g:data[1], b:data[2]};
+                    if(Utils.colorDistanceSq(c, engine.teamColorRGB.A) < 1000) engine.score.A += 1;
+                    else if(Utils.colorDistanceSq(c, engine.teamColorRGB.B) < 1000) engine.score.B += 1;
+                    
+                    document.getElementById('score-a-val').innerText = Math.floor(engine.score.A);
+                    document.getElementById('score-b-val').innerText = Math.floor(engine.score.B);
+                }
+            } else if(engine.mode === 'turf_war') {
+                if(Math.floor(engine.timer*10) % 20 === 0) { // 約2秒に1回
+                    let scores = engine.calculatePaintScore();
+                    document.getElementById('score-a-val').innerText = scores.A.toFixed(1)+'%';
+                    document.getElementById('score-b-val').innerText = scores.B.toFixed(1)+'%';
+                }
+            } else if(engine.mode === 'deathmatch') {
+                // キル時にスコア加算。ここではHUD更新のみ
+                let killsA = 0, killsB = 0;
+                engine.players.forEach(p => { if(p.team==='A') killsA+=p.kills; else killsB+=p.kills; });
+                engine.score.A = killsA; engine.score.B = killsB;
+                document.getElementById('score-a-val').innerText = killsA;
+                document.getElementById('score-b-val').innerText = killsB;
+            }
+
+            // エンティティ更新
+            engine.players.forEach(p => p.update(dt));
+            
+            for(let i=engine.bullets.length-1; i>=0; i--) {
+                engine.bullets[i].update(dt);
+                if(!engine.bullets[i].active) engine.bullets.splice(i, 1);
+            }
+            
+            for(let i=engine.bombs.length-1; i>=0; i--) {
+                engine.bombs[i].update(dt);
+                if(!engine.bombs[i].active) engine.bombs.splice(i, 1);
+            }
+
+            for(let i=engine.particles.length-1; i>=0; i--) {
+                let p = engine.particles[i];
+                p.vel.y -= 60*dt;
+                p.mesh.position.add(p.vel.clone().multiplyScalar(dt));
+                p.life -= dt;
+                if(p.life <= 0 || p.mesh.position.y <= 0) {
+                    engine.scene.remove(p.mesh);
+                    engine.particles.splice(i, 1);
+                }
+            }
+        }
+
+        // カメラとUI以外は常にレンダリング
+        // UI画面表示時はバックグラウンドでゆっくりカメラを回すなどの演出を入れることも可能
+        if(engine.state !== 'playing' && AppState.currentScreen === 'home') {
+            engine.camera.position.x = Math.sin(Date.now()*0.0005) * 50;
+            engine.camera.position.z = Math.cos(Date.now()*0.0005) * 50;
+            engine.camera.position.y = 30;
+            engine.camera.lookAt(0,0,0);
+        }
+
+        engine.renderer.render(engine.scene, engine.camera);
+    }
+};
+
+// 起動
+window.onload = () => {
+    app.selectMode('turf_war'); // default
+    app.init();
+};
+
+</script>
+</body>
+</html>

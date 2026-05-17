@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>青鬼オンライン (本格HTML5版)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            overflow: hidden;
+            touch-action: none; /* スマホでのスワイプスクロール防止 */
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle, #1a1a2e 0%, #000000 100%);
+        }
+
+        canvas {
+            display: block;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            image-rendering: pixelated; /* ドット絵風のくっきりした描画 */
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        /* --- UI画面 --- */
+        .ui-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            z-index: 10;
+            transition: opacity 0.3s;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            font-size: 3rem;
+            text-shadow: 0 0 10px #4a4a8a, 0 0 20px #4a4a8a;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        h2 {
+            font-size: 2rem;
+            color: #ddd;
+            margin-bottom: 15px;
+        }
+
+        /* --- ボタン --- */
+        .btn {
+            background: linear-gradient(to bottom, #444, #222);
+            border: 2px solid #666;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.5rem;
+            font-family: inherit;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+            width: 250px;
+            text-align: center;
+            transition: all 0.2s;
+            box-shadow: 0 5px 0 #111;
+        }
+
+        .btn:hover {
+            background: linear-gradient(to bottom, #555, #333);
+            border-color: #888;
+        }
+
+        .btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 0 0 #111;
+        }
+
+        .btn-special {
+            background: linear-gradient(to bottom, #8a2be2, #4b0082);
+            border-color: #ba55d3;
+        }
+        .btn-special:hover { background: linear-gradient(to bottom, #9932cc, #6a5acd); }
+
+        .btn-danger {
+            background: linear-gradient(to bottom, #b22222, #800000);
+            border-color: #ff6347;
+        }
+        .btn-danger:hover { background: linear-gradient(to bottom, #dc143c, #8b0000); }
+
+        /* --- ホーム画面レイアウト --- */
+        #home-menu {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            padding: 20px;
+            background: rgba(20, 20, 40, 0.9);
+            border: 3px solid #4a4a8a;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(74, 74, 138, 0.5);
+        }
+
+        .player-info {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 10px;
+            background: #000;
+            border-radius: 8px;
+            border: 1px solid #333;
+            margin-bottom: 10px;
+        }
+
+        /* --- コスチューム画面 --- */
+        #costume-container {
+            width: 80%;
+            height: 70%;
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #555;
+            border-radius: 10px;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-content: flex-start;
+        }
+
+        .costume-item {
+            width: 60px;
+            height: 60px;
+            background: #222;
+            border: 2px solid #444;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .costume-item:hover { border-color: #fff; background: #444; }
+        .costume-item.selected { border-color: gold; box-shadow: 0 0 10px gold; background: #554400; }
+        .costume-item.locked { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); }
+
+        /* --- ゲーム内UI --- */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* クリック透過 */
+            z-index: 5;
+        }
+
+        .hud-element {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            font-size: 1.2rem;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        #survivors-count { top: 10px; left: 10px; }
+        #timer-display { top: 10px; right: 10px; font-weight: bold; color: #ffeb3b; }
+        #floor-display { top: 50px; right: 10px; display: none; }
+        #status-message {
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            background: transparent;
+            border: none;
+            color: #ff3b3b;
+            text-shadow: 0 0 10px red;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        /* --- バーチャルパッド (スマホ用) --- */
+        #virtual-pad {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 150px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            pointer-events: auto;
+            z-index: 10;
+            display: none; /* デスクトップでは隠す */
+        }
+        
+        #pad-stick {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #action-btn {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 80px;
+            height: 80px;
+            background: rgba(200, 50, 50, 0.5);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 200, 200, 0.5);
+            color: white;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            z-index: 10;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            #virtual-pad, #action-btn { display: flex; }
+            h1 { font-size: 2rem; }
+            .btn { width: 200px; font-size: 1.2rem; }
+            #home-menu { grid-template-columns: 1fr; }
+        }
+        
+        /* 画面フラッシュ演出 */
+        #flash-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: red;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+        <div id="hud">
+            <div id="survivors-count" class="hud-element">生存者: 100/100</div>
+            <div id="timer-display" class="hud-element">TIME: 03:00</div>
+            <div id="floor-display" class="hud-element">1階</div>
+            <div id="status-message" class="hud-element"></div>
+        </div>
+
+        <div id="virtual-pad"><div id="pad-stick"></div></div>
+        <div id="action-btn">開/閉</div>
+        <div id="flash-overlay"></div>
+
+        <div id="screen-home" class="ui-screen">
+            <h1>青鬼オンライン<br><span style="font-size: 1.5rem; color:#888;">(本格HTML5版)</span></h1>
+            
+            <div id="home-menu">
+                <div class="player-info">
+                    名前: Player1234 <br>
+                    ランク: 10 | 青銭: <span id="ao-zeni-display">1500</span>
+                </div>
+                <button class="btn" onclick="Game.startMode('survival')">100人サバイバル</button>
+                <button class="btn btn-danger" onclick="Game.startMode('betrayal')">裏逃 (裏切り者)</button>
+                <button class="btn btn-special" onclick="Game.startMode('tower')">青鬼の塔 (無限)</button>
+                <button class="btn" onclick="UI.showScreen('screen-costume')">コスチューム (100種)</button>
+            </div>
+        </div>
+
+        <div id="screen-costume" class="ui-screen hidden">
+            <h2>コスチューム選択</h2>
+            <div id="costume-container">
+                <!-- JavaScriptで生成 -->
+            </div>
+            <button class="btn" onclick="UI.showScreen('screen-home')">戻る</button>
+        </div>
+
+        <div id="screen-result" class="ui-screen hidden">
+            <h1 id="result-title">GAME OVER</h1>
+            <div style="font-size: 1.5rem; margin-bottom: 20px;">
+                順位: <span id="result-rank">100</span>位<br>
+                獲得青銭: +<span id="result-reward">0</span>
+            </div>
+            <button class="btn" onclick="UI.showScreen('screen-home')">ホームへ戻る</button>
+        </div>
+        
+        <div id="screen-loading" class="ui-screen hidden">
+            <h2>マップ生成中...</h2>
+            <div style="width: 200px; height: 20px; background: #333; border: 2px solid #555; border-radius: 10px; overflow: hidden; margin-top: 20px;">
+                <div id="loading-bar" style="width: 0%; height: 100%; background: #4caf50; transition: width 0.1s;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 青鬼オンライン - 本格HTML5実装
+         * アーキテクチャ:
+         * - Game: 全体のステート管理、メインループ
+         * - Renderer: Canvas描画処理 (レイヤー構造、カメラ追従)
+         * - MapGen: ダンジョン自動生成 (BSPツリーベース)
+         * - Entity: プレイヤー、青鬼、BOTの基本クラス
+         * - Player, Bot, Oni: 各種エンティティの具体実装
+         * - Input: キーボード、タッチ操作管理
+         * - UI: 画面遷移、HUD更新
+         */
+
+        const TILE_SIZE = 48; // マップタイルのピクセルサイズ
+        const FPS = 60;
+        
+        // 色定数（リアルな質感を表現するためのグラデーションベースカラー）
+        const COLORS = {
+            floor: '#2c3e50',
+            wall: '#34495e',
+            wallTop: '#2c3e50',
+            doorClosed: '#7f8c8d',
+            doorOpen: '#bdc3c7',
+            safeZone: 'rgba(46, 204, 113, 0.3)',
+            gas: 'rgba(155, 89, 182, 0.6)'
+        };
+
+        // リアルな青鬼5種の定義 (色だけではない特性)
+        const ONI_TYPES = [
+            { id: 0, name: "ノーマル青鬼", speed: 4.0, size: 1.0, color: '#3498db', sightRadius: 10, pattern: 'chase' },
+            { id: 1, name: "筋肉青鬼", speed: 3.2, size: 1.5, color: '#2980b9', sightRadius: 8, pattern: 'breakDoors' }, // ドアを破壊する
+            { id: 2, name: "スパイダー青鬼", speed: 5.5, size: 0.8, color: '#1abc9c', sightRadius: 12, pattern: 'wallCrawling' }, // 壁を無視する(低確率)
+            { id: 3, name: "巨大青鬼", speed: 2.5, size: 2.5, color: '#16a085', sightRadius: 15, pattern: 'areaDenial' }, // 判定がでかい
+            { id: 4, name: "影青鬼", speed: 4.5, size: 1.0, color: '#111111', sightRadius: 8, pattern: 'stealth' } // 暗闇に紛れる、透明になる
+        ];
+
+        // 100種類のコスチューム用絵文字配列
+        const COSTUMES = [
+            "👦","👧","👨","👩","👴","👵","🧑‍🦰","👱‍♂️","👱‍♀️","🧔‍♂️",
+            "👨‍🦲","👩‍🦲","👮‍♂️","👮‍♀️","🕵️‍♂️","🕵️‍♀️","💂‍♂️","💂‍♀️","👷‍♂️","👷‍♀️",
+            "🤴","👸","👳‍♂️","👳‍♀️","👲","🧕","🤵","👰","🤰","🤱",
+            "👼","🎅","🤶","🦸‍♂️","🦸‍♀️","🦹‍♂️","🦹‍♀️","🧙‍♂️","🧙‍♀️","🧚‍♂️",
+            "🧚‍♀️","🧛‍♂️","🧛‍♀️","🧜‍♂️","🧜‍♀️","🧝‍♂️","🧝‍♀️","🧞‍♂️","🧞‍♀️","🧟‍♂️",
+            "🧟‍♀️","💆‍♂️","💆‍♀️","💇‍♂️","💇‍♀️","🚶‍♂️","🚶‍♀️","🏃‍♂️","🏃‍♀️","🕺",
+            "💃","🕴️","👯‍♂️","👯‍♀️","🤺","🏇","⛷️","🏂","🏌️‍♂️","🏌️‍♀️",
+            "🏄‍♂️","🏄‍♀️","🚣‍♂️","🚣‍♀️","🏊‍♂️","🏊‍♀️","⛹️‍♂️","⛹️‍♀️","🏋️‍♂️","🏋️‍♀️",
+            "🚴‍♂️","🚴‍♀️","🚵‍♂️","🚵‍♀️","🤸‍♂️","🤸‍♀️","🤼‍♂️","🤼‍♀️","🤽‍♂️","🤽‍♀️",
+            "🤾‍♂️","🤾‍♀️","🤹‍♂️","🤹‍♀️","🧘‍♂️","🧘‍♀️","🐶","🐱","🐭","🐹"
+        ]; // 後半は動物などネタ系
+
+        const Utils = {
+            distance: (x1, y1, x2, y2) => Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)),
+            randomInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
+            randomFloat: (min, max) => Math.random() * (max - min) + min,
+            checkCollision: (rect1, rect2) => {
+                return (rect1.x < rect2.x + rect2.width &&
+                        rect1.x + rect1.width > rect2.x &&
+                        rect1.y < rect2.y + rect2.height &&
+                        rect1.y + rect1.height > rect2.y);
+            }
+        };
+
+        const Input = {
+            keys: { w:false, a:false, s:false, d:false, up:false, left:false, down:false, right:false, space:false },
+            pad: { x: 0, y: 0, active: false },
+            actionPressed: false,
+
+            init() {
+                window.addEventListener('keydown', (e) => {
+                    if (e.key === 'w' || e.key === 'ArrowUp') this.keys.up = true;
+                    if (e.key === 'a' || e.key === 'ArrowLeft') this.keys.left = true;
+                    if (e.key === 's' || e.key === 'ArrowDown') this.keys.down = true;
+                    if (e.key === 'd' || e.key === 'ArrowRight') this.keys.right = true;
+                    if (e.key === ' ') this.keys.space = true;
+                });
+
+                window.addEventListener('keyup', (e) => {
+                    if (e.key === 'w' || e.key === 'ArrowUp') this.keys.up = false;
+                    if (e.key === 'a' || e.key === 'ArrowLeft') this.keys.left = false;
+                    if (e.key === 's' || e.key === 'ArrowDown') this.keys.down = false;
+                    if (e.key === 'd' || e.key === 'ArrowRight') this.keys.right = false;
+                    if (e.key === ' ') { this.keys.space = false; this.actionPressed = false; }
+                });
+
+                // タッチパッド処理
+                const padArea = document.getElementById('virtual-pad');
+                const stick = document.getElementById('pad-stick');
+                const actionBtn = document.getElementById('action-btn');
+
+                let padCenter = { x: 0, y: 0 };
+                let maxRadius = 45;
+
+                const handleTouch = (e) => {
+                    e.preventDefault();
+                    if (!this.pad.active) return;
+                    let touch = e.touches[0];
+                    for(let i=0; i<e.touches.length; i++) {
+                        let t = e.touches[i];
+                        if(t.target === padArea || t.target === stick) touch = t;
+                    }
+                    if(!touch) return;
+
+                    let rect = padArea.getBoundingClientRect();
+                    let dx = touch.clientX - padCenter.x;
+                    let dy = touch.clientY - padCenter.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (dist > maxRadius) {
+                        dx = (dx / dist) * maxRadius;
+                        dy = (dy / dist) * maxRadius;
+                    }
+
+                    stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                    
+                    // 正規化 (-1.0 ~ 1.0)
+                    this.pad.x = dx / maxRadius;
+                    this.pad.y = dy / maxRadius;
+                };
+
+                padArea.addEventListener('touchstart', (e) => {
+                    let rect = padArea.getBoundingClientRect();
+                    padCenter = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+                    this.pad.active = true;
+                    handleTouch(e);
+                }, {passive: false});
+
+                padArea.addEventListener('touchmove', handleTouch, {passive: false});
+
+                padArea.addEventListener('touchend', (e) => {
+                    this.pad.active = false;
+                    this.pad.x = 0;
+                    this.pad.y = 0;
+                    stick.style.transform = `translate(-50%, -50%)`;
+                });
+
+                actionBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.keys.space = true; });
+                actionBtn.addEventListener('touchend', (e) => { e.preventDefault(); this.keys.space = false; this.actionPressed = false; });
+            },
+
+            getMovementVector() {
+                let dx = 0, dy = 0;
+                if (this.keys.up) dy -= 1;
+                if (this.keys.down) dy += 1;
+                if (this.keys.left) dx -= 1;
+                if (this.keys.right) dx += 1;
+
+                if (this.pad.active) {
+                    dx = this.pad.x;
+                    dy = this.pad.y;
+                }
+
+                // 正規化
+                let length = Math.sqrt(dx*dx + dy*dy);
+                if (length > 0) {
+                    dx /= length;
+                    dy /= length;
+                }
+                return { x: dx, y: dy };
+            },
+
+            isActionJustPressed() {
+                if (this.keys.space && !this.actionPressed) {
+                    this.actionPressed = true;
+                    return true;
+                }
+                return false;
+            }
+        };
+
+        const MapGen = {
+            width: 0,
+            height: 0,
+            grid: [],
+            rooms: [],
+            doors: [],
+
+            // タイル種別
+            TILE_EMPTY: 0,
+            TILE_WALL: 1,
+            TILE_FLOOR: 2,
+            TILE_DOOR: 3,
+
+            generate(w, h, roomCount) {
+                this.width = w;
+                this.height = h;
+                this.grid = Array(h).fill().map(() => Array(w).fill(this.TILE_WALL));
+                this.rooms = [];
+                this.doors = [];
+
+                // BSPノード
+                class Leaf {
+                    constructor(x, y, width, height) {
+                        this.x = x; this.y = y;
+                        this.width = width; this.height = height;
+                        this.leftChild = null; this.rightChild = null;
+                        this.room = null;
+                        this.halls = [];
+                    }
+                    split() {
+                        if (this.leftChild || this.rightChild) return false;
+                        let splitH = Math.random() > 0.5;
+                        if (this.width > this.height && this.width / this.height >= 1.25) splitH = false;
+                        else if (this.height > this.width && this.height / this.width >= 1.25) splitH = true;
+
+                        let max = (splitH ? this.height : this.width) - 10; // 最小サイズ担保
+                        if (max <= 10) return false;
+                        let splitPos = Utils.randomInt(10, max);
+
+                        if (splitH) {
+                            this.leftChild = new Leaf(this.x, this.y, this.width, splitPos);
+                            this.rightChild = new Leaf(this.x, this.y + splitPos, this.width, this.height - splitPos);
+                        } else {
+                            this.leftChild = new Leaf(this.x, this.y, splitPos, this.height);
+                            this.rightChild = new Leaf(this.x + splitPos, this.y, this.width - splitPos, this.height);
+                        }
+                        return true;
+                    }
+                    createRooms() {
+                        if (this.leftChild || this.rightChild) {
+                            if (this.leftChild) this.leftChild.createRooms();
+                            if (this.rightChild) this.rightChild.createRooms();
+                        } else {
+                            let roomW = Utils.randomInt(5, this.width - 2);
+                            let roomH = Utils.randomInt(5, this.height - 2);
+                            let roomX = Utils.randomInt(1, this.width - roomW - 1);
+                            let roomY = Utils.randomInt(1, this.height - roomH - 1);
+                            this.room = { x: this.x + roomX, y: this.y + roomY, w: roomW, h: roomH };
+                            MapGen.rooms.push(this.room);
+                        }
+                    }
+                }
+
+                let root = new Leaf(0, 0, w, h);
+                let leafs = [root];
+                let didSplit = true;
+                
+                // 分割
+                while (didSplit && leafs.length < roomCount) {
+                    didSplit = false;
+                    for (let i = 0; i < leafs.length; i++) {
+                        let l = leafs[i];
+                        if (l.leftChild === null && l.rightChild === null) {
+                            if (l.width > 20 || l.height > 20 || Math.random() > 0.25) {
+                                if (l.split()) {
+                                    leafs.push(l.leftChild);
+                                    leafs.push(l.rightChild);
+                                    didSplit = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                root.createRooms();
+
+                // グリッドに部屋を書き込む
+                for (let r of this.rooms) {
+                    for (let y = r.y; y < r.y + r.h; y++) {
+                        for (let x = r.x; x < r.x + r.w; x++) {
+                            this.grid[y][x] = this.TILE_FLOOR;
+                        }
+                    }
+                }
+
+                // 部屋同士を繋ぐ通路 (簡易版DelaunayやMSTの代わりに総当り近傍接続)
+                for (let i = 0; i < this.rooms.length - 1; i++) {
+                    let r1 = this.rooms[i];
+                    let r2 = this.rooms[i+1];
+                    this.createHall(
+                        {x: r1.x + Math.floor(r1.w/2), y: r1.y + Math.floor(r1.h/2)},
+                        {x: r2.x + Math.floor(r2.w/2), y: r2.y + Math.floor(r2.h/2)}
+                    );
+                }
+
+                // ドアの配置 (部屋と通路の境界)
+                this.placeDoors();
+            },
+
+            createHall(p1, p2) {
+                let x = p1.x; let y = p1.y;
+                while (x !== p2.x) {
+                    if(this.grid[y][x] === this.TILE_WALL) this.grid[y][x] = this.TILE_FLOOR;
+                    x += (p2.x > p1.x) ? 1 : -1;
+                }
+                while (y !== p2.y) {
+                    if(this.grid[y][x] === this.TILE_WALL) this.grid[y][x] = this.TILE_FLOOR;
+                    y += (p2.y > p1.y) ? 1 : -1;
+                }
+            },
+
+            placeDoors() {
+                // 簡易的なドア配置ロジック
+                for (let y = 1; y < this.height - 1; y++) {
+                    for (let x = 1; x < this.width - 1; x++) {
+                        if (this.grid[y][x] === this.TILE_FLOOR) {
+                            // 上下が壁で左右が床 (縦の通路)
+                            if (this.grid[y-1][x] === this.TILE_WALL && this.grid[y+1][x] === this.TILE_WALL &&
+                                this.grid[y][x-1] === this.TILE_FLOOR && this.grid[y][x+1] === this.TILE_FLOOR) {
+                                if(Math.random() < 0.2) { this.grid[y][x] = this.TILE_DOOR; this.doors.push({x, y, open: false, hp: 100}); }
+                            }
+                            // 左右が壁で上下が床 (横の通路)
+                            else if (this.grid[y][x-1] === this.TILE_WALL && this.grid[y][x+1] === this.TILE_WALL &&
+                                     this.grid[y-1][x] === this.TILE_FLOOR && this.grid[y+1][x] === this.TILE_FLOOR) {
+                                if(Math.random() < 0.2) { this.grid[y][x] = this.TILE_DOOR; this.doors.push({x, y, open: false, hp: 100}); }
+                            }
+                        }
+                    }
+                }
+            },
+
+            isSolid(x, y) {
+                if (x < 0 || x >= this.width || y < 0 || y >= this.height) return true;
+                if (this.grid[y][x] === this.TILE_WALL) return true;
+                if (this.grid[y][x] === this.TILE_DOOR) {
+                    let door = this.doors.find(d => d.x === x && d.y === y);
+                    return door && !door.open;
+                }
+                return false;
+            },
+
+            interactDoor(px, py) {
+                // プレイヤーの周囲のドアを探して開閉する
+                let searchRange = 1.5; // タイル単位
+                for (let d of this.doors) {
+                    if (Utils.distance(px, py, d.x + 0.5, d.y + 0.5) < searchRange) {
+                        d.open = !d.open;
+                        return true;
+                    }
+                }
+                return false;
+            },
+
+            getRandomFloorPos() {
+                while(true) {
+                    let x = Utils.randomInt(1, this.width - 2);
+                    let y = Utils.randomInt(1, this.height - 2);
+                    if (this.grid[y][x] === this.TILE_FLOOR) {
+                        return { x: x + 0.5, y: y + 0.5 }; // タイル中央
+                    }
+                }
+            }
+        };
+
+        class Entity {
+            constructor(x, y, radius, speed) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius; // 物理判定の半径(タイル単位)
+                this.speed = speed;   // 移動速度(タイル/秒)
+                this.vx = 0;
+                this.vy = 0;
+                this.alive = true;
+                this.direction = 1; // 1:右, -1:左
+            }
+
+            update(dt) {
+                if (!this.alive) return;
+
+                // 次の位置
+                let nx = this.x + this.vx * this.speed * dt;
+                let ny = this.y + this.vy * this.speed * dt;
+
+                // 壁衝突判定 (AABB/円近似)
+                // 簡易化のため、四隅の点と中心点で判定
+                let checkX = (x) => {
+                    return MapGen.isSolid(Math.floor(x - this.radius), Math.floor(this.y)) ||
+                           MapGen.isSolid(Math.floor(x + this.radius), Math.floor(this.y));
+                };
+                let checkY = (y) => {
+                    return MapGen.isSolid(Math.floor(this.x), Math.floor(y - this.radius)) ||
+                           MapGen.isSolid(Math.floor(this.x), Math.floor(y + this.radius));
+                };
+
+                if (!checkX(nx)) this.x = nx;
+                if (!checkY(ny)) this.y = ny;
+
+                // 向きの更新
+                if (this.vx > 0) this.direction = 1;
+                else if (this.vx < 0) this.direction = -1;
+            }
+        }
+
+        class Player extends Entity {
+            constructor(x, y) {
+                super(x, y, 0.4, 5.0); // 人間の基本速度
+                this.costumeIndex = parseInt(localStorage.getItem('aooni_costume')) || 0;
+                this.role = 'survivor'; // survivor, traitor(裏逃)
+            }
+
+            update(dt) {
+                if (!this.alive) return;
+                let vec = Input.getMovementVector();
+                this.vx = vec.x;
+                this.vy = vec.y;
+
+                if (Input.isActionJustPressed()) {
+                    MapGen.interactDoor(this.x, this.y);
+                }
+
+                super.update(dt);
+            }
+
+            draw(ctx) {
+                if (!this.alive) return;
+                let px = this.x * TILE_SIZE;
+                let py = this.y * TILE_SIZE;
+                
+                // 影
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.beginPath();
+                ctx.ellipse(px, py + TILE_SIZE/3, TILE_SIZE/3, TILE_SIZE/6, 0, 0, Math.PI*2);
+                ctx.fill();
+
+                // コスチューム描画 (絵文字)
+                ctx.font = `${TILE_SIZE}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                ctx.save();
+                ctx.translate(px, py - TILE_SIZE/4);
+                if(this.direction < 0) ctx.scale(-1, 1); // 左向き反転
+
+                // 裏切り者の場合は赤く発光
+                if (this.role === 'traitor') {
+                    ctx.shadowColor = 'red';
+                    ctx.shadowBlur = 10;
+                }
+                
+                ctx.fillText(COSTUMES[this.costumeIndex], 0, 0);
+                ctx.restore();
+
+                // プレイヤーマーカー
+                ctx.fillStyle = 'yellow';
+                ctx.beginPath();
+                ctx.moveTo(px, py - TILE_SIZE + 5);
+                ctx.lineTo(px - 5, py - TILE_SIZE - 5);
+                ctx.lineTo(px + 5, py - TILE_SIZE - 5);
+                ctx.fill();
+            }
+        }
+
+        class Bot extends Entity {
+            constructor(x, y) {
+                super(x, y, 0.4, Utils.randomFloat(4.0, 4.8));
+                this.costumeIndex = Utils.randomInt(0, COSTUMES.length - 1);
+                this.state = 'idle'; // idle, wander, flee
+                this.target = null;
+                this.timer = 0;
+            }
+
+            update(dt) {
+                if (!this.alive) return;
+                this.timer -= dt;
+
+                // 簡単なステートマシン
+                if (this.state === 'idle' && this.timer <= 0) {
+                    this.state = 'wander';
+                    this.timer = Utils.randomFloat(1.0, 3.0);
+                    let angle = Math.random() * Math.PI * 2;
+                    this.vx = Math.cos(angle);
+                    this.vy = Math.sin(angle);
+                } else if (this.state === 'wander' && this.timer <= 0) {
+                    this.state = 'idle';
+                    this.timer = Utils.randomFloat(0.5, 2.0);
+                    this.vx = 0;
+                    this.vy = 0;
+                }
+
+                // 逃走ロジック (近くの青鬼から逃げる)
+                let nearestOni = null;
+                let minDist = 10; // 視界
+                for (let oni of Game.onis) {
+                    let d = Utils.distance(this.x, this.y, oni.x, oni.y);
+                    if (d < minDist) {
+                        minDist = d;
+                        nearestOni = oni;
+                    }
+                }
+
+                if (nearestOni) {
+                    this.state = 'flee';
+                    let dx = this.x - nearestOni.x;
+                    let dy = this.y - nearestOni.y;
+                    let len = Math.sqrt(dx*dx + dy*dy);
+                    this.vx = dx / len;
+                    this.vy = dy / len;
+                }
+
+                // 壁にぶつかったらランダムに方向転換 (簡易回避)
+                let nx = this.x + this.vx * this.speed * dt;
+                let ny = this.y + this.vy * this.speed * dt;
+                if (MapGen.isSolid(Math.floor(nx), Math.floor(this.y))) this.vx *= -1;
+                if (MapGen.isSolid(Math.floor(this.x), Math.floor(ny))) this.vy *= -1;
+
+                super.update(dt);
+            }
+
+            draw(ctx) {
+                if (!this.alive) return;
+                let px = this.x * TILE_SIZE;
+                let py = this.y * TILE_SIZE;
+                
+                ctx.font = `${TILE_SIZE * 0.8}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                ctx.save();
+                ctx.translate(px, py - TILE_SIZE/5);
+                if(this.direction < 0) ctx.scale(-1, 1);
+                ctx.globalAlpha = 0.8; // BOTは少し透過
+                ctx.fillText(COSTUMES[this.costumeIndex], 0, 0);
+                ctx.restore();
+            }
+        }
+
+        class Oni extends Entity {
+            constructor(x, y, typeId) {
+                let type = ONI_TYPES[typeId];
+                super(x, y, 0.4 * type.size, type.speed);
+                this.type = type;
+                this.state = 'search'; // search, chase
+                this.target = null;
+                
+                // グラフィック生成 (リアルな顔のプロシージャル描画用設定)
+                this.eyeBlink = 0;
+            }
+
+            update(dt) {
+                this.eyeBlink += dt;
+
+                // ターゲット選定 (プレイヤーとBOTを区別せず、最も近いものを狙う)
+                let nearest = null;
+                let minDist = this.type.sightRadius;
+
+                let potentials = [...Game.bots.filter(b=>b.alive)];
+                if (Game.player.alive && Game.player.role !== 'traitor') { // 裏切り者は狙われない
+                    potentials.push(Game.player);
+                }
+
+                for (let p of potentials) {
+                    let d = Utils.distance(this.x, this.y, p.x, p.y);
+                    // 視線が通るか(壁がないか)の簡易チェック(Raycast省略で距離のみ)
+                    if (d < minDist) {
+                        minDist = d;
+                        nearest = p;
+                    }
+                }
+
+                this.target = nearest;
+
+                if (this.target) {
+                    this.state = 'chase';
+                    let dx = this.target.x - this.x;
+                    let dy = this.target.y - this.y;
+                    let len = Math.sqrt(dx*dx + dy*dy);
+                    this.vx = dx / len;
+                    this.vy = dy / len;
+
+                    // 筋肉青鬼：ドア破壊
+                    if (this.type.pattern === 'breakDoors') {
+                        let tx = Math.floor(this.x + this.vx * 1.5);
+                        let ty = Math.floor(this.y + this.vy * 1.5);
+                        if (MapGen.grid[ty] && MapGen.grid[ty][tx] === MapGen.TILE_DOOR) {
+                            let door = MapGen.doors.find(d => d.x === tx && d.y === ty);
+                            if (door && !door.open) {
+                                door.open = true; // 強制開放
+                                // TODO: 破壊エフェクト
+                            }
+                        }
+                    }
+                } else {
+                    this.state = 'search';
+                    // ランダム徘徊
+                    if (Math.random() < 0.05) {
+                        let angle = Math.random() * Math.PI * 2;
+                        this.vx = Math.cos(angle);
+                        this.vy = Math.sin(angle);
+                    }
+                }
+
+                super.update(dt);
+
+                // 捕食判定
+                if (this.target && Utils.distance(this.x, this.y, this.target.x, this.target.y) < (this.radius + this.target.radius)) {
+                    this.target.alive = false;
+                    if (this.target === Game.player) {
+                        Game.gameOver();
+                    } else {
+                        Game.survivors--;
+                    }
+                }
+            }
+
+            draw(ctx) {
+                // リアルな青鬼の描画 (Canvas APIを駆使して絵文字を使わずに描画)
+                let px = this.x * TILE_SIZE;
+                let py = this.y * TILE_SIZE;
+                let s = TILE_SIZE * this.type.size;
+
+                ctx.save();
+                ctx.translate(px, py - s/4);
+                if (this.direction < 0) ctx.scale(-1, 1);
+
+                // 影青鬼のステルス処理
+                if (this.type.pattern === 'stealth') {
+                    let dToPlayer = Utils.distance(this.x, this.y, Game.player.x, Game.player.y);
+                    ctx.globalAlpha = Math.max(0, 1 - (dToPlayer / 6)); // 近づくまで見えない
+                }
+
+                // 頭部 (楕円形グラデーション)
+                let grad = ctx.createRadialGradient(0, -s/4, s/8, 0, 0, s/2);
+                grad.addColorStop(0, this.type.color); // ベース色
+                grad.addColorStop(1, '#000000'); // 影
+
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                // いびつな頭の形
+                ctx.ellipse(0, 0, s/2.2, s/1.8, 0, 0, Math.PI*2);
+                ctx.fill();
+
+                // 巨大な目
+                ctx.fillStyle = '#ffffff';
+                let eyeY = -s/6;
+                let eyeX = s/6;
+                let eyeW = s/5;
+                let eyeH = s/4;
+                
+                // まばたき
+                if (Math.sin(this.eyeBlink * 5) > 0.95) eyeH = 2;
+
+                // 左目
+                ctx.beginPath(); ctx.ellipse(-eyeX, eyeY, eyeW, eyeH, -0.2, 0, Math.PI*2); ctx.fill();
+                // 右目
+                ctx.beginPath(); ctx.ellipse(eyeX, eyeY, eyeW, eyeH, 0.2, 0, Math.PI*2); ctx.fill();
+
+                // 瞳孔（プレイヤーの方を向く）
+                ctx.fillStyle = '#000000';
+                let pupX = this.vx * 3;
+                let pupY = this.vy * 3;
+                ctx.beginPath(); ctx.arc(-eyeX + pupX, eyeY + pupY, eyeW/2.5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(eyeX + pupX, eyeY + pupY, eyeW/2.5, 0, Math.PI*2); ctx.fill();
+
+                // 恐ろしい口
+                ctx.fillStyle = '#330000';
+                ctx.beginPath();
+                if (this.state === 'chase') {
+                    // 開いた口
+                    ctx.ellipse(0, s/4, s/3, s/4, 0, 0, Math.PI*2);
+                    ctx.fill();
+                    // 歯
+                    ctx.fillStyle = '#ffffff';
+                    for(let i=-2; i<=2; i++) {
+                        ctx.fillRect(i*(s/8) - s/20, s/8, s/10, s/8);
+                    }
+                } else {
+                    // 閉じた口(歪んだ線)
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = '#000';
+                    ctx.moveTo(-s/4, s/4);
+                    ctx.quadraticCurveTo(0, s/3, s/4, s/4);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        const Renderer = {
+            canvas: null,
+            ctx: null,
+            camera: { x: 0, y: 0, zoom: 1.5 },
+            width: 0,
+            height: 0,
+
+            init() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+            },
+
+            resize() {
+                // コンテナのサイズに合わせる
+                let container = document.getElementById('game-container');
+                this.width = container.clientWidth;
+                this.height = container.clientHeight;
+                this.canvas.width = this.width;
+                this.canvas.height = this.height;
+            },
+
+            updateCamera() {
+                if (!Game.player) return;
+                // カメラをプレイヤーに追従させる (Lerpで滑らかに)
+                let targetX = Game.player.x * TILE_SIZE;
+                let targetY = Game.player.y * TILE_SIZE;
+                
+                this.camera.x += (targetX - this.camera.x) * 0.1;
+                this.camera.y += (targetY - this.camera.y) * 0.1;
+            },
+
+            draw() {
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+
+                if (!Game.isPlaying) return;
+
+                this.ctx.save();
+                
+                // カメラ適用 (画面中央を原点に)
+                this.ctx.translate(this.width / 2, this.height / 2);
+                this.ctx.scale(this.camera.zoom, this.camera.zoom);
+                this.ctx.translate(-this.camera.x, -this.camera.y);
+
+                // --- 背景・マップ描画 ---
+                let startCol = Math.floor((this.camera.x - (this.width/2)/this.camera.zoom) / TILE_SIZE) - 1;
+                let endCol = Math.ceil((this.camera.x + (this.width/2)/this.camera.zoom) / TILE_SIZE) + 1;
+                let startRow = Math.floor((this.camera.y - (this.height/2)/this.camera.zoom) / TILE_SIZE) - 1;
+                let endRow = Math.ceil((this.camera.y + (this.height/2)/this.camera.zoom) / TILE_SIZE) + 1;
+
+                // 範囲制限
+                startCol = Math.max(0, startCol); endCol = Math.min(MapGen.width - 1, endCol);
+                startRow = Math.max(0, startRow); endRow = Math.min(MapGen.height - 1, endRow);
+
+                for (let y = startRow; y <= endRow; y++) {
+                    for (let x = startCol; x <= endCol; x++) {
+                        let tile = MapGen.grid[y][x];
+                        let px = x * TILE_SIZE;
+                        let py = y * TILE_SIZE;
+
+                        if (tile === MapGen.TILE_FLOOR || tile === MapGen.TILE_DOOR) {
+                            // 床描画 (市松模様で洋館風)
+                            this.ctx.fillStyle = ((x+y)%2===0) ? '#2c3e50' : '#273746';
+                            this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                        } else if (tile === MapGen.TILE_WALL) {
+                            // 壁描画 (立体的に)
+                            this.ctx.fillStyle = COLORS.wallTop;
+                            this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                            // 下が床なら壁の側面を描画
+                            if (y < MapGen.height - 1 && (MapGen.grid[y+1][x] === MapGen.TILE_FLOOR || MapGen.grid[y+1][x] === MapGen.TILE_DOOR)) {
+                                this.ctx.fillStyle = COLORS.wall;
+                                this.ctx.fillRect(px, py + TILE_SIZE - 10, TILE_SIZE, 10);
+                            }
+                        }
+                    }
+                }
+
+                // ドア描画
+                for (let d of MapGen.doors) {
+                    if (d.x >= startCol && d.x <= endCol && d.y >= startRow && d.y <= endRow) {
+                        let px = d.x * TILE_SIZE;
+                        let py = d.y * TILE_SIZE;
+                        this.ctx.fillStyle = d.open ? COLORS.doorOpen : COLORS.doorClosed;
+                        if (!d.open) {
+                            this.ctx.fillRect(px, py + TILE_SIZE/4, TILE_SIZE, TILE_SIZE/2);
+                            // ドアノブ
+                            this.ctx.fillStyle = 'gold';
+                            this.ctx.beginPath();
+                            this.ctx.arc(px + TILE_SIZE - 10, py + TILE_SIZE/2, 4, 0, Math.PI*2);
+                            this.ctx.fill();
+                        } else {
+                            // 開いている状態 (端に寄せる)
+                            this.ctx.fillRect(px, py, 10, TILE_SIZE);
+                        }
+                    }
+                }
+
+                // 毒ガスエリア描画 (サバイバルモード用)
+                if (Game.gasRadius < MapGen.width * TILE_SIZE) {
+                    this.ctx.fillStyle = COLORS.gas;
+                    this.ctx.beginPath();
+                    // 外側全体を覆い、内側をくり抜く (Even-Odd rule)
+                    this.ctx.rect(-1000, -1000, MapGen.width * TILE_SIZE + 2000, MapGen.height * TILE_SIZE + 2000);
+                    this.ctx.arc(Game.gasCenter.x * TILE_SIZE, Game.gasCenter.y * TILE_SIZE, Game.gasRadius, 0, Math.PI*2, true);
+                    this.ctx.fill('evenodd');
+                }
+
+                // --- エンティティ描画 (Y座標でソートして奥から描画) ---
+                let entities = [Game.player, ...Game.bots.filter(b=>b.alive), ...Game.onis];
+                entities.sort((a, b) => a.y - b.y);
+
+                for (let e of entities) {
+                    e.draw(this.ctx);
+                }
+
+                // --- 視界の暗闇 (Fog of War) ---
+                // プレイヤーの周囲だけ明るく、それ以外は暗くする
+                let viewRadius = TILE_SIZE * 6; // 視界半径
+                let ppx = Game.player.x * TILE_SIZE;
+                let ppy = Game.player.y * TILE_SIZE;
+
+                let darkGrad = this.ctx.createRadialGradient(ppx, ppy, viewRadius * 0.5, ppx, ppy, viewRadius);
+                darkGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                darkGrad.addColorStop(1, 'rgba(0,0,0,0.95)');
+
+                this.ctx.fillStyle = darkGrad;
+                this.ctx.fillRect(ppx - viewRadius, ppy - viewRadius, viewRadius*2, viewRadius*2);
+                
+                // 視界外を真っ黒に
+                this.ctx.fillStyle = 'rgba(0,0,0,0.95)';
+                this.ctx.beginPath();
+                this.ctx.rect(startCol*TILE_SIZE, startRow*TILE_SIZE, (endCol-startCol+1)*TILE_SIZE, (endRow-startRow+1)*TILE_SIZE);
+                this.ctx.arc(ppx, ppy, viewRadius, 0, Math.PI*2, true);
+                this.ctx.fill('evenodd');
+
+                this.ctx.restore();
+            }
+        };
+
+        const UI = {
+            screens: ['screen-home', 'screen-costume', 'screen-result', 'screen-loading'],
+            
+            init() {
+                // コスチューム画面の生成
+                let container = document.getElementById('costume-container');
+                let savedIndex = parseInt(localStorage.getItem('aooni_costume')) || 0;
+                let unlockedCount = parseInt(localStorage.getItem('aooni_unlocked')) || 10; // 初期10個解放
+
+                for (let i = 0; i < COSTUMES.length; i++) {
+                    let div = document.createElement('div');
+                    div.className = 'costume-item';
+                    if (i === savedIndex) div.classList.add('selected');
+                    if (i >= unlockedCount) div.classList.add('locked');
+                    
+                    div.innerText = COSTUMES[i];
+                    div.onclick = () => {
+                        if (i < unlockedCount) {
+                            document.querySelectorAll('.costume-item').forEach(el => el.classList.remove('selected'));
+                            div.classList.add('selected');
+                            localStorage.setItem('aooni_costume', i);
+                        } else {
+                            // TODO: 青銭で購入処理
+                            let price = 500 + i * 10;
+                            if(confirm(`このコスチュームを ${price} 青銭で解放しますか？`)) {
+                                let zeni = parseInt(localStorage.getItem('aooni_zeni')) || 1500;
+                                if(zeni >= price) {
+                                    localStorage.setItem('aooni_zeni', zeni - price);
+                                    localStorage.setItem('aooni_unlocked', i + 1);
+                                    div.classList.remove('locked');
+                                    div.click();
+                                    this.updateStats();
+                                }
+                            }
+                        }
+                    };
+                    container.appendChild(div);
+                }
+
+                this.updateStats();
+            },
+
+            showScreen(id) {
+                this.screens.forEach(s => {
+                    document.getElementById(s).classList.add('hidden');
+                });
+                if (id) document.getElementById(id).classList.remove('hidden');
+            },
+
+            updateStats() {
+                document.getElementById('ao-zeni-display').innerText = localStorage.getItem('aooni_zeni') || 1500;
+            },
+
+            updateHUD() {
+                document.getElementById('survivors-count').innerText = `生存者: ${Game.survivors}/${Game.totalPlayers}`;
+                
+                let min = Math.floor(Game.timeRemain / 60).toString().padStart(2, '0');
+                let sec = Math.floor(Game.timeRemain % 60).toString().padStart(2, '0');
+                let timeEl = document.getElementById('timer-display');
+                timeEl.innerText = `TIME: ${min}:${sec}`;
+                
+                if (Game.timeRemain <= 30) {
+                    timeEl.style.color = '#f44336';
+                    if (Math.floor(Game.timeRemain*10) % 5 === 0) timeEl.style.opacity = 0;
+                    else timeEl.style.opacity = 1;
+                } else {
+                    timeEl.style.color = '#ffeb3b';
+                    timeEl.style.opacity = 1;
+                }
+
+                if (Game.mode === 'tower') {
+                    document.getElementById('floor-display').style.display = 'block';
+                    document.getElementById('floor-display').innerText = `第 ${Game.floor} 階`;
+                } else {
+                    document.getElementById('floor-display').style.display = 'none';
+                }
+            },
+
+            showMessage(text, color = '#ff3b3b') {
+                let el = document.getElementById('status-message');
+                el.innerText = text;
+                el.style.color = color;
+                el.style.opacity = 1;
+                setTimeout(() => { el.style.opacity = 0; }, 3000);
+            },
+
+            showResult(rank, reward) {
+                this.showScreen('screen-result');
+                document.getElementById('result-rank').innerText = rank;
+                document.getElementById('result-reward').innerText = reward;
+                
+                let title = document.getElementById('result-title');
+                if (rank === 1) {
+                    title.innerText = "VICTORY (青逃げ)";
+                    title.style.color = "#4caf50";
+                } else {
+                    title.innerText = "GAME OVER";
+                    title.style.color = "#f44336";
+                }
+
+                let currentZeni = parseInt(localStorage.getItem('aooni_zeni')) || 1500;
+                localStorage.setItem('aooni_zeni', currentZeni + reward);
+                this.updateStats();
+            }
+        };
+
+        const Game = {
+            mode: '', // 'survival', 'betrayal', 'tower'
+            isPlaying: false,
+            lastTime: 0,
+            
+            // ステート
+            player: null,
+            bots: [],
+            onis: [],
+            totalPlayers: 100,
+            survivors: 100,
+            timeRemain: 180, // 3分
+            floor: 1, // 塔モード用
+            
+            // 毒ガス (サバイバル)
+            gasCenter: {x:0, y:0},
+            gasRadius: 10000,
+            
+            startMode(mode) {
+                this.mode = mode;
+                UI.showScreen('screen-loading');
+                
+                // 初期化処理を非同期で行いプログレスバーを回すフリをする
+                let progress = 0;
+                let bar = document.getElementById('loading-bar');
+                let interval = setInterval(() => {
+                    progress += 20;
+                    bar.style.width = progress + '%';
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        this.initGame();
+                    }
+                }, 100);
+            },
+
+            initGame() {
+                // マップ生成
+                let w = 50, h = 50, rooms = 20;
+                if (this.mode === 'survival') { w=80; h=80; rooms=40; }
+                else if (this.mode === 'tower') { w=30 + this.floor*5; h=30 + this.floor*5; rooms=10+this.floor; }
+
+                MapGen.generate(w, h, rooms);
+
+                // エンティティ初期化
+                this.bots = [];
+                this.onis = [];
+                
+                let pPos = MapGen.getRandomFloorPos();
+                this.player = new Player(pPos.x, pPos.y);
+
+                this.totalPlayers = this.mode === 'tower' ? 10 : 100;
+                this.survivors = this.totalPlayers;
+                this.timeRemain = this.mode === 'survival' ? 180 : (this.mode === 'tower' ? 60 : 120);
+
+                // BOT配置
+                for (let i = 0; i < this.totalPlayers - 1; i++) {
+                    let pos = MapGen.getRandomFloorPos();
+                    this.bots.push(new Bot(pos.x, pos.y));
+                }
+
+                // 青鬼初期配置
+                let oniCount = this.mode === 'tower' ? 1 + Math.floor(this.floor/2) : 5;
+                for (let i = 0; i < oniCount; i++) {
+                    let pos = MapGen.getRandomFloorPos();
+                    // プレイヤーから離れた場所に
+                    while(Utils.distance(pos.x, pos.y, pPos.x, pPos.y) < 20) {
+                        pos = MapGen.getRandomFloorPos();
+                    }
+                    // 青鬼の種類をランダムに
+                    let typeId = Utils.randomInt(0, ONI_TYPES.length - 1);
+                    this.onis.push(new Oni(pos.x, pos.y, typeId));
+                }
+
+                // モード特殊処理
+                if (this.mode === 'betrayal') {
+                    UI.showMessage("あなたは 裏切り者 です。他の生存者を全滅させろ！", "#ba55d3");
+                    this.player.role = 'traitor';
+                    this.player.speed = 6.0; // 少し速い
+                } else if (this.mode === 'survival') {
+                    UI.showMessage("100人サバイバル 開始！", "#4caf50");
+                    // 毒ガスの中心を決める
+                    this.gasCenter = MapGen.getRandomFloorPos();
+                    this.gasRadius = Math.max(w, h) * TILE_SIZE * 1.5;
+                } else if (this.mode === 'tower') {
+                    UI.showMessage(`${this.floor}階 スタート！鍵を探して扉を開けろ！`, "#ffeb3b");
+                }
+
+                this.isPlaying = true;
+                this.lastTime = performance.now();
+                UI.showScreen(''); // HUDのみにする
+                requestAnimationFrame((t) => this.loop(t));
+            },
+
+            loop(timestamp) {
+                if (!this.isPlaying) return;
+
+                let dt = (timestamp - this.lastTime) / 1000; // 秒
+                if (dt > 0.1) dt = 0.1; // タイムステップの制限
+                this.lastTime = timestamp;
+
+                this.update(dt);
+                Renderer.updateCamera();
+                Renderer.draw();
+                UI.updateHUD();
+
+                if (this.isPlaying) {
+                    requestAnimationFrame((t) => this.loop(t));
+                }
+            },
+
+            update(dt) {
+                this.timeRemain -= dt;
+
+                // 毒ガスの縮小 (サバイバル)
+                if (this.mode === 'survival') {
+                    this.gasRadius -= dt * (TILE_SIZE * 0.5); // 毎秒半タイル分縮小
+                    if (this.gasRadius < 0) this.gasRadius = 0;
+
+                    // ガスダメージ判定
+                    let checkGas = (entity) => {
+                        if(!entity.alive) return;
+                        let d = Utils.distance(entity.x * TILE_SIZE, entity.y * TILE_SIZE, this.gasCenter.x * TILE_SIZE, this.gasCenter.y * TILE_SIZE);
+                        if (d > this.gasRadius) {
+                            entity.alive = false;
+                            if(entity === this.player) this.gameOver("毒ガスで死亡");
+                            else this.survivors--;
+                        }
+                    };
+                    checkGas(this.player);
+                    this.bots.forEach(checkGas);
+                }
+
+                // エンティティ更新
+                this.player.update(dt);
+                this.bots.forEach(b => b.update(dt));
+                this.onis.forEach(o => o.update(dt));
+
+                // プレイヤーの攻撃(裏逃モード)
+                if (this.mode === 'betrayal' && Input.isActionJustPressed()) {
+                    // 近接キル
+                    for (let b of this.bots) {
+                        if (b.alive && Utils.distance(this.player.x, this.player.y, b.x, b.y) < 1.5) {
+                            b.alive = false;
+                            this.survivors--;
+                            UI.showMessage("キル成功！", "red");
+                            // 画面フラッシュ
+                            let flash = document.getElementById('flash-overlay');
+                            flash.style.opacity = 0.5;
+                            setTimeout(()=>flash.style.opacity = 0, 100);
+                            break;
+                        }
+                    }
+                }
+
+                // ゲーム終了判定
+                if (this.mode === 'survival' || this.mode === 'tower') {
+                    if (this.timeRemain <= 0 && this.player.alive) {
+                        if(this.mode === 'tower') {
+                            this.floor++;
+                            this.initGame(); // 次の階へ
+                        } else {
+                            this.gameClear(); // サバイバル時間切れ生存
+                        }
+                    } else if (this.survivors <= 1 && this.player.alive) {
+                        this.gameClear(); // 1位
+                    }
+                } else if (this.mode === 'betrayal') {
+                    if (this.survivors <= 1 && this.player.alive) {
+                        this.gameClear(); // 全滅成功
+                    } else if (this.timeRemain <= 0) {
+                        this.gameOver("時間切れ (生存者が逃げ切りました)");
+                    }
+                }
+            },
+
+            gameOver(reason = "捕まりました") {
+                this.isPlaying = false;
+                console.log("Game Over:", reason);
+                // 順位計算 (適当なロジック)
+                let rank = this.survivors;
+                let reward = Math.floor((this.totalPlayers - rank) * 10);
+                
+                setTimeout(() => UI.showResult(rank, reward), 1000); // 死亡後少し待ってリザルト
+            },
+
+            gameClear() {
+                this.isPlaying = false;
+                let reward = this.mode === 'betrayal' ? 1000 : 500;
+                setTimeout(() => UI.showResult(1, reward), 1000);
+            }
+        };
+
+        window.onload = () => {
+            Input.init();
+            Renderer.init();
+            UI.init();
+        };
+
+    </script>
+</body>
+</html>

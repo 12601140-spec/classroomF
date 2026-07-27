@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pop Block Blast! - Ultimate</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap');
+
+        :root {
+            --bg-color: #1a1a2e;
+            --board-bg: #16213e;
+            --cell-bg: #0f3460;
+            --text-main: #fff;
+            --primary: #e94560;
+            --secondary: #00bbf9;
+            --accent: #ffd166;
+            --cell-size: clamp(22px, 7vw, 42px);
+        }
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: none; }
+        body {
+            margin: 0; padding: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f172a 100%);
+            font-family: 'Nunito', sans-serif;
+            color: var(--text-main);
+            display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden;
+        }
+        #particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+        
+        /* UI Top */
+        .header { width: 100%; max-width: 500px; padding: 10px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+        .info-box { background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 15px; text-align: center; border: 2px solid rgba(255,255,255,0.2); }
+        .score-val { font-family: 'Fredoka One'; font-size: 1.4rem; color: var(--accent); }
+        .badge { background: var(--primary); font-family: 'Fredoka One'; padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; }
+        
+        /* Time & Target Bars */
+        .status-bar-container { width: 100%; max-width: 500px; padding: 0 10px; display: flex; flex-direction: column; gap: 5px; margin-bottom: 5px; z-index: 10;}
+        .timer-track { width: 100%; height: 15px; background: rgba(255,255,255,0.2); border-radius: 10px; overflow: hidden; display: none; }
+        .timer-fill { height: 100%; background: linear-gradient(90deg, #00f5d4, #00bbf9); width: 100%; transition: width 0.2s linear; }
+        .target-bar { display: none; justify-content: center; gap: 10px; background: rgba(0,0,0,0.3); border-radius: 10px; padding: 5px; }
+        .target-item { display: flex; align-items: center; gap: 5px; font-weight: bold; background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 10px; font-size: 0.9rem;}
+
+        /* Board */
+        .game-container { background: rgba(0,0,0,0.5); padding: 8px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); position: relative; z-index: 10; }
+        .board { display: grid; grid-template-columns: repeat(8, var(--cell-size)); grid-template-rows: repeat(8, var(--cell-size)); gap: 2px; }
+        .cell { background: var(--cell-bg); border-radius: 4px; position: relative; transition: 0.1s; }
+        .cell.highlight { background: rgba(255,255,255,0.3) !important; }
+
+        /* Blocks */
+        .block-unit {
+            border-radius: 4px; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.2), inset 0 -3px 0 rgba(0,0,0,0.3);
+            display: flex; justify-content: center; align-items: center; font-family: 'Fredoka One'; color: white;
+            font-size: calc(var(--cell-size) * 0.45);
+        }
+        .board .cell .block-unit { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        
+        .block-pop { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .block-blast { animation: blastOut 0.3s ease-out forwards; }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes blastOut { 50% { transform: scale(1.2); opacity: 0.8; } 100% { transform: scale(0); opacity: 0; } }
+        .shake-it { animation: shake 0.4s; }
+        @keyframes shake { 0%, 100%{transform:translate(0,0);} 25%{transform:translate(-3px,2px);} 50%{transform:translate(3px,-2px);} 75%{transform:translate(-3px,-2px);} }
+
+        /* Aura & Hard Ores */
+        .hp-badge { position: absolute; bottom: 2px; right: 2px; font-size: 8px; background: #e74c3c; padding: 1px 3px; border-radius: 3px; line-height:1; z-index: 5;}
+        .hard-block { border: 2px dashed rgba(255,255,255,0.9); }
+        .ore-aura { animation: auraGlow 1.5s infinite alternate; }
+        @keyframes auraGlow {
+            from { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.4), 0 0 5px var(--aura-color); }
+            to { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.6), 0 0 15px var(--aura-color), 0 0 25px var(--aura-color); }
+        }
+
+        /* 10 Buff Effects */
+        .buff-hacker { animation: glitch-anim 0.2s linear infinite; position: relative; overflow: hidden; }
+        @keyframes glitch-anim { 0% { filter: hue-rotate(0deg) blur(0px); } 50% { filter: hue-rotate(90deg) blur(1px) invert(0.2); } 100% { filter: hue-rotate(0deg) blur(0px); } }
+        .buff-giant { transform: scale(1.35) !important; z-index: 20; }
+        .buff-lucky { position: relative; }
+        .buff-lucky::after { content: '🍀'; position: absolute; font-size: 1.2rem; top:0; left:0; right:0; bottom:0; display:flex; justify-content:center; align-items:center; opacity: 0.8; animation: luckyFloat 1.5s linear infinite; pointer-events:none;}
+        @keyframes luckyFloat { 0% { transform: translateY(10px) rotate(0deg); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateY(-30px) rotate(360deg); opacity: 0; } }
+        .buff-rainbow { animation: rainbowHue 2s linear infinite; }
+        @keyframes rainbowHue { 100% { filter: hue-rotate(360deg) brightness(1.2); } }
+        .buff-spider { position: relative; }
+        .buff-spider::after { content: ''; position: absolute; inset: -5px; border: 1px dashed rgba(255,255,255,0.6); border-radius: 50%; opacity:0.9; background: radial-gradient(circle, transparent 30%, rgba(255,255,255,0.4) 31%, transparent 32%); pointer-events:none; }
+        .buff-fire { box-shadow: 0 0 15px #ff5722, inset 0 0 10px #ff5722; position: relative;}
+        .buff-fire::after { content: '🔥'; position: absolute; bottom:-10px; font-size: 1.2rem; animation: fireFlicker 0.4s infinite alternate; pointer-events:none;}
+        @keyframes fireFlicker { 0% { transform: scale(1) translateY(0); } 100% { transform: scale(1.2) translateY(-2px); } }
+        .buff-ice { box-shadow: 0 0 15px #00ffff, inset 0 0 10px #00ffff; position: relative;}
+        .buff-ice::after { content: '❄️'; position: absolute; font-size: 1rem; opacity:0.9; animation: spin 4s linear infinite; pointer-events:none;}
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .buff-thunder { position: relative; animation: flash 1s infinite; }
+        @keyframes flash { 0%, 92%, 100% { filter: brightness(1); } 95% { filter: brightness(3) sepia(1) hue-rotate(40deg); } }
+        .buff-thunder::after { content: '⚡'; position: absolute; right:-5px; top:-5px; font-size:1rem; animation: flash 1s infinite; pointer-events:none;}
+        .buff-dark { box-shadow: 0 0 20px #800080, inset 0 0 15px #000; filter: contrast(1.5); position: relative;}
+        .buff-dark::after { content: '👁‍🗨'; position: absolute; opacity: 0.4; font-size: 1.5rem; pointer-events:none;}
+        .buff-holy { box-shadow: 0 0 20px #fff, 0 0 30px #ffeb3b, inset 0 0 20px #fff; filter: brightness(1.5); position: relative;}
+        .buff-holy::after { content: '✨'; position: absolute; font-size: 1.2rem; animation: holySpin 3s linear infinite; pointer-events:none;}
+        @keyframes holySpin { 0% { transform: scale(1) rotate(0); opacity:1;} 50% { transform: scale(1.5) rotate(180deg); opacity:0.5;} 100%{ transform: scale(1) rotate(360deg); opacity:1;}}
+
+        /* Tray & Shapes */
+        .tray { display: flex; justify-content: center; gap: 15px; margin-top: 15px; height: 110px; z-index: 10; width: 100%; max-width: 500px;}
+        .tray-slot { width: 90px; height: 90px; display: flex; justify-content: center; align-items: center; }
+        .shape-container { display: grid; gap: 2px; cursor: grab; transition: transform 0.2s; }
+        .shape-container .block-unit { position: relative; width: 100%; height: 100%; }
+        .shape-container.dragging {
+            position: fixed; z-index: 1000; pointer-events: none;
+            transform: scale(1.1); filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+        }
+
+        /* Modals & Overlays */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85);
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200;
+            opacity: 0; pointer-events: none; transition: 0.3s; padding: 10px; perspective: 1200px;
+        }
+        .overlay.active { opacity: 1; pointer-events: all; }
+        .modal {
+            background: #16213e; padding: 25px; border-radius: 20px; text-align: center; border: 4px solid var(--primary);
+            width: 100%; max-width: 380px; max-height: 90vh; overflow-y: auto; color: white; transform: translateY(20px); transition: 0.3s;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        .overlay.active .modal { transform: translateY(0); }
+        .modal h1 { font-family: 'Fredoka One'; color: var(--accent); margin: 0 0 15px 0; font-size: 2rem;}
+        
+        .btn {
+            background: var(--primary); color: white; border: none; padding: 12px; font-size: 1.1rem; font-family: 'Fredoka One';
+            border-radius: 15px; cursor: pointer; width: 100%; margin-bottom: 10px; box-shadow: 0 4px 0 #900020; transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #900020; }
+        .btn-sec { background: #00bbf9; box-shadow: 0 4px 0 #0077b6; }
+        .btn-time { background: #00f5d4; color: #111; box-shadow: 0 4px 0 #00a896; }
+        .btn-ore { background: linear-gradient(45deg, #9b5de5, #f15bb5); box-shadow: 0 4px 0 #5a189a; }
+        .btn-sys { background: #475569; box-shadow: 0 4px 0 #1e293b; width: 48%; }
+        
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .sys-btns { display: flex; justify-content: space-between; gap: 10px; }
+        input[type="text"] { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 10px; border: none; text-align: center; font-family: 'Fredoka One'; font-size: 1.1rem; background: #e2e8f0; color: #0f172a;}
+
+        /* Encyclopedia (Two-page Spread Book UI) */
+        .book-open {
+            display: flex; flex-direction: column; width: 95vw; max-width: 800px; height: 85vh; max-height: 700px;
+            background: #4e342e; border-radius: 8px; padding: 10px; gap: 4px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 25px 50px rgba(0,0,0,0.8);
+            transform: perspective(1200px) rotateX(60deg) scale(0.5); opacity: 0;
+            transition: 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @media (min-width: 600px) { .book-open { flex-direction: row; } }
+        
+        #encyclopediaOverlay.active .book-open { transform: perspective(1200px) rotateX(0deg) scale(1); opacity: 1; }
+        
+        .page { flex: 1; background: #fff8e1; border-radius: 4px; padding: 15px; color: #3e2723; overflow-y: auto; box-shadow: inset 0 0 15px rgba(0,0,0,0.1); }
+        .page-left { border-right: 2px solid #d7ccc8; }
+        .page-right { border-left: 2px solid #d7ccc8; display: flex; flex-direction: column; justify-content: space-between;}
+        
+        .encyclopedia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; padding: 5px;}
+        .ore-icon-btn { font-size: 1.5rem; text-align: center; padding: 5px; background: rgba(0,0,0,0.05); border-radius: 5px; cursor: pointer; border: 1px solid #ccc; transition: 0.2s;}
+        .ore-icon-btn.selected { background: var(--primary); border-color: #900020; transform: scale(1.1); box-shadow: 0 4px 8px rgba(0,0,0,0.3);}
+        .ore-icon-btn.locked { filter: grayscale(100%) opacity(0.3); pointer-events: none;}
+        
+        /* Buff UI in Book */
+        .buff-selector { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 10px;}
+        .buff-btn { padding: 4px 8px; font-size: 0.75rem; background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 12px; cursor: pointer; color: #333; font-weight: bold;}
+        .buff-btn.active { background: #e94560; color: white; border-color: #be123c; box-shadow: 0 2px 4px rgba(0,0,0,0.2);}
+        .buff-btn.locked { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; border-style: dashed;}
+        
+        .ore-info-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 10px 0;}
+        .ore-info-table th { text-align: left; padding: 4px; color: #5d4037; width: 40%;}
+        .ore-info-table td { text-align: right; padding: 4px; font-weight: bold;}
+
+        /* Leaderboard UI */
+        .lb-container { background: #fdfbf7; border-radius: 15px; padding: 15px; color: #333; max-height: 60vh; overflow-y: auto;}
+        .lb-tabs { display: flex; gap: 5px; overflow-x: auto; margin-bottom: 15px; padding-bottom: 5px;}
+        .lb-tab { padding: 5px 10px; background: #e2e8f0; border-radius: 20px; font-size: 0.8rem; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .lb-tab.active { background: var(--primary); color: white; }
+        .lb-list { display: flex; flex-direction: column; gap: 8px; }
+        .lb-row { display: flex; align-items: flex-start; background: #f1f5f9; border-radius: 10px; padding: 8px 15px; font-family: 'Fredoka One'; font-size: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+        .lb-row.is-me { background: #ffe4e6; border: 2px solid var(--primary); }
+        .lb-rank { width: 30px; height: 30px; background: #94a3b8; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-right: 15px; font-size: 0.9rem; flex-shrink: 0;}
+        .lb-row:nth-child(1) .lb-rank { background: #fbbf24; box-shadow: 0 0 10px #fbbf24;}
+        .lb-row:nth-child(2) .lb-rank { background: #94a3b8; }
+        .lb-row:nth-child(3) .lb-rank { background: #b45309; }
+        .lb-info { flex: 1; display: flex; flex-direction: column; text-align: left; overflow: hidden;}
+        .lb-name-score { display: flex; justify-content: space-between; align-items: center; width: 100%;}
+        .lb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px; }
+        .lb-score { color: var(--primary); font-size: 1.1rem;}
+        .lb-ores-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; background: rgba(0,0,0,0.05); padding: 5px; border-radius: 8px; justify-content: flex-start;}
+        .lb-ore-badge { font-size: 0.8rem; background: rgba(255,255,255,0.9); border-radius: 5px; padding: 2px 4px; display: flex; align-items: center; gap: 2px; border: 1px solid #e2e8f0;}
+        .lb-ore-badge small { font-size: 0.7rem; color: #555; }
+
+        .floating-text { position: absolute; color: var(--accent); font-family: 'Fredoka One'; font-size: 1.5rem; z-index: 150; animation: floatUp 1.2s forwards; text-shadow: 0 2px 4px #000; pointer-events: none;}
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(1.5); opacity: 0; } }
+
+    </style>
+</head>
+<body>
+    <canvas id="particles"></canvas>
+
+    <div class="header">
+        <div class="badge" id="modeBadge">CLASSIC</div>
+        <div class="info-box"><div style="font-size:0.6rem">SCORE</div><div class="score-val" id="scoreEl">0</div></div>
+        <div class="info-box"><div style="font-size:0.6rem">BEST</div><div class="score-val" id="highScoreEl">0</div></div>
+    </div>
+    
+    <div class="status-bar-container">
+        <div class="timer-track" id="timerTrack"><div class="timer-fill" id="timerFill"></div></div>
+        <div class="target-bar" id="targetBar"></div>
+    </div>
+
+    <div class="game-container" id="gameContainer">
+        <div class="board" id="board"></div>
+    </div>
+
+    <div class="tray" id="tray">
+        <div class="tray-slot" id="slot0"></div>
+        <div class="tray-slot" id="slot1"></div>
+        <div class="tray-slot" id="slot2"></div>
+    </div>
+
+    <!-- Main Menu -->
+    <div class="overlay active" id="menuOverlay">
+        <div class="modal">
+            <h1>Pop Block! <br><span style="font-size:1rem; color:var(--accent);">Ultimate 30 Ores</span></h1>
+            <input type="text" id="playerNameInput" placeholder="プレイヤー名を入力" maxlength="10">
+            
+            <h3 style="font-size:0.9rem; margin-bottom:5px; text-align:left;">🧩 スタンダード</h3>
+            <div class="menu-grid">
+                <button class="btn" onclick="startGame('classic')">クラシック</button>
+                <button class="btn btn-time" onclick="startGame('time')">タイムアタック</button>
+                <button class="btn btn-sec" style="grid-column: span 2;" onclick="startGame('bomb')">ボムサバイバル</button>
+            </div>
+            
+            <h3 style="font-size:0.9rem; margin-bottom:5px; text-align:left;">💎 鉱石モード</h3>
+            <div class="menu-grid">
+                <button class="btn btn-ore" onclick="startGame('diamond_level')">ダイヤ目標(Lv)</button>
+                <button class="btn btn-ore" onclick="startGame('diamond_attack')">ダイヤアタック</button>
+                <button class="btn btn-ore" style="grid-column: span 2; background: linear-gradient(45deg, #111, #8a2be2);" onclick="startGame('ore_collection')">コウセキ収集 (全30種)</button>
+            </div>
+            
+            <div class="sys-btns" style="margin-top:15px;">
+                <button class="btn btn-sys" onclick="showLeaderboard()">🏆 ランキング</button>
+                <button class="btn btn-sys" onclick="showEncyclopedia()">📖 魔法の図鑑</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Encyclopedia Overlay (Two-page Spread) -->
+    <div class="overlay" id="encyclopediaOverlay">
+        <div class="book-open">
+            <div class="page page-left">
+                <h3 style="text-align:center; margin:0 0 10px 0; font-family:'Fredoka One'; border-bottom: 2px dashed #d7ccc8; padding-bottom:5px;">鉱石図鑑</h3>
+                <div class="encyclopedia-grid" id="encLeftGrid"></div>
+            </div>
+            <div class="page page-right">
+                <div id="encRightContent"></div>
+                <button class="btn btn-sys" style="width:100%; margin-top:10px; flex-shrink:0;" onclick="closeModal('encyclopediaOverlay')">本を閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Overlay -->
+    <div class="overlay" id="lbOverlay">
+        <div class="modal" style="background:#fbbf24; border-color:#d97706; padding: 15px;">
+            <h1 style="color:#78350f; text-shadow:none; font-size: 1.5rem;">GLOBAL RANKING</h1>
+            <div class="lb-container">
+                <div class="lb-tabs" id="lbTabs"></div>
+                <div class="lb-list" id="lbContent"></div>
+            </div>
+            <button class="btn" style="background:#78350f; margin-top:15px;" onclick="closeModal('lbOverlay')">閉じる</button>
+        </div>
+    </div>
+
+    <!-- Game Over -->
+    <div class="overlay" id="gameOverOverlay">
+        <div class="modal">
+            <h1 id="goTitle">Game Over</h1>
+            <p id="goDesc" style="font-size: 1.2rem; font-weight:bold; color:var(--accent);"></p>
+            <button class="btn" onclick="returnToMenu()">メニューに戻る</button>
+        </div>
+    </div>
+
+<script>
+// --- Local Storage Management (Multi-Player Local) ---
+let playerName = localStorage.getItem('popBlockPlayerName') || 'PLAYER';
+let allSaves = JSON.parse(localStorage.getItem('popBlockAllSaves')) || {};
+
+// 現在のプレイヤーのデータを初期化
+if (!allSaves[playerName]) {
+    allSaves[playerName] = {
+        leaderboards: { classic: 0, time: 0, bomb: 0, diamond_level: 1, diamond_attack: 0, ore_collection: 0 },
+        oreCollection: {},
+        buffCollection: {}
+    };
+}
+
+let leaderboards = allSaves[playerName].leaderboards;
+let oreCollection = allSaves[playerName].oreCollection;
+let buffCollection = allSaves[playerName].buffCollection;
+let currentLbMode = 'classic';
+
+document.getElementById('playerNameInput').value = playerName;
+
+// 名前を変更したとき、別のプレイヤーのセーブデータに切り替える
+document.getElementById('playerNameInput').addEventListener('change', (e) => {
+    let newName = (e.target.value || 'PLAYER').toUpperCase();
+    if (newName !== playerName) {
+        // 現在の進行状況を保存
+        allSaves[playerName] = { leaderboards, oreCollection, buffCollection };
+        
+        // 新しい名前に切り替え
+        playerName = newName;
+        localStorage.setItem('popBlockPlayerName', playerName);
+        
+        // 新しいプレイヤーのデータをロード
+        if (!allSaves[playerName]) {
+            allSaves[playerName] = {
+                leaderboards: { classic: 0, time: 0, bomb: 0, diamond_level: 1, diamond_attack: 0, ore_collection: 0 },
+                oreCollection: {},
+                buffCollection: {}
+            };
+        }
+        leaderboards = allSaves[playerName].leaderboards;
+        oreCollection = allSaves[playerName].oreCollection;
+        buffCollection = allSaves[playerName].buffCollection;
+        
+        localStorage.setItem('popBlockAllSaves', JSON.stringify(allSaves));
+        
+        // UIの表示更新
+        let currentBest = leaderboards[game?.mode] || (game?.mode==='diamond_level'?1:0);
+        if(document.getElementById('highScoreEl')) document.getElementById('highScoreEl').innerText = currentBest;
+        
+        if (document.getElementById('lbOverlay').classList.contains('active')) {
+            window.renderLbContent();
+        }
+        if (document.getElementById('encyclopediaOverlay').classList.contains('active')) {
+            window.renderEncyclopedia();
+        }
+    }
+});
+
+function saveProgress() {
+    allSaves[playerName] = { leaderboards, oreCollection, buffCollection };
+    localStorage.setItem('popBlockPlayerName', playerName);
+    localStorage.setItem('popBlockAllSaves', JSON.stringify(allSaves));
+}
+
+// --- Buff Definitions ---
+const BUFF_LIST = [
+    { id: 'hacker', name: 'ハッカー', mult: 10 },
+    { id: 'giant', name: '巨大化', mult: 8 },
+    { id: 'lucky', name: 'ラッキー', mult: 12 },
+    { id: 'rainbow', name: 'レインボー', mult: 15 },
+    { id: 'spider', name: 'スパイダー', mult: 9 },
+    { id: 'fire', name: 'ファイヤー', mult: 11 },
+    { id: 'ice', name: 'アイス', mult: 11 },
+    { id: 'thunder', name: 'サンダー', mult: 13 },
+    { id: 'dark', name: 'ダーク', mult: 14 },
+    { id: 'holy', name: 'ホーリー', mult: 16 }
+];
+
+// --- Data: 30 Ores Definition ---
+const ORE_LIST = [
+    { id: 'coal', name: '石炭', p: 1, icon: '⬛', color: '#34495e', rarity: 'Common', weight: 350, hp: 1, desc: 'よく見つかる燃料。' },
+    { id: 'copper', name: '銅', p: 2, icon: '🟫', color: '#b87333', rarity: 'Common', weight: 200, hp: 1, desc: 'サビやすい金属。' },
+    { id: 'iron', name: '鉄', p: 3, icon: '🪙', color: '#95a5a6', rarity: 'Common', weight: 150, hp: 1, desc: '道具作りの基本。' },
+    { id: 'silver', name: '銀', p: 5, icon: '💿', color: '#bdc3c7', rarity: 'Uncommon', weight: 100, hp: 1, desc: '魔を退ける輝き。' },
+    { id: 'gold', name: '金', p: 8, icon: '🌟', color: '#f1c40f', rarity: 'Uncommon', weight: 50, hp: 1, desc: '永遠に輝く貴金属。' },
+    { id: 'lapis', name: 'ラピスラズリ', p: 10, icon: '🧿', color: '#2980b9', rarity: 'Rare', weight: 40, hp: 1, desc: '星空のような青色。' },
+    { id: 'redstone', name: 'レッドストーン', p: 10, icon: '🔴', color: '#c0392b', rarity: 'Rare', weight: 30, hp: 1, desc: '不思議な動力を生む。' },
+    { id: 'emerald', name: 'エメラルド', p: 15, icon: '🟩', color: '#2ecc71', rarity: 'Rare', weight: 20, hp: 1, desc: '自然の力を宿す緑。' },
+    { id: 'ruby', name: 'ルビー', p: 20, icon: '🟥', color: '#e74c3c', rarity: 'Epic', weight: 15, hp: 1, desc: '情熱の赤い宝石。' },
+    { id: 'sapphire', name: 'サファイア', p: 20, icon: '🟦', color: '#0984e3', rarity: 'Epic', weight: 15, hp: 1, desc: '海を封じ込めた石。' },
+    { id: 'amethyst', name: 'アメジスト', p: 25, icon: '🟪', color: '#9b59b6', rarity: 'Epic', weight: 10, hp: 1, desc: '神秘的な紫の結晶。' },
+    { id: 'topaz', name: 'トパーズ', p: 25, icon: '🟨', color: '#f39c12', rarity: 'Epic', weight: 8, hp: 1, desc: '太陽の欠片。' },
+    { id: 'diamond', name: 'ダイヤモンド', p: 50, icon: '💎', color: '#00d2d3', rarity: 'Legendary', weight: 5, hp: 1, desc: '至高の硬度。' },
+    { id: 'onyx', name: 'オニキス', p: 60, icon: '🎱', color: '#2c3e50', rarity: 'Legendary', weight: 4, hp: 1, desc: '漆黒の魔石。' },
+    { id: 'obsidian', name: '黒曜石', p: 80, icon: '🪨', color: '#111111', rarity: 'Legendary', weight: 3, hp: 2, desc: '硬い。2回の衝撃が必要。' },
+    { id: 'pearl', name: 'パール', p: 100, icon: '⚪', color: '#ecf0f1', rarity: 'Legendary', weight: 2, hp: 2, desc: '人魚の涙。硬い。' },
+    { id: 'moonstone', name: 'ムーンストーン', p: 150, icon: '🌙', color: '#fdf5e6', rarity: 'Mythic', weight: 1, hp: 2, desc: '月の光を宿す。' },
+    { id: 'sunstone', name: 'サンストーン', p: 150, icon: '☀️', color: '#ff7f50', rarity: 'Mythic', weight: 1, hp: 2, desc: '太陽の熱を帯びる。' },
+    { id: 'star_shard', name: '星の欠片', p: 200, icon: '⭐', color: '#fffacd', rarity: 'Mythic', weight: 0.8, hp: 2, desc: '流れ星の残骸。' },
+    { id: 'galaxy', name: 'ギャラクシー', p: 300, icon: '🌌', color: '#8a2be2', rarity: 'Mythic', weight: 0.5, hp: 3, desc: '宇宙の幻石。3回の衝撃。' },
+    { id: 'dragon_eye', name: 'ドラゴンの目', p: 500, icon: '👁️', color: '#dc143c', rarity: 'Mythic', weight: 0.5, hp: 3, desc: '竜の魔眼。' },
+    { id: 'philosopher', name: '賢者の石', p: 1000, icon: '⚗️', color: '#ff1493', rarity: 'Divine', weight: 0.3, hp: 3, desc: '錬金術の到達点。' },
+    { id: 'time_crystal', name: '時空の水晶', p: 1500, icon: '⏳', color: '#00ffff', rarity: 'Divine', weight: 0.2, hp: 3, desc: '時を操る結晶。' },
+    { id: 'rainbow_gem', name: '虹の宝石', p: 2000, icon: '🌈', color: '#ff00ff', rarity: 'Divine', weight: 0.2, hp: 4, desc: '七色に輝く。HP4' },
+    { id: 'spirit_tear', name: '精霊の涙', p: 3000, icon: '💧', color: '#00bfff', rarity: 'Divine', weight: 0.1, hp: 4, desc: '精霊王の悲しみ。' },
+    { id: 'demon_heart', name: '悪魔の心臓', p: 5000, icon: '🖤', color: '#8b0000', rarity: 'Divine', weight: 0.1, hp: 4, desc: '邪悪な鼓動を打つ。' },
+    { id: 'angel_halo', name: '天使の輪', p: 7000, icon: '👼', color: '#ffd700', rarity: 'Divine', weight: 0.1, hp: 4, desc: '神聖なる光の輪。' },
+    { id: 'void_stone', name: '虚無の石', p: 10000, icon: '🕳️', color: '#000000', rarity: 'Void', weight: 0.05, hp: 5, desc: '全てを吸い込む。HP5' },
+    { id: 'creator_seed', name: '創造の種', p: 20000, icon: '🌱', color: '#32cd32', rarity: 'Creator', weight: 0.03, hp: 5, desc: '世界樹の種子。' },
+    { id: 'ultimate_truth', name: '宇宙の真理', p: 50000, icon: '💠', color: '#ffffff', rarity: 'Ultimate', weight: 0.02, hp: 9, desc: '真理そのもの。HP9の絶望。' }
+];
+
+const ORE_DEFS = {};
+let totalOreWeight = 0;
+ORE_LIST.forEach(o => { ORE_DEFS[o.id] = o; totalOreWeight += o.weight; });
+const MODE_NAMES = { classic: 'クラシック', time: 'タイム', bomb: 'ボム', diamond_level: 'ダイヤ目標', diamond_attack: 'ダイヤATK', ore_collection: 'コウセキ収集' };
+const BLOCK_COLORS = ['', '#ff477e', '#00bbf9', '#00f5d4', '#fee440', '#9b5de5', '#f15bb5', '#fb5607'];
+const BASE_SHAPES = [
+    { mat: [[1]], colorIdx: 1 }, { mat: [[1,1],[1,1]], colorIdx: 2 }, { mat: [[1,1,1],[1,1,1],[1,1,1]], colorIdx: 3 },
+    { mat: [[1,1]], colorIdx: 4 }, { mat: [[1],[1]], colorIdx: 4 }, { mat: [[1,1,1]], colorIdx: 5 }, { mat: [[1],[1],[1]], colorIdx: 5 },
+    { mat: [[1,1,1,1]], colorIdx: 6 }, { mat: [[1],[1],[1],[1]], colorIdx: 6 }, { mat: [[1,1,1,1,1]], colorIdx: 7 }, { mat: [[1],[1],[1],[1],[1]], colorIdx: 7 },
+    { mat: [[1,1],[1,0]], colorIdx: 1 }, { mat: [[1,1],[0,1]], colorIdx: 1 }, { mat: [[1,0],[1,1]], colorIdx: 1 }, { mat: [[0,1],[1,1]], colorIdx: 1 },
+    { mat: [[1,1,1],[1,0,0],[1,0,0]], colorIdx: 2 }, { mat: [[1,1,1],[0,0,1],[0,0,1]], colorIdx: 2 }, { mat: [[1,0,0],[1,0,0],[1,1,1]], colorIdx: 2 }, { mat: [[0,0,1],[0,0,1],[1,1,1]], colorIdx: 2 },
+    { mat: [[1,1,1],[0,1,0]], colorIdx: 3 }, { mat: [[0,1,0],[1,1,1]], colorIdx: 3 }, { mat: [[1,0],[1,1],[1,0]], colorIdx: 3 }, { mat: [[0,1],[1,1],[0,1]], colorIdx: 3 },
+    { mat: [[1,1,0],[0,1,1]], colorIdx: 4 }, { mat: [[0,1,1],[1,1,0]], colorIdx: 4 }
+];
+BASE_SHAPES.forEach(s => s.blocksCount = s.mat.flat().filter(x=>x===1).length);
+
+// --- Audio & Particles ---
+const AudioSys = (function(){
+    let ctx=null, on=false;
+    function init(){ if(!ctx){ ctx = new (window.AudioContext || window.webkitAudioContext)(); on=true;} if(ctx.state==='suspended') ctx.resume(); }
+    function playTone(f,t,d,v=0.1){ if(!on||!ctx)return; let o=ctx.createOscillator(),g=ctx.createGain(); o.type=t; o.frequency.setValueAtTime(f,ctx.currentTime); g.gain.setValueAtTime(v,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+d); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+d); }
+    return {
+        init,
+        playPop: ()=> { playTone(600,'sine',0.1,0.2); setTimeout(()=>playTone(800,'sine',0.1,0.2),50); },
+        playDrop: ()=> playTone(300,'triangle',0.1,0.3),
+        playClear: (l)=> { let b=400+(l*100); playTone(b,'square',0.2); setTimeout(()=>playTone(b*1.5,'square',0.3),100); if(l>1)setTimeout(()=>playTone(b*2,'square',0.4),200); },
+        playOre: ()=> { playTone(1200,'sine',0.1,0.1); setTimeout(()=>playTone(1600,'sine',0.2,0.1),100); },
+        playError: ()=> playTone(150,'sawtooth',0.2,0.2),
+        playGameOver: ()=> { playTone(300,'sawtooth',0.3); setTimeout(()=>playTone(250,'sawtooth',0.3),300); setTimeout(()=>playTone(200,'sawtooth',0.5),600); }
+    };
+})();
+
+const Particles = (function(){
+    const canvas = document.getElementById('particles'), ctx = canvas.getContext('2d');
+    let parts = [];
+    function resize(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+    window.addEventListener('resize', resize); resize();
+    function animate(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        for(let i=parts.length-1; i>=0; i--){
+            let p=parts[i]; p.vy+=0.2; p.x+=p.vx; p.y+=p.vy; p.life-=p.decay; p.size*=0.96;
+            ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
+            if(p.life<=0||p.size<0.5) parts.splice(i,1);
+        }
+        requestAnimationFrame(animate);
+    } animate();
+    return { spawn: (x,y,color,cnt=10)=>{ for(let i=0;i<cnt;i++){ let a=Math.random()*Math.PI*2, s=Math.random()*8+2; parts.push({x:x,y:y,color:color,size:Math.random()*6+4,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,decay:Math.random()*0.02+0.02}); } } };
+})();
+
+// --- Core Engine ---
+const ROWS=8, COLS=8;
+class Game {
+    constructor() {
+        this.board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null)); 
+        this.score = 0; this.level = 1; this.mode = ''; this.isOver = false;
+        this.trayShapes = [null, null, null];
+        this.els = { board: document.getElementById('board'), tray: [document.getElementById('slot0'), document.getElementById('slot1'), document.getElementById('slot2')] };
+        this.drag = { active: false };
+        this.moves = 0;
+        this.needsSave = false;
+        this.timeLeft = 60; this.maxTime = 60; this.timerInterval = null;
+        this.targets = {}; this.progress = {};
+        this.initDOM(); this.bindEvents();
+    }
+
+    initDOM() {
+        this.els.board.innerHTML = '';
+        for(let r=0; r<ROWS; r++){
+            for(let c=0; c<COLS; c++){
+                let cell = document.createElement('div'); cell.className='cell'; cell.id=`c-${r}-${c}`;
+                this.els.board.appendChild(cell);
+            }
+        }
+    }
+
+    start(mode) {
+        AudioSys.init(); this.mode = mode; this.score = 0; this.level = 1; this.isOver = false; this.moves = 0; this.needsSave = false;
+        this.board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+        this.trayShapes = [null, null, null];
+        document.getElementById('scoreEl').innerText = '0';
+        document.getElementById('modeBadge').innerText = MODE_NAMES[mode];
+        document.getElementById('highScoreEl').innerText = leaderboards[mode] || (mode==='diamond_level'?1:0);
+        
+        document.getElementById('timerTrack').style.display = 'none';
+        document.getElementById('targetBar').style.display = 'none';
+        if(this.timerInterval) clearInterval(this.timerInterval);
+
+        if(mode === 'time') {
+            document.getElementById('timerTrack').style.display = 'block';
+            this.timeLeft = this.maxTime; this.updateTimerUI();
+            this.timerInterval = setInterval(()=>this.tickTime(), 1000);
+        } else if(mode === 'diamond_level') {
+            this.generateLevelTarget();
+        }
+
+        this.renderBoard();
+        this.fillTray();
+    }
+
+    tickTime() {
+        if(this.isOver) return;
+        this.timeLeft--; this.updateTimerUI();
+        if(this.timeLeft<=0) this.gameOver();
+    }
+    updateTimerUI() {
+        let p = Math.max(0, (this.timeLeft/this.maxTime)*100);
+        document.getElementById('timerFill').style.width = `${p}%`;
+        document.getElementById('timerFill').style.background = p<20 ? '#e94560' : 'linear-gradient(90deg, #00f5d4, #00bbf9)';
+    }
+
+    generateLevelTarget() {
+        this.progress = { emerald: 0, ruby: 0, diamond: 0 };
+        this.targets = {
+            emerald: Math.min(3 + this.level*2, 20),
+            ruby: (this.level >= 2) ? Math.min(1 + Math.floor(this.level/2), 10) : 0,
+            diamond: (this.level >= 4) ? Math.min(Math.floor(this.level/4), 5) : 0
+        };
+        this.renderTargets();
+    }
+
+    renderTargets() {
+        const tb = document.getElementById('targetBar');
+        if(this.mode !== 'diamond_level'){ tb.style.display='none'; return; }
+        tb.style.display = 'flex';
+        let html = `<div class="target-item" style="background:var(--primary);">Lv ${this.level}</div>`;
+        ['emerald', 'ruby', 'diamond'].forEach(id => {
+            if(this.targets[id] > 0) {
+                let c = this.progress[id], m = this.targets[id];
+                html += `<div class="target-item" style="${c>=m?'opacity:0.5; text-decoration:line-through;':''}">${ORE_DEFS[id].icon} ${c}/${m}</div>`;
+            }
+        });
+        tb.innerHTML = html;
+    }
+
+    getRandomOre() {
+        let r = Math.random();
+        if(this.mode === 'diamond_level' || this.mode === 'diamond_attack') {
+            let chance = (this.mode === 'diamond_level') ? Math.min(0.1 + (this.level*0.015), 0.4) : 0.25;
+            if (r > chance) return null;
+            let tr = Math.random();
+            if(tr < 0.15) return 'diamond';
+            if(tr < 0.4) return 'ruby';
+            return 'emerald';
+        } else if (this.mode === 'ore_collection') {
+            if (r > 0.4) return null;
+            let rw = Math.random() * totalOreWeight;
+            for(let o of ORE_LIST) { rw -= o.weight; if(rw <= 0) return o.id; }
+        }
+        return null;
+    }
+
+    buildShapeData(baseDef) {
+        let clone = { mat: [], blocksCount: baseDef.blocksCount };
+        for(let r=0; r<baseDef.mat.length; r++) {
+            clone.mat[r] = [];
+            for(let c=0; c<baseDef.mat[r].length; c++) {
+                if(baseDef.mat[r][c] === 1) {
+                    let oreId = this.getRandomOre();
+                    if(oreId) clone.mat[r][c] = { type: 'ore', oreId: oreId, hp: ORE_DEFS[oreId].hp }; // buffId initially null
+                    else clone.mat[r][c] = { type: 'normal', colorIdx: baseDef.colorIdx };
+                } else {
+                    clone.mat[r][c] = null;
+                }
+            }
+        }
+        return clone;
+    }
+
+    getPlaceableShapes() {
+        let placeable = [];
+        for(let def of BASE_SHAPES) {
+            let canPlace = false;
+            for(let r=0; r<ROWS; r++){
+                for(let c=0; c<COLS; c++){ if(this.canPlaceMatrix(def.mat, r, c)) { canPlace=true; break; } }
+                if(canPlace) break;
+            }
+            if(canPlace) placeable.push(def);
+        }
+        return placeable;
+    }
+
+    fillTray() {
+        let pool = this.getPlaceableShapes();
+        if (pool.length === 0) pool = BASE_SHAPES;
+        for (let i = 0; i < 3; i++) {
+            if (!this.trayShapes[i]) {
+                let baseDef = pool[Math.floor(Math.random() * pool.length)];
+                this.trayShapes[i] = this.buildShapeData(baseDef);
+                this.renderTraySlot(i);
+            }
+        }
+        this.checkGameOver();
+    }
+
+    renderTraySlot(idx) {
+        let slot = this.els.tray[idx], def = this.trayShapes[idx];
+        slot.innerHTML = ''; if(!def) return;
+        
+        let cont = document.createElement('div'); cont.className = 'shape-container popIn';
+        let rCnt = def.mat.length, cCnt = def.mat[0].length;
+        let trayCellSize = Math.min(26, window.innerWidth / 15);
+        cont.style.gridTemplateColumns = `repeat(${cCnt}, ${trayCellSize}px)`; 
+        cont.style.gridTemplateRows = `repeat(${rCnt}, ${trayCellSize}px)`;
+        
+        for(let r=0; r<rCnt; r++){
+            for(let c=0; c<cCnt; c++){
+                let v = def.mat[r][c];
+                if(v) {
+                    let b = document.createElement('div'); b.className = 'block-unit';
+                    b.style.gridRowStart = r+1; b.style.gridColumnStart = c+1;
+                    if(v.type === 'ore') {
+                        let ore = ORE_DEFS[v.oreId]; b.style.background = ore.color; b.innerHTML = ore.icon;
+                        b.classList.add('ore-aura'); b.style.setProperty('--aura-color', ore.color);
+                        if(v.buffId) b.classList.add(`buff-${v.buffId}`);
+                        if(v.hp>1) { b.classList.add('hard-block'); b.innerHTML += `<div class="hp-badge">HP${v.hp}</div>`;}
+                    } else { b.style.background = BLOCK_COLORS[v.colorIdx]; }
+                    cont.appendChild(b);
+                }
+            }
+        }
+        cont.addEventListener('mousedown', e => this.dragStart(e, idx, cont));
+        cont.addEventListener('touchstart', e => this.dragStart(e, idx, cont), {passive:false});
+        slot.appendChild(cont);
+    }
+
+    bindEvents() {
+        document.addEventListener('mousemove', e=>this.dragMove(e)); document.addEventListener('touchmove', e=>this.dragMove(e), {passive:false});
+        document.addEventListener('mouseup', e=>this.dragEnd(e)); document.addEventListener('touchend', e=>this.dragEnd(e));
+        window.addEventListener('resize', ()=> { if(document.getElementById('c-0-0')) this.cellSize = document.getElementById('c-0-0').getBoundingClientRect().width; this.boardRect = this.els.board.getBoundingClientRect(); });
+    }
+    
+    dragStart(e, idx, el) {
+        if(this.isOver) return;
+        if(e.type==='touchstart') e.preventDefault();
+        AudioSys.playPop();
+        
+        this.cellSize = document.getElementById('c-0-0').getBoundingClientRect().width; 
+        this.boardRect = this.els.board.getBoundingClientRect();
+        let cx = e.touches?e.touches[0].clientX:e.clientX, cy = e.touches?e.touches[0].clientY:e.clientY;
+        let rect = el.getBoundingClientRect();
+        this.drag = { active:true, idx:idx, def:this.trayShapes[idx], clone:el.cloneNode(true) };
+        
+        let rCnt = this.drag.def.mat.length, cCnt = this.drag.def.mat[0].length;
+        this.drag.clone.classList.add('dragging');
+        this.drag.clone.style.gridTemplateColumns = `repeat(${cCnt}, ${this.cellSize}px)`;
+        this.drag.clone.style.gridTemplateRows = `repeat(${rCnt}, ${this.cellSize}px)`;
+        this.drag.clone.style.width = `${cCnt*this.cellSize}px`; this.drag.clone.style.height = `${rCnt*this.cellSize}px`;
+        
+        this.drag.ox = (cCnt*this.cellSize)*((cx-rect.left)/rect.width);
+        this.drag.oy = (rCnt*this.cellSize)*((cy-rect.top)/rect.height) + (e.touches?this.cellSize*1.5:0);
+        this.drag.clone.style.left = `${cx-this.drag.ox}px`; this.drag.clone.style.top = `${cy-this.drag.oy}px`;
+        document.body.appendChild(this.drag.clone); el.style.opacity = '0';
+    }
+
+    dragMove(e) {
+        if(!this.drag.active) return; e.preventDefault();
+        let cx = e.touches?e.touches[0].clientX:e.clientX, cy = e.touches?e.touches[0].clientY:e.clientY;
+        this.drag.clone.style.left = `${cx-this.drag.ox}px`; this.drag.clone.style.top = `${cy-this.drag.oy}px`;
+        document.querySelectorAll('.cell.highlight').forEach(el=>el.classList.remove('highlight'));
+        let pos = this.getGridPos(cx,cy);
+        if(pos) this.highlight(this.drag.def.mat, pos.r, pos.c, this.canPlaceMatrix(this.drag.def.mat, pos.r, pos.c));
+    }
+
+    dragEnd(e) {
+        if(!this.drag.active) return; this.drag.active=false;
+        let cx = e.changedTouches?e.changedTouches[0].clientX:e.clientX, cy = e.changedTouches?e.changedTouches[0].clientY:e.clientY;
+        let pos = this.getGridPos(cx,cy), placed = false;
+        
+        if(pos && this.canPlaceMatrix(this.drag.def.mat, pos.r, pos.c)) {
+            this.placeMatrix(this.drag.def.mat, pos.r, pos.c); placed = true;
+        }
+        this.drag.clone.remove(); document.querySelectorAll('.cell.highlight').forEach(el=>el.classList.remove('highlight'));
+        let orig = this.els.tray[this.drag.idx].firstChild;
+        if(placed) {
+            AudioSys.playDrop(); this.trayShapes[this.drag.idx] = null; orig.remove();
+            
+            // Score for placing is based on blocks count
+            this.addScore(this.drag.def.blocksCount); 
+            this.processTurn();
+        } else {
+            AudioSys.playError(); if(orig) orig.style.opacity = '1';
+        }
+    }
+
+    getGridPos(x,y) {
+        if(!this.boardRect) return null;
+        let pL = parseInt(getComputedStyle(this.els.board).paddingLeft||0), pT = parseInt(getComputedStyle(this.els.board).paddingTop||0);
+        let rx = (x - this.drag.ox) - this.boardRect.left - pL;
+        let ry = (y - this.drag.oy) - this.boardRect.top - pT;
+        return { c: Math.round(rx/(this.cellSize+2)), r: Math.round(ry/(this.cellSize+2)) };
+    }
+
+    canPlaceMatrix(mat, sr, sc) {
+        for(let r=0; r<mat.length; r++) {
+            for(let c=0; c<mat[r].length; c++) {
+                if(mat[r][c]) {
+                    let br=sr+r, bc=sc+c;
+                    if(br<0||br>=ROWS||bc<0||bc>=COLS || this.board[br][bc] !== null) return false;
+                }
+            }
+        } return true;
+    }
+
+    highlight(mat, sr, sc, valid) {
+        if(!valid) return;
+        for(let r=0; r<mat.length; r++) {
+            for(let c=0; c<mat[r].length; c++) {
+                if(mat[r][c]) { let br=sr+r, bc=sc+c; if(br>=0&&br<ROWS&&bc>=0&&bc<COLS && !this.board[br][bc]) document.getElementById(`c-${br}-${bc}`).classList.add('highlight'); }
+            }
+        }
+    }
+
+    placeMatrix(mat, sr, sc) {
+        for(let r=0; r<mat.length; r++) {
+            for(let c=0; c<mat[r].length; c++) {
+                if(mat[r][c]) this.board[sr+r][sc+c] = JSON.parse(JSON.stringify(mat[r][c]));
+            }
+        }
+        this.moves++; this.renderBoard();
+    }
+
+    processTurn() {
+        let clearedR=[], clearedC=[];
+        for(let r=0; r<ROWS; r++) if(this.board[r].every(c=>c!==null)) clearedR.push(r);
+        for(let c=0; c<COLS; c++) { let full=true; for(let r=0; r<ROWS; r++) if(!this.board[r][c]){full=false;break;} if(full) clearedC.push(c); }
+        
+        if(clearedR.length>0 || clearedC.length>0) {
+            let bonus = (clearedR.length+clearedC.length)**2 * 10;
+            this.addScore(bonus);
+            AudioSys.playClear(clearedR.length+clearedC.length);
+            if((clearedR.length+clearedC.length)>=2) { document.getElementById('gameContainer').classList.add('shake-it'); setTimeout(()=>document.getElementById('gameContainer').classList.remove('shake-it'), 400); }
+            if(this.mode === 'time') { this.timeLeft = Math.min(this.maxTime, this.timeLeft + ((clearedR.length+clearedC.length)*5)); this.updateTimerUI();}
+            
+            // Random Buff Application (40% chance if ores on board)
+            if (this.mode === 'ore_collection' || this.mode === 'diamond_attack') {
+                let oreCells = [];
+                for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+                    // Don't buff blocks that are about to be cleared in this very turn to allow user to see it
+                    if(this.board[r][c] && this.board[r][c].type === 'ore' && !this.board[r][c].buffId && !clearedR.includes(r) && !clearedC.includes(c)) {
+                        oreCells.push({r,c});
+                    }
+                }
+                if(oreCells.length > 0 && Math.random() < 0.4) {
+                    let target = oreCells[Math.floor(Math.random() * oreCells.length)];
+                    let buff = BUFF_LIST[Math.floor(Math.random() * BUFF_LIST.length)];
+                    this.board[target.r][target.c].buffId = buff.id;
+                    this.floatText(`✨${buff.name} BUFF✨`, window.innerWidth/2, window.innerHeight/3);
+                }
+            }
+
+            let toClear = new Set();
+            clearedR.forEach(r=>{for(let c=0;c<COLS;c++)toClear.add(`${r},${c}`)});
+            clearedC.forEach(c=>{for(let r=0;r<ROWS;r++)toClear.add(`${r},${c}`)});
+            
+            toClear.forEach(coord => {
+                let [r,c] = coord.split(',').map(Number);
+                let dom = document.getElementById(`c-${r}-${c}`);
+                if(dom.firstChild) dom.firstChild.classList.add('block-blast');
+                let cellData = this.board[r][c];
+                let color = cellData.type==='ore' ? ORE_DEFS[cellData.oreId].color : BLOCK_COLORS[cellData.colorIdx];
+                let rect = dom.getBoundingClientRect(); Particles.spawn(rect.left+rect.width/2, rect.top+rect.height/2, color, 5);
+                
+                if(cellData.type === 'ore' && cellData.hp > 1) {
+                    cellData.hp--;
+                    setTimeout(()=> {if(dom.firstChild) dom.firstChild.classList.remove('block-blast'); this.renderBoard();}, 100);
+                } else {
+                    if(cellData.type === 'ore') this.collectOre(cellData.oreId, cellData.buffId);
+                    this.board[r][c] = null;
+                }
+            });
+            setTimeout(()=> { this.renderBoard(); this.postTurnLogic(); }, 300);
+        } else {
+            this.postTurnLogic();
+        }
+    }
+
+    collectOre(oreId, buffId = null) {
+        AudioSys.playOre(); let def = ORE_DEFS[oreId];
+        let mult = 1;
+        if(buffId) {
+            let buffDef = BUFF_LIST.find(b => b.id === buffId);
+            if(buffDef) mult = buffDef.mult;
+        }
+        
+        if(this.mode === 'diamond_level') {
+            if(this.targets[oreId] !== undefined && this.progress[oreId] < this.targets[oreId]) {
+                this.progress[oreId]++; this.renderTargets();
+                this.floatText(`+1 ${def.icon}`, document.getElementById('targetBar').getBoundingClientRect().left+100, 50);
+            }
+        } else if (this.mode === 'diamond_attack' || this.mode === 'ore_collection') {
+            this.addScore(def.p * 10 * mult);
+            let bTxt = buffId ? '✨ ' : '';
+            this.floatText(`${bTxt}+${def.p*10*mult} ${def.icon}`, window.innerWidth/2, 100);
+        }
+
+        if(this.mode === 'ore_collection') {
+            oreCollection[oreId] = (oreCollection[oreId]||0) + 1;
+            if(buffId) {
+                if(!buffCollection[oreId]) buffCollection[oreId] = {};
+                buffCollection[oreId][buffId] = (buffCollection[oreId][buffId]||0) + 1;
+            }
+            this.needsSave = true;
+        }
+    }
+
+    postTurnLogic() {
+        if(this.mode === 'bomb') {
+            let exploded = false;
+            for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+                let v = this.board[r][c];
+                if(v && v.type==='bomb') { v.timer--; if(v.timer<=0) exploded = true; }
+            }
+            if(this.moves%5===0 && !exploded) {
+                let emps = [];
+                for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++) if(!this.board[r][c])emps.push({r,c});
+                if(emps.length>0) {
+                    let t=emps[Math.floor(Math.random()*emps.length)];
+                    this.board[t.r][t.c] = { type:'bomb', colorIdx: Math.floor(Math.random()*7)+1, timer:9 };
+                    AudioSys.playError();
+                }
+            }
+            this.renderBoard();
+            if(exploded) { this.gameOver(); return; }
+        }
+
+        if(this.mode === 'diamond_level') {
+            let done = true;
+            for(let k in this.targets) if(this.targets[k]>0 && this.progress[k]<this.targets[k]) done=false;
+            if(done) {
+                AudioSys.playClear(3);
+                this.floatText("LEVEL UP!", window.innerWidth/2 - 50, window.innerHeight/2);
+                this.level++;
+                if(this.level > leaderboards.diamond_level) { leaderboards.diamond_level = this.level; this.needsSave = true; }
+                if(this.needsSave) saveProgress();
+                setTimeout(()=> { this.board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null)); this.generateLevelTarget(); this.renderBoard(); this.fillTray(); }, 1000);
+                return;
+            }
+        }
+        
+        if(this.needsSave) {
+            saveProgress();
+            this.needsSave = false;
+        }
+        
+        if(this.trayShapes.every(s=>!s)) this.fillTray(); else this.checkGameOver();
+    }
+
+    renderBoard() {
+        for(let r=0; r<ROWS; r++){
+            for(let c=0; c<COLS; c++){
+                let dom = document.getElementById(`c-${r}-${c}`);
+                dom.innerHTML = ''; let v = this.board[r][c];
+                if(v) {
+                    let b = document.createElement('div'); b.className = 'block-unit block-pop';
+                    if(v.type === 'normal') b.style.backgroundColor = BLOCK_COLORS[v.colorIdx];
+                    else if(v.type === 'ore') {
+                        let ore = ORE_DEFS[v.oreId]; b.style.backgroundColor = ore.color; b.innerHTML = ore.icon;
+                        b.classList.add('ore-aura'); b.style.setProperty('--aura-color', ore.color);
+                        if(v.buffId) b.classList.add(`buff-${v.buffId}`);
+                        if(v.hp>1) { b.classList.add('hard-block'); b.innerHTML+=`<div class="hp-badge">HP${v.hp}</div>`;}
+                    } else if(v.type === 'bomb') {
+                        b.style.backgroundColor = BLOCK_COLORS[v.colorIdx]; b.innerHTML = `💣<br><span style="font-size:0.5em">${v.timer}</span>`;
+                        if(v.timer<=3) b.style.boxShadow = 'inset 0 0 15px red';
+                    }
+                    dom.appendChild(b);
+                }
+            }
+        }
+    }
+
+    addScore(p) {
+        this.score += p;
+        let el = document.getElementById('scoreEl'); el.innerText = this.score;
+        el.style.transform='scale(1.5)'; setTimeout(()=>el.style.transform='scale(1)', 150);
+        
+        if (this.mode !== 'diamond_level') {
+            if(this.score > leaderboards[this.mode]) {
+                leaderboards[this.mode] = this.score;
+                document.getElementById('highScoreEl').innerText = this.score;
+                this.needsSave = true;
+            }
+        }
+    }
+    
+    floatText(t,x,y) {
+        let el=document.createElement('div'); el.className='floating-text'; el.innerText=t;
+        el.style.left=`${x}px`; el.style.top=`${y}px`; document.body.appendChild(el);
+        setTimeout(()=>el.remove(),1200);
+    }
+
+    checkGameOver() {
+        if(this.isOver) return;
+        let canPlace = false;
+        for(let s of this.trayShapes) {
+            if(s) {
+                for(let r=0;r<ROWS;r++){ for(let c=0;c<COLS;c++){ if(this.canPlaceMatrix(s.mat,r,c)){canPlace=true;break;} } if(canPlace)break; }
+            }
+            if(canPlace)break;
+        }
+        if(!canPlace && this.trayShapes.some(s=>s)) this.gameOver();
+    }
+
+    gameOver() {
+        if(this.isOver) return; this.isOver = true;
+        if(this.timerInterval) clearInterval(this.timerInterval);
+        
+        if(this.needsSave) saveProgress();
+        
+        AudioSys.playGameOver(); document.getElementById('board').style.opacity = '0.5';
+        setTimeout(() => {
+            if(this.mode==='diamond_level') document.getElementById('goDesc').innerText = `到達レベル: Lv ${this.level}`;
+            else document.getElementById('goDesc').innerText = `スコア: ${this.score}`;
+            document.getElementById('gameOverOverlay').classList.add('active');
+        }, 1000);
+    }
+}
+
+const game = new Game();
+
+// --- UI Controls Exports ---
+window.startGame = (mode) => {
+    document.getElementById('menuOverlay').classList.remove('active');
+    document.getElementById('gameOverOverlay').classList.remove('active');
+    document.getElementById('board').style.opacity = '1';
+    game.start(mode);
+};
+window.returnToMenu = () => {
+    document.getElementById('gameOverOverlay').classList.remove('active');
+    document.getElementById('menuOverlay').classList.add('active');
+};
+window.closeModal = (id) => { document.getElementById(id).classList.remove('active'); };
+
+
+// --- Encyclopedia (Two-page Spread UI) ---
+let selectedOreId = null;
+let selectedBuffId = null;
+
+window.showEncyclopedia = () => {
+    document.getElementById('encyclopediaOverlay').classList.add('active');
+    selectedOreId = ORE_LIST[0].id; // Default selection
+    selectedBuffId = null;
+    window.renderEncyclopedia();
+};
+
+window.renderEncyclopedia = () => {
+    const leftPage = document.getElementById('encLeftGrid');
+    const rightPage = document.getElementById('encRightContent');
+    
+    // Left Page (Grid)
+    leftPage.innerHTML = '';
+    ORE_LIST.forEach(ore => {
+        let count = oreCollection[ore.id] || 0;
+        let btn = document.createElement('div'); 
+        btn.className = `ore-icon-btn ${count>0?'':'locked'} ${selectedOreId===ore.id?'selected':''}`;
+        btn.innerHTML = ore.icon;
+        btn.onclick = () => {
+            if(count > 0) {
+                selectedOreId = ore.id;
+                selectedBuffId = null;
+                window.renderEncyclopedia();
+            }
+        };
+        leftPage.appendChild(btn);
+    });
+    
+    // Right Page (Details)
+    if(selectedOreId) {
+        let ore = ORE_LIST.find(o => o.id === selectedOreId);
+        let prob = ((ore.weight / totalOreWeight) * 100).toFixed(3) + "%";
+        
+        let buffUI = `<div class="buff-selector">
+            <button class="buff-btn ${selectedBuffId===null?'active':''}" onclick="selectBuff(null)">NORMAL</button>`;
+        BUFF_LIST.forEach(b => {
+            let hasBuff = buffCollection[ore.id] && buffCollection[ore.id][b.id] > 0;
+            if(hasBuff) {
+                buffUI += `<button class="buff-btn ${selectedBuffId===b.id?'active':''}" onclick="selectBuff('${b.id}')">${b.name}</button>`;
+            } else {
+                buffUI += `<button class="buff-btn locked">???</button>`;
+            }
+        });
+        buffUI += `</div>`;
+        
+        let displayVal = ore.p;
+        let displayClass = 'block-unit ore-aura';
+        let displayColor = ore.color;
+        
+        if(selectedBuffId) {
+            let bDef = BUFF_LIST.find(b => b.id === selectedBuffId);
+            displayVal = ore.p * bDef.mult;
+            displayClass += ` buff-${bDef.id}`;
+        }
+        
+        rightPage.innerHTML = `
+            <div style="display:flex; justify-content:center; margin-bottom:15px; padding:10px;">
+                <div style="position:relative; width:70px; height:70px; font-size:35px;">
+                    <div class="${displayClass}" style="background:${displayColor}; --aura-color:${displayColor}; position:absolute; width:100%; height:100%; border-radius:8px;">${ore.icon}</div>
+                </div>
+            </div>
+            <h2 style="color:${ore.color}; text-align:center; margin:0 0 10px 0; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">${ore.name}</h2>
+            <table class="ore-info-table">
+                <tr><th>レア度</th><td>${ore.rarity}</td></tr>
+                <tr><th>出現確率</th><td>${prob}</td></tr>
+                <tr><th>価値(P)</th><td>${displayVal} P</td></tr>
+                <tr><th>所持数</th><td>${oreCollection[ore.id]||0} 個</td></tr>
+            </table>
+            <p style="font-size:0.85rem; color:#8d6e63; margin-top:10px;">${ore.desc}</p>
+            <h4 style="margin-top:10px; border-bottom:1px solid #d7ccc8; padding-bottom:5px;">バフ図鑑</h4>
+            ${buffUI}
+        `;
+    }
+};
+
+window.selectBuff = (buffId) => {
+    selectedBuffId = buffId;
+    window.renderEncyclopedia();
+};
+
+// --- Global Leaderboard Rendering (Local Real Players) ---
+window.showLeaderboard = () => {
+    document.getElementById('lbOverlay').classList.add('active');
+    window.renderLbTabs();
+    window.renderLbContent();
+};
+
+window.renderLbTabs = () => {
+    const tabsContainer = document.getElementById('lbTabs'); tabsContainer.innerHTML='';
+    const modes = [ {k:'classic', n:'クラシック'}, {k:'time', n:'タイム'}, {k:'bomb', n:'ボム'}, {k:'diamond_level', n:'ダイヤ目標'}, {k:'diamond_attack', n:'ダイヤATK'}, {k:'ore_collection', n:'収集'} ];
+    modes.forEach(m => {
+        let t = document.createElement('div'); t.className = `lb-tab ${m.k===currentLbMode?'active':''}`;
+        t.innerText = m.n;
+        t.onclick = () => { currentLbMode = m.k; window.renderLbTabs(); window.renderLbContent(); };
+        tabsContainer.appendChild(t);
+    });
+};
+
+window.renderLbContent = () => {
+    const content = document.getElementById('lbContent'); content.innerHTML = '';
+    
+    // ローカルに保存された全プレイヤーのデータを集計してランキング化
+    let list = [];
+    for (let pName in allSaves) {
+        let pData = allSaves[pName];
+        let score = pData.leaderboards[currentLbMode];
+        if (score === undefined) score = (currentLbMode === 'diamond_level' ? 1 : 0);
+        
+        // スコアが初期値のまま（未プレイ）の人はランキングから除外
+        if (currentLbMode === 'diamond_level') {
+            if (score <= 1 && Object.keys(pData.oreCollection || {}).length === 0) continue; 
+        } else {
+            if (score <= 0) continue;
+        }
+
+        let ores = null;
+        if (currentLbMode === 'ore_collection' && pData.oreCollection && Object.keys(pData.oreCollection).length > 0) {
+            ores = pData.oreCollection;
+        }
+        
+        list.push({
+            name: pName,
+            score: score,
+            isMe: (pName === playerName),
+            ores: ores
+        });
+    }
+    
+    list.sort((a,b) => b.score - a.score);
+    
+    if (list.length === 0) {
+        content.innerHTML = '<div style="text-align:center; padding: 30px; font-weight:bold;">まだ誰もプレイしていません。<br>一番乗りで記録を残そう！</div>';
+        return;
+    }
+    
+    list.forEach((entry, idx) => {
+        let row = document.createElement('div'); row.className = `lb-row ${entry.isMe?'is-me':''}`;
+        
+        let oreHtml = '';
+        if (currentLbMode === 'ore_collection' && entry.ores) {
+            oreHtml = '<div class="lb-ores-list">';
+            let sortedOres = Object.keys(entry.ores).sort((a,b) => ORE_DEFS[a].weight - ORE_DEFS[b].weight);
+            sortedOres.forEach(oreId => {
+                let oreDef = ORE_DEFS[oreId];
+                if (oreDef) oreHtml += `<span class="lb-ore-badge" title="${oreDef.name}: ${entry.ores[oreId]}">${oreDef.icon}<small>${entry.ores[oreId]}</small></span>`;
+            });
+            oreHtml += '</div>';
+        }
+
+        row.innerHTML = `
+            <div class="lb-rank">${idx+1}</div>
+            <div class="lb-info">
+                <div class="lb-name-score">
+                    <span class="lb-name">${entry.name || 'ANONYMOUS'}</span>
+                    <span class="lb-score">${entry.score}</span>
+                </div>
+                ${oreHtml}
+            </div>
+        `;
+        content.appendChild(row);
+    });
+};
+</script>
+</body>
+</html>

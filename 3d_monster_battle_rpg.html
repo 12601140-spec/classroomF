@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D Monster Battle RPG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* 全体のスクロールを無効化し、中央に配置する */
+        body { 
+            margin: 0; 
+            background-color: #111; 
+            color: white; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            user-select: none; 
+            touch-action: none; /* スマホでの誤スクロール防止 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ゲーム画面のコンテナ（最大幅を決めて中央に寄せる） */
+        #game-container { 
+            width: 100%; 
+            height: 100%; 
+            max-width: 1024px; /* タブレットサイズを上限に */
+            position: relative; 
+            background-color: #000; 
+            overflow: hidden; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        /* UI Layers */
+        .layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        .pointer-events-auto { pointer-events: auto; }
+        .hidden { display: none !important; }
+        
+        /* Field UI */
+        #field-hud { padding: 5%; display: flex; justify-content: space-between; align-items: flex-start; }
+        .hud-panel { background: rgba(26, 32, 44, 0.85); padding: 10px 16px; border-radius: 8px; border: 2px solid #718096; box-shadow: 0 4px 6px rgba(0,0,0,0.5); pointer-events: auto; }
+        
+        /* Battle UI */
+        #battle-ui { flex-direction: column; justify-content: flex-end; background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.8) 100%); }
+        .status-panel { position: absolute; background: rgba(26, 32, 44, 0.9); padding: 10px 16px; border-radius: 8px; border: 2px solid #718096; width: 45%; max-width: 260px; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
+        #enemy-status { top: 5%; left: 5%; }
+        #player-status { bottom: 38%; right: 5%; }
+        .hp-bar-bg { background-color: #4a5568; border-radius: 9999px; overflow: hidden; height: 12px; width: 100%; border: 2px solid #1a202c; }
+        .hp-bar-fill { background-color: #48bb78; height: 100%; transition: width 0.3s ease; }
+        .exp-bar-bg { background-color: #2d3748; height: 4px; width: 100%; margin-top: 4px; border-radius: 2px; }
+        .exp-bar-fill { background-color: #4299e1; height: 100%; transition: width 0.3s ease; }
+        
+        #battle-bottom { height: 35%; background: #2d3748; border-top: 4px solid #4a5568; display: flex; flex-direction: column; pointer-events: auto; }
+        #message-box { flex: 0 0 35%; padding: 12px 16px; font-size: 1.1rem; border-bottom: 2px solid #4a5568; overflow-y: auto; text-shadow: 1px 1px 0px #000; }
+        #command-box { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; overflow-y: auto; }
+        
+        /* Buttons */
+        .btn { background: #4a5568; border: 2px solid #718096; border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.1s; font-weight: bold; }
+        .btn:hover { background: #718096; }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* Menus */
+        .menu-overlay { background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; }
+        .menu-window { background: #2d3748; border: 4px solid #4a5568; border-radius: 12px; width: 95%; max-width: 700px; max-height: 85%; overflow-y: auto; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.8); touch-action: auto; /* メニュー内はスクロール許可 */ }
+        
+        /* Util */
+        .type-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-right: 4px; color: white; text-shadow: 1px 1px 1px rgba(0,0,0,0.5); }
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(4px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-8px, 0, 0); } 40%, 60% { transform: translate3d(8px, 0, 0); } }
+        
+        /* Joystick/Controls for Mobile/Desktop */
+        #controls { position: absolute; bottom: 5%; left: 5%; pointer-events: auto; display: grid; grid-template-columns: 60px 60px 60px; grid-template-rows: 60px 60px; gap: 5px; opacity: 0.8; }
+        .ctrl-btn { background: rgba(255,255,255,0.3); border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; font-size: 24px; display: flex; justify-content: center; align-items: center; font-weight: bold; user-select: none; }
+        .ctrl-btn:active { background: rgba(255,255,255,0.6); }
+
+        .hint-text { position: absolute; bottom: 5%; right: 5%; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px; font-size: 0.9rem; pointer-events: auto; }
+
+        /* Save indicator */
+        #save-indicator { position: absolute; top: 5%; left: 50%; transform: translateX(-50%); background: rgba(72, 187, 120, 0.9); padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; pointer-events: none; opacity: 0; transition: opacity 0.5s; z-index: 100; box-shadow: 0 0 10px rgba(72,187,120,0.5); }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="canvas-container"></div>
+    
+    <div id="save-indicator">📝 レポートに きろくした！</div>
+
+    <!-- FIELD HUD -->
+    <div id="field-ui" class="layer hidden pointer-events-none flex flex-col justify-between">
+        <div id="field-hud">
+            <div class="hud-panel">
+                <div class="font-bold text-xl mb-1 text-yellow-400">💰 <span id="money-display">0</span> 円</div>
+                <div class="text-sm" id="area-display">エリア: 草原</div>
+            </div>
+            <button onclick="openMenu('MAIN')" class="btn pointer-events-auto shadow-lg border-2 border-white">メニューを開く</button>
+        </div>
+        
+        <!-- Virtual Controls -->
+        <div id="controls">
+            <div></div>
+            <div class="ctrl-btn" onmousedown="k.w=true" onmouseup="k.w=false" onmouseleave="k.w=false" ontouchstart="k.w=true; event.preventDefault();" ontouchend="k.w=false" ontouchcancel="k.w=false">↑</div>
+            <div></div>
+            <div class="ctrl-btn" onmousedown="k.a=true" onmouseup="k.a=false" onmouseleave="k.a=false" ontouchstart="k.a=true; event.preventDefault();" ontouchend="k.a=false" ontouchcancel="k.a=false">←</div>
+            <div class="ctrl-btn" onmousedown="k.s=true" onmouseup="k.s=false" onmouseleave="k.s=false" ontouchstart="k.s=true; event.preventDefault();" ontouchend="k.s=false" ontouchcancel="k.s=false">↓</div>
+            <div class="ctrl-btn" onmousedown="k.d=true" onmouseup="k.d=false" onmouseleave="k.d=false" ontouchstart="k.d=true; event.preventDefault();" ontouchend="k.d=false" ontouchcancel="k.d=false">→</div>
+        </div>
+        <div class="hint-text pointer-events-none text-center">
+            WASDまたは矢印キー<br>画面の十字キーで移動
+        </div>
+    </div>
+
+    <!-- ポケモンセンターメッセージ -->
+    <div id="field-msg" class="absolute top-1/3 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-80 border-4 border-red-500 text-white p-4 md:p-6 rounded-xl hidden z-50 text-xl md:text-2xl font-bold whitespace-nowrap shadow-2xl text-center leading-relaxed w-11/12 max-w-sm"></div>
+
+    <!-- BATTLE UI -->
+    <div id="battle-ui" class="layer hidden flex">
+        <div id="enemy-status" class="status-panel">
+            <div class="flex justify-between items-end mb-1">
+                <span id="enemy-name" class="font-bold text-base md:text-lg">Enemy</span>
+                <span id="enemy-lv" class="text-xs md:text-sm font-bold text-yellow-400">Lv.50</span>
+            </div>
+            <div id="enemy-types" class="mb-2"></div>
+            <div class="hp-bar-bg"><div id="enemy-hp-bar" class="hp-bar-fill"></div></div>
+        </div>
+        <div id="player-status" class="status-panel">
+            <div class="flex justify-between items-end mb-1">
+                <span id="player-name" class="font-bold text-base md:text-lg">Player</span>
+                <span id="player-lv" class="text-xs md:text-sm font-bold text-yellow-400">Lv.50</span>
+            </div>
+            <div id="player-types" class="mb-2"></div>
+            <div class="hp-bar-bg"><div id="player-hp-bar" class="hp-bar-fill"></div></div>
+            <div class="text-right text-xs md:text-sm mt-1" id="player-hp-text">100/100</div>
+            <div class="exp-bar-bg"><div id="player-exp-bar" class="exp-bar-fill"></div></div>
+        </div>
+        <div id="battle-bottom">
+            <div id="message-box"></div>
+            <div id="command-box"></div>
+        </div>
+    </div>
+
+    <!-- MENU OVERLAYS -->
+    <div id="menu-overlay" class="layer hidden menu-overlay">
+        <div id="menu-content" class="menu-window">
+            <!-- Dynamically populated -->
+        </div>
+    </div>
+
+    <!-- START SCREEN -->
+    <div id="start-overlay" class="layer menu-overlay" style="z-index: 100; background: #000;">
+        <h1 class="text-4xl md:text-6xl font-black mb-8 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)] text-center tracking-widest leading-tight">3D MONSTER<br>BATTLE RPG</h1>
+        <p class="mb-8 text-base md:text-xl text-center text-gray-300">広大な4つの世界。全50種。最強のミュウツーを倒せ！</p>
+        <button id="btn-continue" onclick="startGame(true)" class="hidden bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 md:py-4 md:px-12 rounded-full text-xl md:text-2xl transition transform hover:scale-105 border-4 border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.8)] mb-4">
+            つづきから
+        </button>
+        <button onclick="startGame(false)" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 md:py-4 md:px-12 rounded-full text-xl md:text-2xl transition transform hover:scale-105 border-4 border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.8)]">
+            はじめから
+        </button>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// ==========================================
+// DATA DEFINITIONS (Optimized)
+// ==========================================
+const TYPES = ['ノーマル','炎','水','草','電','氷','闘','毒','地','飛','超','虫','岩','霊','竜','悪','鋼','妖'];
+const T_COL = ['#A8A878','#F08030','#6890F0','#78C850','#F8D030','#98D8D8','#C03028','#A040A0','#E0C068','#A890F0','#F85888','#A8B820','#B8A038','#705898','#7038F8','#705848','#B8B8D0','#EE99AC'];
+const T_CHART = [
+    [2,2,2,2,2,2,2,2,2,2,2,2,1,0,2,2,1,2],[2,1,1,3,2,3,2,2,2,2,2,3,1,2,1,2,3,2],[2,3,1,1,2,2,2,2,3,2,2,2,3,2,1,2,2,2],[2,1,3,1,2,2,2,1,3,1,2,1,3,2,1,2,1,2],[2,2,2,1,1,2,2,2,0,3,2,2,2,2,1,2,2,2],[2,1,1,3,2,1,2,2,3,3,2,2,2,2,3,2,1,2],[3,2,2,2,2,3,2,1,2,1,1,1,3,0,2,3,3,1],[2,2,2,3,2,2,2,1,1,2,2,2,1,1,2,2,0,3],[2,3,2,1,3,2,2,3,2,0,2,1,3,2,2,2,3,2],[2,2,2,3,1,2,3,2,2,2,2,3,1,2,2,2,1,2],[2,2,2,2,2,2,3,3,2,2,1,2,2,2,2,0,1,2],[2,1,2,3,2,2,1,1,2,1,3,2,2,1,2,3,1,1],[2,3,2,2,2,3,1,2,1,3,2,3,2,2,2,2,1,2],[0,2,2,2,2,2,2,2,2,2,3,2,2,3,2,1,2,2],[2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,2,1,0],[2,2,2,2,2,2,1,2,2,2,3,2,2,3,2,1,2,1],[2,1,1,2,1,3,2,2,2,2,2,2,3,2,2,2,1,3],[2,1,2,2,2,2,3,1,2,2,2,2,2,2,3,3,1,2]
+];
+
+const SKILLS = [
+    {id:0,n:"たいあたり",t:0,c:0,p:40,a:100},{id:1,n:"ひっかく",t:0,c:0,p:40,a:100},{id:2,n:"はたく",t:0,c:0,p:40,a:100},{id:3,n:"すてみタックル",t:0,c:0,p:120,a:100},{id:4,n:"はかいこうせん",t:0,c:1,p:150,a:90},
+    {id:5,n:"ひのこ",t:1,c:1,p:40,a:100},{id:6,n:"かえんほうしゃ",t:1,c:1,p:90,a:100},{id:7,n:"だいもんじ",t:1,c:1,p:110,a:85},{id:8,n:"フレアドライブ",t:1,c:0,p:120,a:100},{id:9,n:"ほのおのパンチ",t:1,c:0,p:75,a:100},
+    {id:10,n:"みずでっぽう",t:2,c:1,p:40,a:100},{id:11,n:"なみのり",t:2,c:1,p:90,a:100},{id:12,n:"ハイドロポンプ",t:2,c:1,p:110,a:80},{id:13,n:"たきのぼり",t:2,c:0,p:80,a:100},{id:14,n:"アクアジェット",t:2,c:0,p:40,a:100},
+    {id:15,n:"つるのムチ",t:3,c:0,p:45,a:100},{id:16,n:"はっぱカッター",t:3,c:0,p:55,a:95},{id:17,n:"エナジーボール",t:3,c:1,p:90,a:100},{id:18,n:"リーフストーム",t:3,c:1,p:130,a:90},{id:19,n:"ソーラービーム",t:3,c:1,p:120,a:100},
+    {id:20,n:"でんきショック",t:4,c:1,p:40,a:100},{id:21,n:"10まんボルト",t:4,c:1,p:90,a:100},{id:22,n:"かみなり",t:4,c:1,p:110,a:70},{id:23,n:"スパーク",t:4,c:0,p:65,a:100},{id:24,n:"ワイルドボルト",t:4,c:0,p:90,a:100},
+    {id:25,n:"こなゆき",t:5,c:1,p:40,a:100},{id:26,n:"れいとうビーム",t:5,c:1,p:90,a:100},{id:27,n:"ふぶき",t:5,c:1,p:110,a:70},{id:28,n:"れいとうパンチ",t:5,c:0,p:75,a:100},{id:29,n:"つららおとし",t:5,c:0,p:85,a:90},
+    {id:30,n:"かわらわり",t:6,c:0,p:75,a:100},{id:31,n:"インファイト",t:6,c:0,p:120,a:100},{id:32,n:"ばかぢから",t:6,c:0,p:120,a:100},{id:33,n:"はどうだん",t:6,c:1,p:80,a:100},{id:34,n:"きあいだま",t:6,c:1,p:120,a:70},
+    {id:35,n:"どくばり",t:7,c:0,p:15,a:100},{id:36,n:"ヘドロばくだん",t:7,c:1,p:90,a:100},{id:37,n:"ダストシュート",t:7,c:0,p:120,a:80},{id:38,n:"クロスポイズン",t:7,c:0,p:70,a:100},{id:39,n:"クリアスモッグ",t:7,c:1,p:50,a:100},
+    {id:40,n:"どろかけ",t:8,c:1,p:20,a:100},{id:41,n:"じしん",t:8,c:0,p:100,a:100},{id:42,n:"だいちのちから",t:8,c:1,p:90,a:100},{id:43,n:"ドリルライナー",t:8,c:0,p:80,a:95},{id:44,n:"じならし",t:8,c:0,p:60,a:100},
+    {id:45,n:"つつく",t:9,c:0,p:35,a:100},{id:46,n:"つばめがえし",t:9,c:0,p:60,a:100},{id:47,n:"ブレイブバード",t:9,c:0,p:120,a:100},{id:48,n:"エアスラッシュ",t:9,c:1,p:75,a:95},{id:49,n:"ぼうふう",t:9,c:1,p:110,a:70},
+    {id:50,n:"ねんりき",t:10,c:1,p:50,a:100},{id:51,n:"サイコキネシス",t:10,c:1,p:90,a:100},{id:52,n:"サイコショック",t:10,c:1,p:80,a:100},{id:53,n:"しねんのずつき",t:10,c:0,p:80,a:90},{id:54,n:"じんつうりき",t:10,c:1,p:80,a:100},
+    {id:55,n:"むしくい",t:11,c:0,p:60,a:100},{id:56,n:"シザークロス",t:11,c:0,p:80,a:100},{id:57,n:"メガホーン",t:11,c:0,p:120,a:85},{id:58,n:"むしのさざめき",t:11,c:1,p:90,a:100},{id:59,n:"とんぼがえり",t:11,c:0,p:70,a:100},
+    {id:60,n:"いわおとし",t:12,c:0,p:50,a:90},{id:61,n:"いわなだれ",t:12,c:0,p:75,a:90},{id:62,n:"ストーンエッジ",t:12,c:0,p:100,a:80},{id:63,n:"パワージェム",t:12,c:1,p:80,a:100},{id:64,n:"がんせきふうじ",t:12,c:0,p:60,a:95},
+    {id:65,n:"したでなめる",t:13,c:0,p:30,a:100},{id:66,n:"シャドーボール",t:13,c:1,p:80,a:100},{id:67,n:"シャドークロー",t:13,c:0,p:70,a:100},{id:68,n:"ゴーストダイブ",t:13,c:0,p:90,a:100},{id:69,n:"たたりめ",t:13,c:1,p:65,a:100},
+    {id:70,n:"りゅうのいかり",t:14,c:1,p:40,a:100},{id:71,n:"ドラゴンクロー",t:14,c:0,p:80,a:100},{id:72,n:"りゅうのはどう",t:14,c:1,p:85,a:100},{id:73,n:"げきりん",t:14,c:0,p:120,a:100},{id:74,n:"りゅうせいぐん",t:14,c:1,p:130,a:90},
+    {id:75,n:"かみつく",t:15,c:0,p:60,a:100},{id:76,n:"あくのはどう",t:15,c:1,p:80,a:100},{id:77,n:"アイアンテール",t:16,c:0,p:100,a:75},{id:78,n:"ラスターカノン",t:16,c:1,p:80,a:100},{id:79,n:"ムーンフォース",t:17,c:1,p:95,a:100}
+];
+
+const MONSTERS = [
+    {id:0, n:"フシギダネダ", t1:3, t2:7, s:[45,49,49,65,65,45], k:[0,15,16,36], a:[0], v:{g:1, c:0x44aa88, scl:[1.2,1,1.2], p:2}},
+    {id:1, n:"リザードンン", t1:1, t2:9, s:[78,84,78,109,85,100], k:[1,6,8,48], a:[1], v:{g:2, c:0xff6600, scl:[1.5,1.8,1.5], p:4}},
+    {id:2, n:"カメックスス", t1:2, t2:-1, s:[79,83,100,85,105,78], k:[0,11,12,26], a:[3], v:{g:4, c:0x3388ff, scl:[1.4,1.2,1.4], p:3}},
+    {id:3, n:"ピカチュウウ", t1:4, t2:-1, s:[35,55,40,50,50,90], k:[0,20,21,23], a:[0], v:{g:1, c:0xffdd00, scl:[0.8,0.9,0.8], p:2}},
+    {id:4, n:"ピジョットト", t1:0, t2:9, s:[83,80,75,70,70,101], k:[0,46,47,49], a:[0], v:{g:5, c:0xddaa77, scl:[1.2,1.4,1], p:3}},
+    {id:5, n:"ゲンガーア", t1:13, t2:7, s:[60,65,60,130,75,110], k:[65,66,36,39], a:[0,1], v:{g:1, c:0x6644aa, scl:[1.3,1.3,1.3], p:5}},
+    {id:6, n:"カイリキーー", t1:6, t2:-1, s:[90,130,80,65,85,55], k:[30,31,32,41], a:[1], v:{g:0, c:0xaaccdd, scl:[1.2,1.8,1.2], p:6}},
+    {id:7, n:"フーディンン", t1:10, t2:-1, s:[55,50,45,135,95,120], k:[50,51,52,66], a:[0], v:{g:2, c:0xffcc33, scl:[1,1.7,1], p:2}},
+    {id:8, n:"ギャラドスス", t1:2, t2:9, s:[95,125,79,60,100,81], k:[75,13,11,73], a:[3], v:{g:4, c:0x3366dd, scl:[1,2.5,1], p:8}},
+    {id:9, n:"カビゴンン", t1:0, t2:-1, s:[160,110,65,65,110,30], k:[3,41,8,73], a:[0], v:{g:1, c:0x225544, scl:[2,1.8,2], p:2}},
+    {id:10, n:"カイリューー", t1:14, t2:9, s:[91,134,95,100,100,80], k:[71,74,48,22], a:[3], v:{g:1, c:0xffaa33, scl:[1.5,1.6,1.5], p:4}},
+    {id:11, n:"ミュウツーー", t1:10, t2:-1, s:[106,110,90,154,90,130], k:[51,52,34,26], a:[4], v:{g:4, c:0xddccff, scl:[1.5,2.2,1.5], p:3}}, // ボス
+    {id:12, n:"バンギラスス", t1:12, t2:15, s:[100,134,110,95,100,61], k:[61,62,76,41], a:[1], v:{g:0, c:0x558855, scl:[1.6,1.7,1.6], p:5}},
+    {id:13, n:"メタグロスス", t1:16, t2:10, s:[80,135,130,95,90,70], k:[78,51,41,31], a:[2], v:{g:3, c:0x55aacc, scl:[1.8,1,1.8], p:4}},
+    {id:14, n:"ボーマンダダ", t1:14, t2:9, s:[95,135,80,110,80,100], k:[71,74,48,6], a:[1], v:{g:4, c:0x4466cc, scl:[1.5,1.3,1.8], p:4}},
+    {id:15, n:"ガブリアスス", t1:14, t2:8, s:[108,130,95,80,85,102], k:[73,41,62,8], a:[1], v:{g:2, c:0x334488, scl:[1.4,1.8,1.4], p:5}},
+    {id:16, n:"ルカリオー", t1:6, t2:16, s:[70,110,70,115,70,90], k:[31,33,78,41], a:[2], v:{g:4, c:0x2266aa, scl:[1.2,1.6,1.2], p:3}},
+    {id:17, n:"サザンドララ", t1:15, t2:14, s:[92,105,90,125,90,98], k:[76,74,6,12], a:[1], v:{g:1, c:0x333366, scl:[1.4,1.5,1.4], p:6}},
+    {id:18, n:"ウルガモスス", t1:11, t2:1, s:[85,60,65,135,105,100], k:[58,7,19,51], a:[1], v:{g:3, c:0xdd4422, scl:[1.6,1.2,1.6], p:6}},
+    {id:19, n:"ゲッコウガガ", t1:2, t2:15, s:[72,95,67,103,71,122], k:[11,76,26,14], a:[3], v:{g:4, c:0x224499, scl:[1.1,1.5,1.1], p:3}},
+    {id:20, n:"ギルガルドド", t1:16, t2:13, s:[60,50,150,50,150,60], k:[78,66,31,67], a:[2], v:{g:2, c:0xaa9944, scl:[1,2,0.5], p:2}},
+    {id:21, n:"ニンフィアア", t1:17, t2:-1, s:[95,65,65,110,130,60], k:[79,66,51,14], a:[0], v:{g:1, c:0xffbbee, scl:[1.2,1.3,1.2], p:4}},
+    {id:22, n:"ミミッキュュ", t1:13, t2:17, s:[55,90,80,50,105,96], k:[67,79,56,68], a:[0], v:{g:1, c:0xddcc99, scl:[0.9,1.1,0.9], p:2}},
+    {id:23, n:"ドラパルトト", t1:14, t2:13, s:[88,120,75,100,75,142], k:[74,66,71,68], a:[3], v:{g:2, c:0x44aa88, scl:[1.6,1.2,1.6], p:4}},
+    {id:24, n:"マニューララ", t1:15, t2:5, s:[70,120,65,45,85,125], k:[75,29,30,56], a:[2], v:{g:4, c:0x443344, scl:[1.1,1.5,1.1], p:3}},
+    {id:25, n:"ポリゴンＺＺ", t1:0, t2:-1, s:[85,80,70,135,75,90], k:[4,21,26,66], a:[2], v:{g:5, c:0xdd5566, scl:[1.2,1.2,1.2], p:2}},
+    {id:26, n:"サーナイトト", t1:10, t2:17, s:[68,65,65,125,115,80], k:[51,79,34,21], a:[0], v:{g:4, c:0xffffff, scl:[1.1,1.7,1.1], p:3}},
+    {id:27, n:"シャンデララ", t1:13, t2:1, s:[60,55,90,145,90,80], k:[66,7,17,51], a:[1], v:{g:3, c:0x5533aa, scl:[1.3,1.5,1.3], p:5}},
+    {id:28, n:"オノノクスス", t1:14, t2:-1, s:[76,147,90,60,70,97], k:[73,41,38,62], a:[1], v:{g:0, c:0x889922, scl:[1.3,1.6,1.3], p:4}},
+    {id:29, n:"マリルリリ", t1:2, t2:17, s:[100,50,80,60,80,50], k:[11,79,14,26], a:[3], v:{g:1, c:0x5588ff, scl:[1.1,1.1,1.1], p:2}},
+    {id:30, n:"ラグラージジ", t1:2, t2:8, s:[100,110,90,85,90,60], k:[11,41,28,31], a:[1,3], v:{g:4, c:0x3355cc, scl:[1.4,1.4,1.4], p:4}},
+    {id:31, n:"ヒードランン", t1:1, t2:16, s:[91,90,106,130,106,77], k:[6,78,42,19], a:[1], v:{g:0, c:0x773322, scl:[1.5,1.2,1.5], p:4}},
+    {id:32, n:"クレセリアア", t1:10, t2:-1, s:[120,70,120,75,130,85], k:[51,26,79,66], a:[0], v:{g:3, c:0xdd99bb, scl:[1.4,1.4,1.4], p:2}},
+    {id:33, n:"サンダーー", t1:4, t2:9, s:[90,90,85,125,90,100], k:[21,49,12,6], a:[2], v:{g:2, c:0xffcc00, scl:[1.5,1.5,1.5], p:5}},
+    {id:34, n:"スイクンン", t1:2, t2:-1, s:[100,75,115,90,115,85], k:[11,26,76,51], a:[2,3], v:{g:4, c:0x88aacc, scl:[1.4,1.6,1.4], p:4}},
+    {id:35, n:"ライコウウ", t1:4, t2:-1, s:[90,85,75,115,100,115], k:[21,66,54,34], a:[0], v:{g:4, c:0xddaa22, scl:[1.4,1.6,1.4], p:4}},
+    {id:36, n:"エンテイイ", t1:1, t2:-1, s:[115,115,85,90,75,100], k:[8,62,41,77], a:[1], v:{g:4, c:0xaa4422, scl:[1.4,1.6,1.4], p:4}},
+    {id:37, n:"ラティオスス", t1:14, t2:10, s:[80,90,80,130,110,110], k:[74,51,11,26], a:[3], v:{g:2, c:0x3366cc, scl:[1.3,1.2,1.5], p:3}},
+    {id:38, n:"ランドロスス", t1:8, t2:9, s:[89,145,90,105,80,91], k:[41,62,59,48], a:[1], v:{g:1, c:0xdd8844, scl:[1.3,1.4,1.3], p:4}},
+    {id:39, n:"カプ・コケコ", t1:4, t2:17, s:[70,115,85,95,75,130], k:[24,79,59,47], a:[2], v:{g:5, c:0xffcc22, scl:[1.2,1.5,1.2], p:5}},
+    {id:40, n:"ニドキンググ", t1:7, t2:8, s:[81,102,77,85,75,85], k:[36,41,7,57], a:[1], v:{g:2, c:0x9933cc, scl:[1.5,1.5,1.5], p:5}},
+    {id:41, n:"ニドクインン", t1:7, t2:8, s:[90,92,87,75,85,76], k:[36,42,26,32], a:[0], v:{g:2, c:0x3366cc, scl:[1.4,1.4,1.4], p:3}},
+    {id:42, n:"ラプラスス", t1:2, t2:5, s:[130,85,80,85,95,60], k:[11,26,21,51], a:[2,3], v:{g:1, c:0x3399ff, scl:[1.8,1.2,1.8], p:4}},
+    {id:43, n:"ハッサムム", t1:11, t2:16, s:[70,130,100,55,80,65], k:[56,78,30,46], a:[0,2], v:{g:4, c:0xcc3333, scl:[1.2,1.5,1.2], p:6}},
+    {id:44, n:"エアームドド", t1:16, t2:9, s:[65,80,140,40,70,70], k:[78,47,61,75], a:[1], v:{g:5, c:0xaaaaaa, scl:[1.3,1.3,1.3], p:4}},
+    {id:45, n:"ドータクンン", t1:16, t2:10, s:[67,89,116,79,116,33], k:[78,51,41,66], a:[2], v:{g:4, c:0x33aaaa, scl:[1.2,1.8,1.2], p:2}},
+    {id:46, n:"マンムーー", t1:5, t2:8, s:[110,130,80,70,60,80], k:[29,41,62,32], a:[2], v:{g:1, c:0x996633, scl:[1.8,1.6,1.8], p:4}},
+    {id:47, n:"ルギアー", t1:10, t2:9, s:[106,90,130,90,154,110], k:[48,51,11,26], a:[3], v:{g:4, c:0xffffff, scl:[1.6,1.8,1.6], p:6}},
+    {id:48, n:"ホウオウウ", t1:1, t2:9, s:[106,130,90,110,154,90], k:[7,47,21,41], a:[0], v:{g:5, c:0xffcc33, scl:[1.6,1.8,1.6], p:6}},
+    {id:49, n:"レックウザザ", t1:14, t2:9, s:[105,150,90,150,90,95], k:[73,49,6,41], a:[1], v:{g:3, c:0x33cc66, scl:[1.8,2.0,1.8], p:8}}
+];
+
+const BALLS = [
+    {id:0, n:"モンスターボール", p:200, d:"普通のボール。捕まえやすさ 1.0倍"},
+    {id:1, n:"スーパーボール", p:600, d:"少し捕まえやすい。1.5倍"},
+    {id:2, n:"ハイパーボール", p:1200, d:"結構捕まえやすい。2.0倍"},
+    {id:3, n:"マスターボール", p:100000, d:"必ず捕まえられる伝説のボール。"},
+    {id:4, n:"クイックボール", p:1000, d:"1ターン目なら捕獲率5倍。"},
+    {id:5, n:"タイマーボール", p:1000, d:"ターン経過で最大4倍。"},
+    {id:6, n:"ダークボール", p:1000, d:"相手のレベルが自分より高いと3倍。"},
+    {id:7, n:"ネストボール", p:1000, d:"相手のレベルが低いほど捕獲率UP。"},
+    {id:8, n:"ダイブボール", p:1000, d:"水・氷タイプ、または湖で3.5倍。"},
+    {id:9, n:"ネットボール", p:1000, d:"虫・水タイプに3.5倍。"}
+];
+
+const AREAS = [
+    {id:0, n:"草原", c:0x4ade80, lvMin:5, lvMax:15},
+    {id:1, n:"砂漠", c:0xfcd34d, lvMin:15, lvMax:30},
+    {id:2, n:"雪原", c:0xe2e8f0, lvMin:30, lvMax:45},
+    {id:3, n:"湖", c:0x60a5fa, lvMin:25, lvMax:40},
+    {id:4, n:"最深部", c:0x1e1b4b, lvMin:70, lvMax:70}
+];
+
+const TRAINERS = [
+    {x: -40, z: -40, n:"たんぱんこぞう", a:0, d:false, p:[{id:0,lv:10},{id:4,lv:12}]},
+    {x: 40, z: -40, n:"やまおとこ", a:1, d:false, p:[{id:12,lv:25},{id:6,lv:26}]},
+    {x: 40, z: 40, n:"エリートトレーナー", a:2, d:false, p:[{id:24,lv:40},{id:16,lv:42},{id:33,lv:45}]},
+    {x: -40, z: 40, n:"つりびと", a:3, d:false, p:[{id:2,lv:35},{id:8,lv:38}]},
+    {x: 0, z: -20, n:"ライバル", a:0, d:false, p:[{id:1,lv:50},{id:9,lv:50},{id:18,lv:52}]}
+];
+
+// ==========================================
+// GAME STATE & LOGIC
+// ==========================================
+class PokemonInst {
+    constructor(baseId, level) {
+        this.data = MONSTERS[baseId];
+        this.baseId = baseId;
+        this.level = level;
+        this.exp = Math.pow(level, 3);
+        this.calcStats();
+        this.hp = this.maxHp;
+        this.skills = this.data.k.map(id => SKILLS.find(s => s.id === id));
+        this.mesh = null;
+    }
+    calcStats() {
+        const d = this.data.s;
+        const lv = this.level;
+        this.maxHp = Math.floor((d[0] * 2 + 31 + 85) * lv / 100) + lv + 10;
+        this.atk = Math.floor((d[1] * 2 + 31 + 85) * lv / 100) + 5;
+        this.def = Math.floor((d[2] * 2 + 31 + 85) * lv / 100) + 5;
+        this.spa = Math.floor((d[3] * 2 + 31 + 85) * lv / 100) + 5;
+        this.spd = Math.floor((d[4] * 2 + 31 + 85) * lv / 100) + 5;
+        this.spe = Math.floor((d[5] * 2 + 31 + 85) * lv / 100) + 5;
+        this.maxExp = Math.pow(this.level + 1, 3);
+    }
+    addExp(val) {
+        let msgs = [`${this.data.n} は ${val} EXP もらった！`];
+        this.exp += val;
+        while(this.exp >= this.maxExp && this.level < 100) {
+            this.level++;
+            this.calcStats();
+            msgs.push(`${this.data.n} は Lv.${this.level} にあがった！`);
+        }
+        return msgs;
+    }
+}
+
+let state = {
+    mode: 'TITLE', // TITLE, FIELD, BATTLE
+    money: 3000,
+    party: [], // Array of PokemonInst
+    box: [],
+    items: [5, 0, 0, 0, 0, 0, 0, 0, 0, 0], // counts of BALLS
+    pokedex: {}, // id: 1(seen), 2(caught)
+    pos: {x: -60, z: -60},
+    dir: 0,
+    area: 0,
+    bossDefeated: false,
+    inPokeCenter: false,
+    
+    // Battle State
+    b: { type: '', enemyParty: [], pIdx: 0, eIdx: 0, turn: 1, trainer: null, canCatch: false }
+};
+
+let k = {w:false, a:false, s:false, d:false};
+window.onkeydown = e => { if(e.key==='w'||e.key==='ArrowUp') k.w=true; if(e.key==='a'||e.key==='ArrowLeft') k.a=true; if(e.key==='s'||e.key==='ArrowDown') k.s=true; if(e.key==='d'||e.key==='ArrowRight') k.d=true; };
+window.onkeyup = e => { if(e.key==='w'||e.key==='ArrowUp') k.w=false; if(e.key==='a'||e.key==='ArrowLeft') k.a=false; if(e.key==='s'||e.key==='ArrowDown') k.s=false; if(e.key==='d'||e.key==='ArrowRight') k.d=false; };
+
+// ==========================================
+// SAVE & LOAD SYSTEM
+// ==========================================
+window.addEventListener('DOMContentLoaded', () => {
+    if(localStorage.getItem('3d_monster_rpg_save')) {
+        $('btn-continue').classList.remove('hidden');
+    }
+});
+
+function saveGame() {
+    const saveData = {
+        money: state.money,
+        items: state.items,
+        pokedex: state.pokedex,
+        pos: state.pos,
+        area: state.area,
+        bossDefeated: state.bossDefeated,
+        party: state.party.map(p => ({ baseId: p.baseId, level: p.level, exp: p.exp, hp: p.hp })),
+        box: state.box.map(p => ({ baseId: p.baseId, level: p.level, exp: p.exp, hp: p.hp }))
+    };
+    localStorage.setItem('3d_monster_rpg_save', JSON.stringify(saveData));
+    
+    // Show indicator
+    const ind = $('save-indicator');
+    ind.style.opacity = '1';
+    setTimeout(() => { ind.style.opacity = '0'; }, 2000);
+}
+
+function loadGame() {
+    try {
+        const data = localStorage.getItem('3d_monster_rpg_save');
+        if(!data) return false;
+        const d = JSON.parse(data);
+        state.money = d.money || 0;
+        state.items = d.items || [5, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        state.pokedex = d.pokedex || {};
+        state.pos = d.pos || {x: -60, z: -60};
+        state.area = d.area || 0;
+        state.bossDefeated = d.bossDefeated || false;
+        
+        const restoreMon = (p) => {
+            let mon = new PokemonInst(p.baseId, p.level);
+            mon.exp = p.exp;
+            mon.calcStats();
+            mon.hp = p.hp; // HP restored after maxHp calculation
+            return mon;
+        };
+        
+        state.party = (d.party || []).map(restoreMon);
+        state.box = (d.box || []).map(restoreMon);
+        return true;
+    } catch(e) {
+        console.error("Save data parsing error:", e);
+        return false;
+    }
+}
+
+// ==========================================
+// THREE.JS SETUP
+// ==========================================
+let sceneF, sceneB, camera, renderer;
+let playerMesh, tMeshes = [], bossMesh;
+
+function init3D() {
+    const container = $('game-container');
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    $('canvas-container').appendChild(renderer.domElement);
+    
+    camera = new THREE.PerspectiveCamera(60, container.clientWidth/container.clientHeight, 0.1, 1000);
+    
+    // -- Field Scene --
+    sceneF = new THREE.Scene();
+    sceneF.background = new THREE.Color(0x87CEEB);
+    sceneF.fog = new THREE.FogExp2(0x87CEEB, 0.015);
+    sceneF.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dlF = new THREE.DirectionalLight(0xffffff, 0.8);
+    dlF.position.set(50, 100, 50);
+    sceneF.add(dlF);
+
+    // Create 4 Areas (100x100 each)
+    const createPlane = (c, x, z) => {
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshLambertMaterial({color: c}));
+        m.rotation.x = -Math.PI/2; m.position.set(x, 0, z); sceneF.add(m);
+    };
+    createPlane(AREAS[0].c, -50, -50); // 草原
+    createPlane(AREAS[1].c, 50, -50);  // 砂漠
+    createPlane(AREAS[2].c, 50, 50);   // 雪原
+    createPlane(AREAS[3].c, -50, 50);  // 湖
+
+    // Boss Area (Center)
+    const bossArea = new THREE.Mesh(new THREE.CylinderGeometry(15, 15, 0.2, 32), new THREE.MeshLambertMaterial({color: AREAS[4].c}));
+    bossArea.position.y = 0.1;
+    sceneF.add(bossArea);
+    
+    // Pokemon Center
+    const pcGrp = new THREE.Group();
+    pcGrp.position.set(-60, 0, -60);
+    const pcGeo = new THREE.BoxGeometry(8, 5, 8);
+    const pcMat = new THREE.MeshLambertMaterial({color: 0xff5555});
+    const pcBody = new THREE.Mesh(pcGeo, pcMat);
+    pcBody.position.y = 2.5;
+    pcGrp.add(pcBody);
+    const roofGeo = new THREE.ConeGeometry(7, 3, 4);
+    const roofMat = new THREE.MeshLambertMaterial({color: 0xff0000});
+    const roof = new THREE.Mesh(roofGeo, roofMat);
+    roof.position.y = 6.5;
+    roof.rotation.y = Math.PI / 4;
+    pcGrp.add(roof);
+    const signGeo = new THREE.BoxGeometry(4, 2, 0.5);
+    const signMat = new THREE.MeshLambertMaterial({color: 0xffffff});
+    const sign = new THREE.Mesh(signGeo, signMat);
+    sign.position.set(0, 3, 4.1);
+    pcGrp.add(sign);
+    const cross1 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 0.6), new THREE.MeshBasicMaterial({color: 0xff0000}));
+    const cross2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.5, 0.6), new THREE.MeshBasicMaterial({color: 0xff0000}));
+    cross1.position.set(0, 3, 4.1);
+    cross2.position.set(0, 3, 4.1);
+    pcGrp.add(cross1);
+    pcGrp.add(cross2);
+    sceneF.add(pcGrp);
+
+    // Player
+    playerMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshLambertMaterial({color: 0xff0000}));
+    playerMesh.position.y = 1;
+    sceneF.add(playerMesh);
+
+    // Trainers
+    TRAINERS.forEach((t, i) => {
+        const m = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 3, 16), new THREE.MeshLambertMaterial({color: 0x0000ff}));
+        m.position.set(t.x, 1.5, t.z);
+        m.userData = { id: i };
+        sceneF.add(m);
+        tMeshes.push(m);
+    });
+
+    // Boss (Mewtwo)
+    bossMesh = createMonMesh(MONSTERS[11].v);
+    bossMesh.position.set(0, 0, 0);
+    sceneF.add(bossMesh);
+
+    // -- Battle Scene --
+    sceneB = new THREE.Scene();
+    sceneB.background = new THREE.Color(0x1a202c);
+    sceneB.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const dlB = new THREE.DirectionalLight(0xffffff, 0.8);
+    dlB.position.set(10, 20, 10);
+    sceneB.add(dlB);
+    
+    const bGround = new THREE.Mesh(new THREE.CylinderGeometry(15, 15, 1, 32), new THREE.MeshLambertMaterial({color: 0x2d3748}));
+    bGround.position.y = -0.5;
+    sceneB.add(bGround);
+
+    window.addEventListener('resize', () => {
+        const container = $('game-container');
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    animateLoop();
+}
+
+function createMonMesh(v) {
+    const grp = new THREE.Group();
+    const mat = new THREE.MeshPhongMaterial({color: v.c, shininess:30});
+    let geo;
+    switch(v.g) {
+        case 0: geo = new THREE.BoxGeometry(1.5,1.5,1.5); break;
+        case 1: geo = new THREE.SphereGeometry(1,32,32); break;
+        case 2: geo = new THREE.ConeGeometry(1,2,32); break;
+        case 3: geo = new THREE.TorusGeometry(0.8,0.3,16,50); break;
+        case 4: geo = new THREE.CylinderGeometry(0.8,0.8,2,32); break;
+        case 5: geo = new THREE.IcosahedronGeometry(1,0); break;
+        default: geo = new THREE.BoxGeometry(1,1,1);
+    }
+    const b = new THREE.Mesh(geo, mat);
+    b.scale.set(...v.scl);
+    const box = new THREE.Box3().setFromObject(b);
+    b.position.y = (box.max.y - box.min.y) / 2;
+    grp.add(b);
+    
+    // Parts
+    const pGeo = new THREE.ConeGeometry(0.3, 0.8, 16);
+    const pMat = new THREE.MeshPhongMaterial({color: 0xffffff});
+    for(let i=0; i<v.p; i++) {
+        const p = new THREE.Mesh(pGeo, pMat);
+        const ang = (i/v.p)*Math.PI*2;
+        p.position.set(Math.cos(ang)*0.8, b.position.y+0.5, Math.sin(ang)*0.8);
+        p.rotation.set(Math.random(),0,Math.random());
+        p.scale.setScalar(0.5+Math.random()*0.5);
+        grp.add(p);
+    }
+    return grp;
+}
+
+// ==========================================
+// MAIN LOOP & FIELD LOGIC
+// ==========================================
+function animateLoop() {
+    requestAnimationFrame(animateLoop);
+    
+    if(state.mode === 'FIELD') {
+        let moved = false;
+        let dx = 0, dz = 0;
+        const spd = 0.5;
+        if(k.w) dz = -spd; if(k.s) dz = spd;
+        if(k.a) dx = -spd; if(k.d) dx = spd;
+        
+        if(dx !== 0 || dz !== 0) {
+            state.pos.x = Math.max(-95, Math.min(95, state.pos.x + dx));
+            state.pos.z = Math.max(-95, Math.min(95, state.pos.z + dz));
+            moved = true;
+        }
+
+        playerMesh.position.set(state.pos.x, 1, state.pos.z);
+        
+        // Camera Follow
+        camera.position.lerp(new THREE.Vector3(state.pos.x, 15, state.pos.z + 20), 0.1);
+        camera.lookAt(state.pos.x, 0, state.pos.z);
+
+        // Area Check
+        let distToCenter = Math.sqrt(state.pos.x**2 + state.pos.z**2);
+        let newArea = 0;
+        if(distToCenter < 15) newArea = 4; // Boss
+        else if(state.pos.x < 0 && state.pos.z < 0) newArea = 0;
+        else if(state.pos.x > 0 && state.pos.z < 0) newArea = 1;
+        else if(state.pos.x > 0 && state.pos.z > 0) newArea = 2;
+        else newArea = 3;
+
+        if(state.area !== newArea) {
+            state.area = newArea;
+            $('area-display').innerText = `エリア: ${AREAS[state.area].n}`;
+        }
+        
+        // Pokemon Center Check
+        const distToPC = Math.hypot(-60 - state.pos.x, -60 - state.pos.z);
+        if (distToPC < 6) {
+            if (!state.inPokeCenter) {
+                state.inPokeCenter = true;
+                healAllPokemon();
+            }
+        } else {
+            state.inPokeCenter = false;
+        }
+        
+        // Boss Hide/Show based on state
+        bossMesh.visible = !state.bossDefeated;
+
+        // Encounters & Triggers
+        if(moved) {
+            // Random Encounter
+            if(newArea < 4 && Math.random() < 0.005) { // 0.5% per frame while moving
+                startWildBattle();
+            }
+            // Boss Encounter
+            if(newArea === 4 && !state.bossDefeated && distToCenter < 5) {
+                startBossBattle();
+            }
+            // Trainer Check
+            TRAINERS.forEach(t => {
+                if(!t.d && Math.hypot(t.x - state.pos.x, t.z - state.pos.z) < 4) {
+                    startTrainerBattle(t);
+                }
+            });
+        }
+        
+        renderer.render(sceneF, camera);
+        
+    } else if(state.mode === 'BATTLE') {
+        // Simple idle anim
+        if(state.b.pMesh) state.b.pMesh.position.y = Math.sin(Date.now()*0.005)*0.1;
+        if(state.b.eMesh) state.b.eMesh.position.y = Math.sin(Date.now()*0.005+3)*0.1;
+        renderer.render(sceneB, camera);
+    }
+}
+
+// ==========================================
+// GAME FLOW & UTILS
+// ==========================================
+function healAllPokemon() {
+    let needsHeal = false;
+    state.party.forEach(p => { if(p.hp < p.maxHp) needsHeal = true; });
+    
+    if(!needsHeal && state.party.findIndex(p => p.hp <= 0) === -1) {
+        showFieldMessage("ポケモンセンターへ ようこそ！<br>手持ちのポケモンは 元気いっぱいです！");
+        return;
+    }
+    
+    state.party.forEach(p => { p.hp = p.maxHp; });
+    state.box.forEach(p => { p.hp = p.maxHp; });
+    
+    showFieldMessage("ティロリロリン♪<br>手持ちのポケモンが 全回復した！");
+    saveGame();
+}
+
+function showFieldMessage(msg) {
+    const el = $('field-msg');
+    el.innerHTML = msg;
+    el.classList.remove('hidden');
+    setTimeout(() => { el.classList.add('hidden'); }, 3000);
+}
+
+function startGame(isContinue) {
+    $('start-overlay').classList.add('hidden');
+    init3D();
+    
+    if(isContinue && loadGame()) {
+        // Loaded successfully
+    } else {
+        // New Game: Give initial Pikachu LV 20!
+        state.party = [new PokemonInst(3, 20)];
+        state.pokedex[3] = 2;
+        saveGame();
+    }
+    
+    setMode('FIELD');
+}
+
+function setMode(mode) {
+    state.mode = mode;
+    $('field-ui').classList.toggle('hidden', mode !== 'FIELD');
+    $('battle-ui').classList.toggle('hidden', mode !== 'BATTLE');
+    $('menu-overlay').classList.add('hidden'); // Ensure closed
+    
+    if(mode === 'FIELD') {
+        $('money-display').innerText = state.money;
+        // reset keys
+        k.w = k.a = k.s = k.d = false;
+    } else if(mode === 'BATTLE') {
+        camera.position.set(0, 5, 12);
+        camera.lookAt(0, 2, 0);
+    }
+}
+
+// --- Menus ---
+function openMenu(type) {
+    if(state.mode === 'BATTLE' && type !== 'PARTY' && type !== 'ITEM') return;
+    
+    // フィールドからメニューを開くときはオートセーブ
+    if(state.mode === 'FIELD' && type === 'MAIN') {
+        saveGame();
+    }
+    
+    $('menu-overlay').classList.remove('hidden');
+    const c = $('menu-content');
+    c.innerHTML = '';
+    
+    if(type === 'MAIN') {
+        c.innerHTML = `
+            <h2 class="text-2xl md:text-3xl font-bold mb-6 border-b pb-2">メニュー</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button class="btn text-lg md:text-xl" onclick="openMenu('PARTY')">🐾 手持ち・ボックス</button>
+                <button class="btn text-lg md:text-xl" onclick="openMenu('POKEDEX')">📖 ポケモン図鑑</button>
+                <button class="btn text-lg md:text-xl" onclick="openMenu('SHOP')">🛒 ショップ</button>
+                <button class="btn text-lg md:text-xl bg-gray-600 hover:bg-gray-500" onclick="saveGame()">💾 レポートをかく</button>
+                <button class="btn text-lg md:text-xl bg-red-600 hover:bg-red-500 col-span-1 sm:col-span-2" onclick="closeMenu()">閉じる</button>
+            </div>
+        `;
+    } else if(type === 'PARTY') {
+        let html = `<h2 class="text-xl md:text-2xl font-bold mb-4">手持ち (${state.party.length}/6)</h2><div class="space-y-2 mb-6">`;
+        state.party.forEach((p, i) => {
+            html += `<div class="bg-gray-800 p-2 md:p-3 rounded flex justify-between items-center border border-gray-600">
+                <div class="w-2/5 md:w-1/3"><span class="font-bold text-base md:text-lg">${p.data.n}</span> <span class="text-yellow-400 text-xs md:text-sm">Lv.${p.level}</span></div>
+                <div class="w-1/4 hidden sm:block bg-gray-700 h-4 rounded overflow-hidden"><div class="bg-green-500 h-full" style="width:${(p.hp/p.maxHp)*100}%"></div></div>
+                <div class="text-xs md:text-sm text-right w-12 md:w-16">${p.hp}/${p.maxHp}</div>
+                <div class="flex gap-1 md:gap-2">
+                ${state.mode==='BATTLE' && p.hp>0 && i!==state.b.pIdx ? `<button class="btn py-1 px-2 md:px-3 text-xs md:text-sm" onclick="switchPokemon(${i})">交代</button>` : ''}
+                ${state.mode!=='BATTLE' ? `<button class="btn py-1 px-2 md:px-3 text-xs md:text-sm bg-yellow-700 hover:bg-yellow-600" onclick="depositBox(${i})">預ける</button>` : ''}
+                </div>
+            </div>`;
+        });
+        html += `</div><h2 class="text-xl md:text-2xl font-bold mb-4">ボックス (${state.box.length})</h2><div class="space-y-2 mb-4 max-h-40 overflow-y-auto">`;
+        state.box.forEach((p, i) => {
+            html += `<div class="bg-gray-800 p-2 rounded flex justify-between items-center border border-gray-700">
+                <div class="flex items-center gap-2 md:gap-3">
+                    <span class="font-bold text-base md:text-lg text-blue-300 w-24 md:w-32">${p.data.n}</span>
+                    <span class="text-yellow-400 text-xs md:text-sm">Lv.${p.level}</span>
+                    <span class="text-xs text-gray-400 hidden sm:block ml-2">HP: ${p.maxHp}</span>
+                </div>
+                ${state.party.length < 6 ? `<button class="btn py-1 px-2 md:px-3 text-xs md:text-sm bg-blue-700 hover:bg-blue-600" onclick="withdrawBox(${i})">手持ちへ</button>` : `<span class="text-xs text-gray-500">手持ち満タン</span>`}
+            </div>`;
+        });
+        html += `</div><button class="btn w-full mt-4" onclick="${state.mode==='BATTLE'?'closeMenu()':"openMenu('MAIN')"}">戻る</button>`;
+        c.innerHTML = html;
+    } else if(type === 'SHOP') {
+        let html = `<h2 class="text-xl md:text-2xl font-bold mb-2">ショップ (所持金: ${state.money}円)</h2><div class="space-y-2 mb-4 max-h-[50vh] overflow-y-auto">`;
+        BALLS.forEach(b => {
+            html += `<div class="bg-gray-800 p-2 md:p-3 rounded flex justify-between items-center">
+                <div>
+                    <div class="font-bold text-base md:text-lg">${b.n} (所持:${state.items[b.id]}) - <span class="text-yellow-400">${b.p}円</span></div>
+                    <div class="text-xs md:text-sm text-gray-400">${b.d}</div>
+                </div>
+                <button class="btn py-1 px-3 md:px-4 text-sm md:text-base ml-2" onclick="buyItem(${b.id})" ${state.money<b.p?'disabled':''}>買う</button>
+            </div>`;
+        });
+        html += `</div><button class="btn w-full" onclick="openMenu('MAIN')">戻る</button>`;
+        c.innerHTML = html;
+    } else if(type === 'ITEM') {
+        let html = `<h2 class="text-xl md:text-2xl font-bold mb-4">どうぐ</h2><div class="space-y-2 mb-4">`;
+        BALLS.forEach(b => {
+            if(state.items[b.id] > 0) {
+                html += `<div class="bg-gray-800 p-2 md:p-3 rounded flex justify-between items-center">
+                    <div><span class="font-bold text-base md:text-lg">${b.n}</span> <span class="text-xs md:text-sm text-gray-400">x${state.items[b.id]}</span></div>
+                    <button class="btn py-1 px-4" onclick="useBall(${b.id})">使う</button>
+                </div>`;
+            }
+        });
+        html += `</div><button class="btn w-full" onclick="closeMenu()">戻る</button>`;
+        c.innerHTML = html;
+    } else if(type === 'POKEDEX') {
+        let seen = 0, caught = 0;
+        let listHtml = `<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-4 max-h-[50vh] overflow-y-auto">`;
+        MONSTERS.forEach(m => {
+            let st = state.pokedex[m.id] || 0;
+            if(st>0) seen++; if(st>1) caught++;
+            let name = st > 0 ? m.n : '???';
+            let bg = st === 2 ? 'bg-green-900 border-green-500' : (st === 1 ? 'bg-gray-800 border-gray-600' : 'bg-gray-900 border-gray-800 text-gray-600');
+            listHtml += `<div class="p-2 border rounded ${bg} text-center"><div class="text-xs">No.${m.id}</div><div class="font-bold text-xs md:text-sm">${name}</div></div>`;
+        });
+        listHtml += `</div>`;
+        c.innerHTML = `<h2 class="text-xl md:text-2xl font-bold">ポケモン図鑑</h2><p class="text-sm md:text-base">見つけた数: ${seen} / 捕まえた数: ${caught}</p>${listHtml}<button class="btn w-full mt-4" onclick="openMenu('MAIN')">戻る</button>`;
+    }
+}
+
+function closeMenu() {
+    $('menu-overlay').classList.add('hidden');
+}
+
+function buyItem(id) {
+    if(state.money >= BALLS[id].p) {
+        state.money -= BALLS[id].p;
+        state.items[id]++;
+        saveGame();
+        openMenu('SHOP'); // refresh
+    }
+}
+
+function withdrawBox(idx) {
+    if(state.party.length < 6) {
+        state.party.push(state.box.splice(idx, 1)[0]);
+        saveGame();
+        openMenu('PARTY');
+    }
+}
+
+function depositBox(idx) {
+    if(state.party.length > 1) {
+        state.box.push(state.party.splice(idx, 1)[0]);
+        saveGame();
+        openMenu('PARTY');
+    } else {
+        alert("手持ちが いなくなってしまう！");
+    }
+}
+
+// ==========================================
+// BATTLE SYSTEM
+// ==========================================
+function clearBattleScene() {
+    if(state.b.pMesh) sceneB.remove(state.b.pMesh);
+    if(state.b.eMesh) sceneB.remove(state.b.eMesh);
+    state.b.pMesh = null; state.b.eMesh = null;
+}
+
+function setupBattleScene() {
+    clearBattleScene();
+    const p = state.party[state.b.pIdx];
+    const e = state.b.enemyParty[state.b.eIdx];
+    
+    // Add Dex
+    if(!state.pokedex[e.baseId]) state.pokedex[e.baseId] = 1;
+    
+    state.b.pMesh = createMonMesh(p.data.v);
+    state.b.pMesh.position.set(-3, 0, 4);
+    state.b.pMesh.rotation.y = Math.PI - 0.5;
+    sceneB.add(state.b.pMesh);
+    
+    state.b.eMesh = createMonMesh(e.data.v);
+    state.b.eMesh.position.set(3, 0, -4);
+    state.b.eMesh.rotation.y = -0.5;
+    sceneB.add(state.b.eMesh);
+    
+    updateBattleUI();
+}
+
+function updateBattleUI() {
+    const p = state.party[state.b.pIdx];
+    const e = state.b.enemyParty[state.b.eIdx];
+    
+    $('player-name').innerText = p.data.n;
+    $('player-lv').innerText = `Lv.${p.level}`;
+    $('player-hp-text').innerText = `${Math.max(0, p.hp)} / ${p.maxHp}`;
+    $('player-hp-bar').style.width = `${Math.max(0, p.hp/p.maxHp*100)}%`;
+    $('player-hp-bar').style.backgroundColor = (p.hp/p.maxHp) > 0.5 ? '#48bb78' : (p.hp/p.maxHp) > 0.2 ? '#ecc94b' : '#f56565';
+    $('player-exp-bar').style.width = `${((p.exp - Math.pow(p.level,3)) / (p.maxExp - Math.pow(p.level,3)))*100}%`;
+    $('player-types').innerHTML = `<span class="type-badge" style="background:${T_COL[p.data.t1]}">${TYPES[p.data.t1]}</span>` + (p.data.t2 !== -1 ? `<span class="type-badge" style="background:${T_COL[p.data.t2]}">${TYPES[p.data.t2]}</span>` : '');
+
+    $('enemy-name').innerText = e.data.n;
+    $('enemy-lv').innerText = `Lv.${e.level}`;
+    $('enemy-hp-bar').style.width = `${Math.max(0, e.hp/e.maxHp*100)}%`;
+    $('enemy-hp-bar').style.backgroundColor = (e.hp/e.maxHp) > 0.5 ? '#48bb78' : (e.hp/e.maxHp) > 0.2 ? '#ecc94b' : '#f56565';
+    $('enemy-types').innerHTML = `<span class="type-badge" style="background:${T_COL[e.data.t1]}">${TYPES[e.data.t1]}</span>` + (e.data.t2 !== -1 ? `<span class="type-badge" style="background:${T_COL[e.data.t2]}">${TYPES[e.data.t2]}</span>` : '');
+}
+
+async function logMsg(msg, delay=1000) {
+    const box = $('message-box');
+    box.innerHTML = `<div>${msg}</div>`;
+    if(delay>0) await new Promise(r => setTimeout(r, delay));
+}
+
+// -- Encounter Generators --
+function getAvailableIdx() {
+    let alive = state.party.findIndex(p => p.hp > 0);
+    if(alive === -1) {
+        // Heal all if wiped out
+        state.party.forEach(p => p.hp = p.maxHp);
+        alive = 0;
+    }
+    return alive;
+}
+
+async function startWildBattle() {
+    const a = AREAS[state.area];
+    // Filter monsters by area
+    const pool = MONSTERS.filter(m => m.a.includes(state.area));
+    if(pool.length === 0) return;
+    
+    const mData = pool[Math.floor(Math.random() * pool.length)];
+    const lv = Math.floor(Math.random()*(a.lvMax - a.lvMin + 1)) + a.lvMin;
+    
+    state.b = { type: 'WILD', enemyParty: [new PokemonInst(mData.id, lv)], pIdx: getAvailableIdx(), eIdx: 0, turn: 1, trainer: null, canCatch: true };
+    setMode('BATTLE');
+    setupBattleScene();
+    await logMsg(`やせいの ${state.b.enemyParty[0].data.n} が あらわれた！`, 1500);
+    showBattleCommands();
+}
+
+async function startBossBattle() {
+    state.b = { type: 'BOSS', enemyParty: [new PokemonInst(11, 70)], pIdx: getAvailableIdx(), eIdx: 0, turn: 1, trainer: null, canCatch: true };
+    setMode('BATTLE');
+    setupBattleScene();
+    await logMsg(`ミュウツー「ミュウッ！！」`, 2000);
+    showBattleCommands();
+}
+
+async function startTrainerBattle(trainer) {
+    trainer.d = true; // Set defeated flag optimistically
+    const eParty = trainer.p.map(pd => new PokemonInst(pd.id, pd.lv));
+    state.b = { type: 'TRAINER', enemyParty: eParty, pIdx: getAvailableIdx(), eIdx: 0, turn: 1, trainer: trainer, canCatch: false };
+    setMode('BATTLE');
+    setupBattleScene();
+    await logMsg(`${trainer.n} が しょうぶを しかけてきた！`, 1500);
+    showBattleCommands();
+}
+
+function showBattleCommands() {
+    $('command-box').innerHTML = `
+        <button class="btn bg-red-800 hover:bg-red-700 text-white text-base md:text-xl" onclick="showSkills()">たたかう</button>
+        <button class="btn bg-green-800 hover:bg-green-700 text-white text-base md:text-xl" onclick="openMenu('PARTY')">ポケモン</button>
+        <button class="btn bg-blue-800 hover:bg-blue-700 text-white text-base md:text-xl" onclick="openMenu('ITEM')">どうぐ</button>
+        <button class="btn bg-gray-600 hover:bg-gray-500 text-white text-base md:text-xl" onclick="tryFlee()">にげる</button>
+    `;
+    logMsg("どうする？", 0);
+}
+
+function showSkills() {
+    const p = state.party[state.b.pIdx];
+    let html = '';
+    p.skills.forEach(s => {
+        html += `<button class="btn text-white" style="border-color:${T_COL[s.t]}; border-width:3px;" onclick="executeTurn(${s.id})">
+            <div class="text-base md:text-lg">${s.n}</div><div class="text-xs">威力:${s.p} ${TYPES[s.t]}</div>
+        </button>`;
+    });
+    html += `<button class="btn w-full col-span-2 text-sm py-1" onclick="showBattleCommands()">戻る</button>`;
+    $('command-box').innerHTML = html;
+}
+
+// -- Battle Logic --
+async function switchPokemon(newIdx) {
+    closeMenu();
+    $('command-box').innerHTML = '';
+    await logMsg(`${state.party[state.b.pIdx].data.n} もどれ！`, 1000);
+    state.b.pIdx = newIdx;
+    setupBattleScene();
+    await logMsg(`いけっ！ ${state.party[state.b.pIdx].data.n}！`, 1000);
+    
+    // Enemy gets free hit
+    await executeEnemyTurn();
+    state.b.turn++;
+    if(state.mode === 'BATTLE') showBattleCommands();
+}
+
+async function useBall(ballId) {
+    if(!state.b.canCatch) {
+        alert("ひとの ものを とったら どろぼう！"); return;
+    }
+    closeMenu();
+    $('command-box').innerHTML = '';
+    state.items[ballId]--;
+    const bData = BALLS[ballId];
+    const e = state.b.enemyParty[state.b.eIdx];
+    const p = state.party[state.b.pIdx];
+    
+    await logMsg(`${bData.n} を なげた！`, 1500);
+    
+    // Simple Catch Logic
+    let rate = ((e.maxHp - e.hp) / e.maxHp) * 0.3; // max 30% base
+    let mult = 1.0;
+    if(ballId===1) mult = 1.5;
+    if(ballId===2) mult = 2.0;
+    if(ballId===3) mult = 1000;
+    if(ballId===4 && state.b.turn===1) mult = 5.0;
+    if(ballId===5) mult = Math.min(4.0, 1.0 + state.b.turn*0.3);
+    if(ballId===6 && e.level > p.level) mult = 3.0;
+    if(ballId===7 && e.level < p.level) mult = 3.0;
+    if(ballId===8 && (state.area===3 || e.data.t1===2 || e.data.t1===5)) mult = 3.5;
+    if(ballId===9 && (e.data.t1===11 || e.data.t1===2)) mult = 3.5;
+    
+    let caught = Math.random() < (rate * mult + 0.1); // Add base 10%
+    if(ballId===3) caught = true;
+
+    // Anim (Spin Enemy)
+    const int = setInterval(()=>state.b.eMesh.rotation.y += 0.5, 50);
+    await new Promise(r => setTimeout(r, 1500));
+    clearInterval(int);
+
+    if(caught) {
+        state.b.eMesh.scale.set(0,0,0);
+        await logMsg(`やったー！ ${e.data.n} を つかまえた！`, 2000);
+        state.pokedex[e.baseId] = 2;
+        
+        // Heal captured mon to full
+        e.hp = e.maxHp;
+        if(state.party.length < 6) {
+            state.party.push(e);
+            await logMsg(`手持ち に くわわった！`, 1500);
+        } else {
+            state.box.push(e);
+            await logMsg(`ボックス に おくられた！`, 1500);
+        }
+        
+        if(state.b.type === 'BOSS') state.bossDefeated = true;
+        endBattleScene();
+    } else {
+        await logMsg(`ああっと！ つかまらない！`, 1500);
+        await executeEnemyTurn();
+        state.b.turn++;
+        if(state.mode === 'BATTLE') showBattleCommands();
+    }
+}
+
+async function tryFlee() {
+    $('command-box').innerHTML = '';
+    if(state.b.type === 'TRAINER' || state.b.type === 'BOSS') {
+        await logMsg(`ダメだ！ にげられない！`, 1500);
+        await executeEnemyTurn();
+        state.b.turn++;
+        if(state.mode === 'BATTLE') showBattleCommands();
+    } else {
+        await logMsg(`うまく にげきれた！`, 1500);
+        endBattleScene();
+    }
+}
+
+async function executeTurn(skillId) {
+    $('command-box').innerHTML = '';
+    const pSkill = SKILLS.find(s=>s.id===skillId);
+    const p = state.party[state.b.pIdx];
+    const e = state.b.enemyParty[state.b.eIdx];
+    const eSkill = e.skills[Math.floor(Math.random()*e.skills.length)];
+    
+    // Speed check
+    let first = p, second = e, fSkill = pSkill, sSkill = eSkill, isPFirst = true;
+    if(e.spe > p.spe || (e.spe===p.spe && Math.random()>0.5)) {
+        first = e; second = p; fSkill = eSkill; sSkill = pSkill; isPFirst = false;
+    }
+
+    await doAttack(first, second, fSkill, isPFirst);
+    if(second.hp <= 0) return handleFaint(second, !isPFirst);
+    
+    await doAttack(second, first, sSkill, !isPFirst);
+    if(first.hp <= 0) return handleFaint(first, isPFirst);
+    
+    state.b.turn++;
+    showBattleCommands();
+}
+
+async function doAttack(atk, def, skill, isPlayerAtk) {
+    await logMsg(`${atk.data.n} の ${skill.n}！`, 1000);
+    
+    if(Math.random()*100 > skill.a) {
+        await logMsg(`しかし こうげきは はずれた！`, 1000);
+        return;
+    }
+    
+    // Anim
+    const meshA = isPlayerAtk ? state.b.pMesh : state.b.eMesh;
+    const meshD = isPlayerAtk ? state.b.eMesh : state.b.pMesh;
+    const sPos = meshA.position.clone();
+    
+    // Dash
+    meshA.position.lerp(meshD.position, 0.3);
+    await new Promise(r=>setTimeout(r, 200));
+    
+    // Hit
+    meshD.children.forEach(c => { if(c.material) { c.userData.oc = c.material.color.getHex(); c.material.color.setHex(0xff0000); }});
+    const uiId = isPlayerAtk ? 'enemy-status' : 'player-status';
+    $(uiId).classList.remove('shake'); void $(uiId).offsetWidth; $(uiId).classList.add('shake');
+    await new Promise(r=>setTimeout(r, 200));
+    
+    // Return
+    meshD.children.forEach(c => { if(c.material && c.userData.oc) c.material.color.setHex(c.userData.oc); });
+    meshA.position.copy(sPos);
+
+    // Damage Calc
+    let aStat = skill.c===0 ? atk.atk : atk.spa;
+    let dStat = skill.c===0 ? def.def : def.spd;
+    let base = Math.floor(Math.floor(Math.floor(22*skill.p*aStat/dStat)/50)+2);
+    let crit = Math.random() < 0.0625; if(crit) base = Math.floor(base*1.5);
+    let stab = (skill.t===atk.data.t1 || skill.t===atk.data.t2) ? 1.5 : 1.0;
+    let eff1 = getTypeEff(skill.t, def.data.t1);
+    let eff2 = def.data.t2!==-1 ? getTypeEff(skill.t, def.data.t2) : 1.0;
+    let eff = eff1 * eff2;
+    
+    if(eff===0) { await logMsg(`こうかがない みたいだ...`, 1500); return; }
+    
+    let dmg = Math.max(1, Math.floor(base * (0.85+Math.random()*0.15) * stab * eff));
+    def.hp -= dmg;
+    updateBattleUI();
+    
+    if(eff>1) await logMsg(`こうかは ばつぐんだ！`, 1000);
+    if(eff<1) await logMsg(`こうかは いまひとつの ようだ...`, 1000);
+    if(crit) await logMsg(`きゅうしょに あたった！`, 1000);
+}
+
+function getTypeEff(a, d) {
+    const v = T_CHART[a][d];
+    return v===0 ? 0 : v===1 ? 0.5 : v===2 ? 1.0 : 2.0;
+}
+
+async function executeEnemyTurn() {
+    const e = state.b.enemyParty[state.b.eIdx];
+    const p = state.party[state.b.pIdx];
+    const s = e.skills[Math.floor(Math.random()*e.skills.length)];
+    await doAttack(e, p, s, false);
+    if(p.hp <= 0) await handleFaint(p, true);
+}
+
+async function handleFaint(mon, isPlayerMon) {
+    await logMsg(`${mon.data.n} は たおれた！`, 1500);
+    
+    // Anim
+    const mesh = isPlayerMon ? state.b.pMesh : state.b.eMesh;
+    const int = setInterval(()=>{ mesh.position.y -= 0.2; mesh.rotation.x -= 0.1; }, 30);
+    await new Promise(r=>setTimeout(r, 1000));
+    clearInterval(int);
+    sceneB.remove(mesh);
+    
+    if(!isPlayerMon) {
+        // Gain Exp
+        const exp = state.b.enemyParty[state.b.eIdx].level * 10;
+        const msgs = state.party[state.b.pIdx].addExp(exp);
+        updateBattleUI();
+        for(let m of msgs) await logMsg(m, 1200);
+        
+        // Next Enemy or Win
+        state.b.eIdx++;
+        if(state.b.eIdx < state.b.enemyParty.length) {
+            await logMsg(`あいては ${state.b.enemyParty[state.b.eIdx].data.n} を だした！`, 1500);
+            setupBattleScene();
+            state.b.turn++;
+            showBattleCommands();
+        } else {
+            await logMsg(`しょうぶに かった！`, 1500);
+            let mon = 500;
+            if(state.b.type === 'TRAINER') mon = 2000;
+            if(state.b.type === 'BOSS') { mon = 10000; state.bossDefeated = true; await logMsg("ミュウツーを たおした！", 1500); }
+            state.money += mon;
+            await logMsg(`${mon}円 手に入れた！`, 1500);
+            endBattleScene();
+        }
+    } else {
+        // Next Player Mon or Lose
+        const next = state.party.findIndex(p => p.hp > 0);
+        if(next !== -1) {
+            openMenu('PARTY'); // Force switch
+            $('message-box').innerHTML = '<div>次に出すポケモンを選んでください。</div>';
+        } else {
+            await logMsg(`めのまえが まっくらになった...`, 2000);
+            // 手持ちの全滅時はポケモンセンターに戻されたと仮定して、少し座標を戻して全回復する
+            state.party.forEach(p => p.hp = p.maxHp);
+            state.pos.x = -60;
+            state.pos.z = -50;
+            endBattleScene();
+        }
+    }
+}
+
+function endBattleScene() {
+    clearBattleScene();
+    saveGame(); // バトル終了時にオートセーブ
+    setMode('FIELD');
+}
+
+</script>
+</body>
+</html>

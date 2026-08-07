@@ -3,1443 +3,1816 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>青鬼オンライン (本格HTML5版)</title>
+    <title>青鬼サバイバル - 超大型アップデート版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&display=swap');
+        /* =========================================
+           CSSスタイル定義 - リッチなUIとレスポンシブ対応
+           ========================================= */
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --text-color: #ecf0f1;
+            --ui-bg: rgba(0, 0, 0, 0.85);
+            --btn-bg: linear-gradient(to bottom, #3498db, #2980b9);
+        }
+        
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
 
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            font-family: 'M PLUS Rounded 1c', sans-serif;
-            overflow: hidden;
-            touch-action: none; /* スマホでのスワイプスクロール防止 */
-            user-select: none;
+            width: 100%; height: 100%;
+            background-color: #000; overflow: hidden;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            color: var(--text-color);
         }
 
         #game-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: radial-gradient(circle, #1a1a2e 0%, #000000 100%);
+            position: relative; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center; background-color: #111;
         }
 
-        canvas {
-            display: block;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            image-rendering: pixelated; /* ドット絵風のくっきりした描画 */
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-
-        /* --- UI画面 --- */
-        .ui-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background-color: rgba(0, 0, 0, 0.8);
-            color: white;
-            z-index: 10;
-            transition: opacity 0.3s;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        h1 {
-            font-size: 3rem;
-            text-shadow: 0 0 10px #4a4a8a, 0 0 20px #4a4a8a;
-            margin-bottom: 20px;
-            text-align: center;
-        }
+        #game-canvas { display: block; image-rendering: pixelated; z-index: 10; position: absolute; top:0; left:0; }
         
-        h2 {
-            font-size: 2rem;
-            color: #ddd;
-            margin-bottom: 15px;
+        /* タイトル背景用キャンバス */
+        #title-bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.5; }
+
+        /* UIオーバーレイ共通 */
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: var(--ui-bg); z-index: 100; transition: opacity 0.3s ease;
         }
 
-        /* --- ボタン --- */
+        .hidden { display: none !important; }
+
+        h1, h2 { text-shadow: 0 0 10px rgba(255,255,255,0.5); text-align: center; margin: 10px; }
+        h1 { font-size: 3rem; color: #3498db; }
+        h2 { font-size: 2rem; color: #f1c40f; }
+
         .btn {
-            background: linear-gradient(to bottom, #444, #222);
-            border: 2px solid #666;
-            color: white;
-            padding: 15px 30px;
-            font-size: 1.5rem;
-            font-family: inherit;
-            border-radius: 10px;
-            cursor: pointer;
-            margin: 10px;
-            width: 250px;
-            text-align: center;
-            transition: all 0.2s;
-            box-shadow: 0 5px 0 #111;
+            padding: 12px 30px; font-size: 1.2rem; font-weight: bold; color: white;
+            background: var(--btn-bg); border: 2px solid #fff; border-radius: 25px;
+            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin: 10px;
+            transition: transform 0.1s;
         }
+        .btn:active { transform: scale(0.95); }
+        .btn.red { background: linear-gradient(to bottom, #e74c3c, #c0392b); }
+        .btn.green { background: linear-gradient(to bottom, #2ecc71, #27ae60); }
+        .btn.purple { background: linear-gradient(to bottom, #9b59b6, #8e44ad); }
 
-        .btn:hover {
-            background: linear-gradient(to bottom, #555, #333);
-            border-color: #888;
-        }
-
-        .btn:active {
-            transform: translateY(5px);
-            box-shadow: 0 0 0 #111;
-        }
-
-        .btn-special {
-            background: linear-gradient(to bottom, #8a2be2, #4b0082);
-            border-color: #ba55d3;
-        }
-        .btn-special:hover { background: linear-gradient(to bottom, #9932cc, #6a5acd); }
-
-        .btn-danger {
-            background: linear-gradient(to bottom, #b22222, #800000);
-            border-color: #ff6347;
-        }
-        .btn-danger:hover { background: linear-gradient(to bottom, #dc143c, #8b0000); }
-
-        /* --- ホーム画面レイアウト --- */
-        #home-menu {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            padding: 20px;
-            background: rgba(20, 20, 40, 0.9);
-            border: 3px solid #4a4a8a;
-            border-radius: 15px;
-            box-shadow: 0 0 30px rgba(74, 74, 138, 0.5);
-        }
-
-        .player-info {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 10px;
-            background: #000;
-            border-radius: 8px;
-            border: 1px solid #333;
-            margin-bottom: 10px;
-        }
-
-        /* --- コスチューム画面 --- */
-        #costume-container {
-            width: 80%;
-            height: 70%;
-            background: rgba(0,0,0,0.9);
-            border: 2px solid #555;
-            border-radius: 10px;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-            align-content: flex-start;
-        }
-
-        .costume-item {
-            width: 60px;
-            height: 60px;
-            background: #222;
-            border: 2px solid #444;
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 2rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .costume-item:hover { border-color: #fff; background: #444; }
-        .costume-item.selected { border-color: gold; box-shadow: 0 0 10px gold; background: #554400; }
-        .costume-item.locked { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); }
-
-        /* --- ゲーム内UI --- */
-        #hud {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* クリック透過 */
-            z-index: 5;
-        }
-
-        .hud-element {
-            position: absolute;
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 5px;
-            border: 1px solid #555;
-            font-size: 1.2rem;
-            text-shadow: 1px 1px 2px black;
-        }
-
-        #survivors-count { top: 10px; left: 10px; }
-        #timer-display { top: 10px; right: 10px; font-weight: bold; color: #ffeb3b; }
-        #floor-display { top: 50px; right: 10px; display: none; }
-        #status-message {
-            top: 20%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 2rem;
-            background: transparent;
-            border: none;
-            color: #ff3b3b;
-            text-shadow: 0 0 10px red;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-
-        /* --- バーチャルパッド (スマホ用) --- */
-        #virtual-pad {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            width: 150px;
-            height: 150px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            pointer-events: auto;
-            z-index: 10;
-            display: none; /* デスクトップでは隠す */
+        /* =========================================
+           青鬼オンライン風 ホーム画面大改修
+           ========================================= */
+        #home-screen {
+            background-color: #0b192c;
+            background-image: 
+                linear-gradient(0deg, transparent 24%, rgba(52, 152, 219, 0.15) 25%, rgba(52, 152, 219, 0.15) 26%, transparent 27%, transparent 74%, rgba(52, 152, 219, 0.15) 75%, rgba(52, 152, 219, 0.15) 76%, transparent 77%, transparent),
+                linear-gradient(90deg, transparent 24%, rgba(52, 152, 219, 0.15) 25%, rgba(52, 152, 219, 0.15) 26%, transparent 27%, transparent 74%, rgba(52, 152, 219, 0.15) 75%, rgba(52, 152, 219, 0.15) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
+            display: flex; flex-direction: column; justify-content: space-between;
         }
         
-        #pad-stick {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 60px;
-            height: 60px;
-            background: rgba(255, 255, 255, 0.4);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
+        #home-header {
+            width: 100%; padding: 15px; display: flex; justify-content: space-between; align-items: flex-start;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+            position: absolute; top: 0; left: 0; z-index: 20;
         }
-
-        #action-btn {
-            position: absolute;
-            bottom: 30px;
-            right: 30px;
-            width: 80px;
-            height: 80px;
-            background: rgba(200, 50, 50, 0.5);
-            border-radius: 50%;
-            border: 2px solid rgba(255, 200, 200, 0.5);
-            color: white;
-            font-weight: bold;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            pointer-events: auto;
-            z-index: 10;
-            display: none;
-        }
-
-        @media (max-width: 768px) {
-            #virtual-pad, #action-btn { display: flex; }
-            h1 { font-size: 2rem; }
-            .btn { width: 200px; font-size: 1.2rem; }
-            #home-menu { grid-template-columns: 1fr; }
-        }
+        .player-info { display: flex; align-items: center; background: rgba(11, 30, 54, 0.8); border: 2px solid #2980b9; border-radius: 30px; padding: 5px 15px; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.5); cursor: pointer;}
+        .player-rank { background: #f39c12; color: #000; font-weight: 900; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem;}
+        .player-name { font-weight: bold; color: #fff;}
         
-        /* 画面フラッシュ演出 */
-        #flash-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: red;
-            opacity: 0;
-            pointer-events: none;
-            z-index: 20;
-        }
+        .currency-container { display: flex; flex-direction: column; gap: 5px; }
+        .currency-box { background: rgba(0,0,0,0.7); border: 2px solid #f1c40f; border-radius: 20px; padding: 5px 15px; color: #f1c40f; font-weight: bold; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.5);}
+        .currency-box.orb { border-color: #3498db; color: #3498db; }
 
+        /* 左サイドメニュー */
+        .left-menu { position: absolute; left: 15px; top: 80px; display: flex; flex-direction: column; gap: 15px; z-index: 20;}
+        /* 右サイドメニュー */
+        .side-menu { position: absolute; right: 15px; top: 80px; display: flex; flex-direction: column; gap: 15px; z-index: 20;}
+        .side-btn { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 65px; height: 65px; background: linear-gradient(135deg, #2c3e50, #1a252f);
+            border: 2px solid #7f8c8d; border-radius: 15px; cursor: pointer; color: #fff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5); transition: transform 0.1s;
+        }
+        .side-btn:active { transform: scale(0.9); border-color: #3498db; }
+        .side-btn-icon { font-size: 1.8rem; margin-bottom: 2px;}
+        .side-btn span { font-size: 0.7rem; font-weight: bold; }
+
+        /* 中央アバター表示 */
+        #home-avatar-showcase {
+            flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            position: relative; margin-top: 40px; z-index: 10;
+        }
+        .showcase-platform {
+            width: 220px; height: 60px; background: radial-gradient(ellipse at center, rgba(52, 152, 219, 0.6) 0%, transparent 70%);
+            border-radius: 50%; position: absolute; bottom: 30%; left: 50%; transform: translateX(-50%); z-index: 1;
+        }
+        #home-avatar-icon { font-size: 10rem; z-index: 2; animation: float 3s ease-in-out infinite; filter: drop-shadow(0 10px 5px rgba(0,0,0,0.5));}
+        #home-pet-icon { font-size: 4rem; position: absolute; top: 30%; right: 30%; z-index: 3; animation: float 2.5s ease-in-out infinite alternate; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));}
+
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
+
+        /* 下部バナーメニュー */
+        #home-bottom-menu {
+            width: 100%; padding: 20px; display: flex; flex-direction: column; gap: 12px; align-items: center;
+            background: linear-gradient(0deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 80%, transparent 100%);
+            z-index: 10; padding-bottom: 30px;
+        }
+        .banner-btn {
+            width: 95%; max-width: 450px; border: none; border-radius: 15px; padding: 15px 20px; text-align: left;
+            cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            transition: transform 0.1s; display: flex; flex-direction: column; justify-content: center;
+        }
+        .banner-btn:active { transform: scale(0.96); }
+        .banner-btn::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+            transform: skewX(-20deg); animation: shine 3s infinite;
+        }
+        @keyframes shine { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
+
+        .main-survival { background: linear-gradient(135deg, #1abc9c, #16a085); border: 3px solid #2ecc71; height: 100px; }
+        .banner-title { display: block; font-size: 1.8rem; font-weight: 900; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); font-style: italic;}
+        .banner-sub { display: block; font-size: 1rem; color: #fff; font-weight: bold; opacity: 0.9;}
+
+        .sub-banners { display: flex; width: 95%; max-width: 450px; gap: 12px; }
+        .mode-tower { background: linear-gradient(135deg, #f39c12, #d35400); border: 2px solid #f1c40f; flex: 1; height: 80px;}
+        .mode-oni { background: linear-gradient(135deg, #9b59b6, #8e44ad); border: 2px solid #d2b4de; flex: 1; height: 80px;}
+
+        /* ガチャ・編成・図鑑リスト共通 */
+        .item-list {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+            max-height: 50vh; overflow-y: auto; width: 90%; max-width: 600px;
+            background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;
+        }
+        .char-card {
+            width: 100px; height: 120px; background: #34495e; border: 2px solid #7f8c8d;
+            border-radius: 8px; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; cursor: pointer; padding: 5px; text-align: center; position: relative;
+        }
+        .char-card.selected { border-color: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+        .char-card.locked { filter: grayscale(100%) brightness(0.5); cursor: not-allowed; }
+        .char-card .rarity { font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; }
+        .char-card.SSR .rarity { color: #f1c40f; text-shadow: 0 0 5px #f1c40f; }
+
+        /* HUD関連 */
+        #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+        .hud-panel { position: absolute; background: rgba(0,0,0,0.6); border: 2px solid #555; border-radius: 10px; padding: 10px; font-weight: bold; }
+        #alive-count-panel { top: 10px; left: 10px; font-size: 1.2rem; }
+        #tower-info-panel { top: 10px; left: 50%; transform: translateX(-50%); font-size: 1.5rem; color: #f1c40f; }
+        #status-panel { position: absolute; bottom: 10px; left: 10px; display: flex; gap: 10px; }
+        .status-icon { width: 35px; height: 35px; border-radius: 5px; background: #333; display: flex; justify-content: center; align-items: center; border: 2px solid #777; opacity: 0.3; }
+        .status-icon.active { border-color: #2ecc71; opacity: 1; }
+        #center-message { position: absolute; top: 20%; left: 50%; transform: translateX(-50%); font-size: 2.5rem; font-weight: bold; color: #f1c40f; text-shadow: 2px 2px 4px #000; opacity: 0; transition: opacity 0.2s; text-align: center; z-index: 100;}
+        
+        /* キルログ */
+        #kill-log { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; pointer-events: none; z-index: 60;}
+        .log-msg { background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; font-size: 0.9rem; color: #fff; animation: slideIn 0.3s, fadeOut 0.5s 3s forwards; border-left: 4px solid #e74c3c; font-weight: bold;}
+        @keyframes slideIn { from{transform: translateX(100%); opacity:0;} to{transform: translateX(0); opacity:1;} }
+        @keyframes fadeOut { to{opacity:0;} }
+
+        /* コントローラー */
+        #joystick-zone { position: absolute; bottom: 10px; left: 10px; width: 130px; height: 130px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); pointer-events: auto; touch-action: none; }
+        #joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        #action-btn { position: absolute; bottom: 20px; right: 20px; width: 70px; height: 70px; background: rgba(52,152,219,0.5); border: 3px solid rgba(255,255,255,0.5); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; pointer-events: auto; touch-action: none; }
+        
+        /* ガチャ演出用 */
+        #gacha-result-img { width: 150px; height: 150px; background-color: #eee; margin: 20px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 4rem; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 20px #fff;}
+        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+        /* 各種モーダル */
+        .modal-box { background: rgba(0, 0, 0, 0.9); border: 2px solid #3498db; padding: 30px; border-radius: 15px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.8);}
+        #ura-modal { background: rgba(100, 0, 0, 0.95); border-color: #e74c3c; }
+
+        input[type="text"], input[type="file"], textarea {
+            width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #7f8c8d; background: #2c3e50; color: #fff;
+        }
+        textarea { height: 100px; resize: none; font-family: monospace; }
+        
+        /* 描画用キャンバスアイコン */
+        .canvas-icon { width: 64px; height: 64px; }
     </style>
 </head>
 <body>
+<main id="game-container">
+    <canvas id="game-canvas"></canvas>
 
-    <div id="game-container">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <!-- HUD -->
+    <aside id="hud" class="hidden">
+        <section id="alive-count-panel" class="hud-panel">生存者: <span id="alive-count">100</span>人</section>
+        <section id="tower-info-panel" class="hud-panel hidden">試練の塔: <span id="tower-floor">1</span>階</section>
+        <section id="kill-log"></section>
+        <section id="status-panel">
+            <article id="icon-speed" class="status-icon">🛼</article>
+            <article id="icon-mask" class="status-icon">😷</article>
+        </section>
+        <section id="center-message"></section>
+        <section id="joystick-zone"><figure id="joystick-knob"></figure></section>
+        <section id="action-btn">🚪/🗡️</section>
+    </aside>
 
-        <div id="hud">
-            <div id="survivors-count" class="hud-element">生存者: 100/100</div>
-            <div id="timer-display" class="hud-element">TIME: 03:00</div>
-            <div id="floor-display" class="hud-element">1階</div>
-            <div id="status-message" class="hud-element"></div>
-        </div>
+    <!-- タイトル画面 -->
+    <section id="title-screen" class="overlay">
+        <canvas id="title-bg-canvas"></canvas>
+        <h1 style="font-size: 4rem; letter-spacing: 5px;">青鬼サバイバル<br><span style="color:#e74c3c; font-size:2rem;">超大型アップデート版</span></h1>
+        <p style="font-size: 1.5rem; margin-top: 30px; animation: blink 1.5s infinite;">画面をタップしてスタート</p>
+        <style>@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }</style>
+    </section>
 
-        <div id="virtual-pad"><div id="pad-stick"></div></div>
-        <div id="action-btn">開/閉</div>
-        <div id="flash-overlay"></div>
+    <!-- ホーム画面 -->
+    <section id="home-screen" class="overlay hidden">
+        <header id="home-header">
+            <section class="player-info" onclick="uiManager.showScreen('name-edit-screen')">
+                <p class="player-rank">Lv.MAX</p>
+                <p class="player-name" id="ui-player-name">ゲスト</p>
+            </section>
+            <section class="currency-container">
+                <article class="currency-box">
+                    <span>🪙</span><span id="ui-coin">0</span>
+                </article>
+                <article class="currency-box orb">
+                    <span>🔵</span><span id="ui-orb">0</span>
+                </article>
+            </section>
+        </header>
 
-        <div id="screen-home" class="ui-screen">
-            <h1>青鬼オンライン<br><span style="font-size: 1.5rem; color:#888;">(本格HTML5版)</span></h1>
-            
-            <div id="home-menu">
-                <div class="player-info">
-                    名前: Player1234 <br>
-                    ランク: 10 | 青銭: <span id="ao-zeni-display">1500</span>
-                </div>
-                <button class="btn" onclick="Game.startMode('survival')">100人サバイバル</button>
-                <button class="btn btn-danger" onclick="Game.startMode('betrayal')">裏逃 (裏切り者)</button>
-                <button class="btn btn-special" onclick="Game.startMode('tower')">青鬼の塔 (無限)</button>
-                <button class="btn" onclick="UI.showScreen('screen-costume')">コスチューム (100種)</button>
-            </div>
-        </div>
-
-        <div id="screen-costume" class="ui-screen hidden">
-            <h2>コスチューム選択</h2>
-            <div id="costume-container">
-                <!-- JavaScriptで生成 -->
-            </div>
-            <button class="btn" onclick="UI.showScreen('screen-home')">戻る</button>
-        </div>
-
-        <div id="screen-result" class="ui-screen hidden">
-            <h1 id="result-title">GAME OVER</h1>
-            <div style="font-size: 1.5rem; margin-bottom: 20px;">
-                順位: <span id="result-rank">100</span>位<br>
-                獲得青銭: +<span id="result-reward">0</span>
-            </div>
-            <button class="btn" onclick="UI.showScreen('screen-home')">ホームへ戻る</button>
-        </div>
+        <nav class="left-menu">
+            <article class="side-btn" onclick="uiManager.showScreen('zukan-screen')"><p class="side-btn-icon">📖</p><span>図鑑</span></article>
+            <article class="side-btn" onclick="uiManager.showScreen('save-load-screen')"><p class="side-btn-icon">💾</p><span>データ</span></article>
+            <article class="side-btn" onclick="uiManager.showScreen('audio-settings-screen')"><p class="side-btn-icon">🎵</p><span>音声</span></article>
+        </nav>
         
-        <div id="screen-loading" class="ui-screen hidden">
-            <h2>マップ生成中...</h2>
-            <div style="width: 200px; height: 20px; background: #333; border: 2px solid #555; border-radius: 10px; overflow: hidden; margin-top: 20px;">
-                <div id="loading-bar" style="width: 0%; height: 100%; background: #4caf50; transition: width 0.1s;"></div>
+        <nav class="side-menu">
+            <article class="side-btn" onclick="uiManager.showScreen('gacha-screen')"><p class="side-btn-icon">🎁</p><span>ガチャ</span></article>
+            <article class="side-btn" onclick="uiManager.showScreen('party-screen')"><p class="side-btn-icon">👕</p><span>スキン</span></article>
+            <article class="side-btn" onclick="uiManager.showScreen('party-screen')"><p class="side-btn-icon">🐾</p><span>ペット</span></article>
+        </nav>
+
+        <section id="home-avatar-showcase">
+            <p id="home-avatar-icon">👦</p>
+            <p id="home-pet-icon">❌</p>
+            <figure class="showcase-platform"></figure>
+        </section>
+
+        <nav id="home-bottom-menu">
+            <button class="banner-btn main-survival" onclick="game.startMode('SURVIVAL')">
+                <span class="banner-title">100人サバイバル</span>
+                <span class="banner-sub">最後の一人まで生き残れ！</span>
+            </button>
+            <section class="sub-banners">
+                <button class="banner-btn mode-tower" onclick="game.startMode('TOWER')">
+                    <span class="banner-title" style="font-size: 1.3rem;">試練の塔</span>
+                    <span class="banner-sub" style="font-size: 0.8rem;">限界に挑め</span>
+                </button>
+                <button class="banner-btn mode-oni" onclick="game.startMode('ONIMODE')">
+                    <span class="banner-title" style="font-size: 1.3rem;">青鬼モード</span>
+                    <span class="banner-sub" style="font-size: 0.8rem;">人間を捕食せよ</span>
+                </button>
+            </section>
+        </nav>
+    </section>
+
+    <!-- 各種画面定義 -->
+    <section id="gacha-screen" class="overlay hidden">
+        <h2>ガチャセンター</h2>
+        <p style="font-size: 1.2rem; margin-bottom: 20px; font-weight:bold;">
+            <span style="color:#f1c40f;">🪙青銭: <span id="gacha-coin"></span></span> | 
+            <span style="color:#3498db;">🔵青玉: <span id="gacha-orb"></span></span>
+        </p>
+        <section style="display: flex; flex-direction: column; gap: 15px; width: 80%; max-width: 300px;">
+            <button class="btn" onclick="game.pullGacha('CHAR')">キャラガチャ (100🪙)</button>
+            <button class="btn" onclick="game.pullGacha('PET')">ペットガチャ (100🪙)</button>
+            <button class="btn purple" onclick="game.pullGacha('ONI')">青鬼ガチャ (1🔵)</button>
+        </section>
+        <button class="btn red" style="margin-top: 30px;" onclick="uiManager.showScreen('home-screen')">戻る</button>
+    </section>
+
+    <section id="gacha-result-screen" class="overlay hidden" style="background: rgba(0,0,0,0.95); z-index: 200;">
+        <h2 id="gacha-result-title"></h2>
+        <figure id="gacha-result-img"></figure>
+        <h3 id="gacha-result-name" style="font-size: 2rem;"></h3>
+        <button class="btn" onclick="uiManager.showScreen('gacha-screen')">続けて引く</button>
+        <button class="btn red" onclick="uiManager.showScreen('home-screen')">ホームへ</button>
+    </section>
+
+    <section id="party-screen" class="overlay hidden">
+        <h2>スキン・ペット編成</h2>
+        <nav style="display:flex; gap:10px; margin-bottom:10px;">
+            <button class="btn" onclick="uiManager.renderPartyList('CHAR')">キャラ</button>
+            <button class="btn" onclick="uiManager.renderPartyList('PET')">ペット</button>
+            <button class="btn purple" onclick="uiManager.renderPartyList('ONI')">青鬼</button>
+        </nav>
+        <section id="party-list" class="item-list"></section>
+        <button class="btn red" style="margin-top: 20px;" onclick="uiManager.showScreen('home-screen')">決定</button>
+    </section>
+
+    <section id="zukan-screen" class="overlay hidden">
+        <h2>青鬼図鑑 (全18種)</h2>
+        <section id="zukan-list" class="item-list" style="max-height: 60vh;"></section>
+        <button class="btn red" style="margin-top: 20px;" onclick="uiManager.showScreen('home-screen')">戻る</button>
+    </section>
+
+    <section id="save-load-screen" class="overlay hidden">
+        <article class="modal-box">
+            <h2>データ引継ぎ</h2>
+            <p style="font-size: 0.9rem; margin-bottom:10px;">コードをコピーしてバックアップしてください。</p>
+            <textarea id="save-data-text" placeholder="ここにセーブコードが表示されます"></textarea>
+            <button class="btn" onclick="uiManager.exportSave()">コード発行/コピー</button>
+            <button class="btn green" onclick="uiManager.importSave()">コードからロード</button>
+            <br>
+            <button class="btn red" style="margin-top: 20px;" onclick="uiManager.showScreen('home-screen')">閉じる</button>
+        </article>
+    </section>
+
+    <section id="name-edit-screen" class="overlay hidden">
+        <article class="modal-box">
+            <h2>名前変更</h2>
+            <input type="text" id="name-input" maxlength="10" placeholder="新しい名前を入力">
+            <button class="btn green" onclick="uiManager.changeName()">決定</button>
+            <button class="btn red" onclick="uiManager.showScreen('home-screen')">キャンセル</button>
+        </article>
+    </section>
+
+    <section id="audio-settings-screen" class="overlay hidden">
+        <article class="modal-box">
+            <h2>カスタム音声設定</h2>
+            <p style="font-size: 0.8rem; margin-bottom: 10px; color: #ccc;">お好みの音声ファイルを選択してください。</p>
+            <div style="text-align: left; margin-bottom: 15px;">
+                <label style="font-weight: bold; color: #3498db;">1. 青鬼に追われた時</label>
+                <input type="file" id="audio-chase" accept="audio/*">
             </div>
-        </div>
-    </div>
+            <div style="text-align: left; margin-bottom: 15px;">
+                <label style="font-weight: bold; color: #e74c3c;">2. 裏/裏裏ステージ</label>
+                <input type="file" id="audio-ura" accept="audio/*">
+            </div>
+            <button class="btn red" onclick="uiManager.showScreen('home-screen')">完了</button>
+        </article>
+    </section>
 
-    <script>
-        /**
-         * 青鬼オンライン - 本格HTML5実装
-         * アーキテクチャ:
-         * - Game: 全体のステート管理、メインループ
-         * - Renderer: Canvas描画処理 (レイヤー構造、カメラ追従)
-         * - MapGen: ダンジョン自動生成 (BSPツリーベース)
-         * - Entity: プレイヤー、青鬼、BOTの基本クラス
-         * - Player, Bot, Oni: 各種エンティティの具体実装
-         * - Input: キーボード、タッチ操作管理
-         * - UI: 画面遷移、HUD更新
-         */
+    <section id="result-screen" class="overlay hidden">
+        <h2 id="result-title" style="font-size: 4rem; margin-bottom: 0;"></h2>
+        <p id="result-desc" style="font-size: 1.5rem; margin: 20px; text-align: center; font-weight:bold;"></p>
+        <p style="font-size: 2rem; margin-bottom: 10px; color:#f1c40f; font-weight:bold;">獲得青銭: +<span id="result-coin">0</span></p>
+        <p id="result-orb-text" class="hidden" style="font-size: 1.5rem; margin-bottom: 30px; color:#3498db; font-weight:bold;">獲得青玉: +<span id="result-orb">0</span></p>
+        <button class="btn" onclick="uiManager.showScreen('home-screen')">ホームへ戻る</button>
+    </section>
 
-        const TILE_SIZE = 48; // マップタイルのピクセルサイズ
-        const FPS = 60;
+    <!-- 裏ステージ挑戦モーダル -->
+    <aside id="new-ura-prompt-screen" class="overlay hidden" style="z-index: 250; background: rgba(0,0,0,0.9);">
+        <article id="ura-modal">
+            <h2 style="color: #e74c3c; font-size: 2.5rem; text-shadow: 0 0 10px #ff0000;">⚠️ 裏ステージ</h2>
+            <div id="ura-boss-preview" style="width: 150px; height: 150px; margin: 10px auto; background: #000; border: 2px solid #555;">
+                <svg viewBox="0 0 100 100" width="100%" height="100%">
+                    <circle cx="50" cy="50" r="40" fill="#8e44ad" />
+                    <rect x="30" y="30" width="10" height="10" fill="white" />
+                    <rect x="60" y="30" width="10" height="10" fill="white" />
+                    <rect x="35" y="35" width="5" height="5" fill="black" />
+                    <rect x="65" y="35" width="5" height="5" fill="black" />
+                    <path d="M 40 70 Q 50 80 60 70" stroke="black" stroke-width="3" fill="none" />
+                </svg>
+            </div>
+            <p style="font-size: 1.2rem; font-weight:bold; margin-top:10px;">挑戦しますか？<br><span style="color:#ccc; font-size: 0.9rem;">（失敗すると報酬を失います）</span></p>
+            <button class="btn red" style="font-size: 1.5rem; width: 80%;" onclick="game.startUraTransition()">挑戦！</button>
+            <br>
+            <button class="btn" style="background: #555; margin-top:10px;" onclick="game.cancelUra()">キャンセル</button>
+        </article>
+    </aside>
+
+</main>
+
+<script>
+/**
+ * ============================================================================
+ * 青鬼サバイバル 超大型アップデート版エンジン
+ * ============================================================================
+ */
+
+const DB = {
+    CHARACTERS: [
+        { id: 'c1', name: 'ひろし風', color: '#3498db', speedBase: 180, rarity: 'N', icon: '👦' },
+        { id: 'c2', name: 'タケル風', color: '#e74c3c', speedBase: 185, rarity: 'N', icon: '👱' },
+        { id: 'c3', name: 'ミカ風', color: '#f39c12', speedBase: 185, rarity: 'N', icon: '👧' },
+        { id: 'c4', name: 'タクヤ風', color: '#2ecc71', speedBase: 175, rarity: 'N', icon: '👦🏻' },
+        { id: 'c5', name: 'ニワトリ', color: '#ecf0f1', speedBase: 210, rarity: 'R', icon: '🐔' },
+        { id: 'c6', name: '鎧の騎士', color: '#95a5a6', speedBase: 165, rarity: 'SR', icon: '🛡️' },
+        { id: 'c7', name: '忍者', color: '#2c3e50', speedBase: 230, rarity: 'SR', icon: '🥷' },
+        { id: 'c8', name: '宇宙飛行士', color: '#ecf0f1', speedBase: 190, rarity: 'SR', icon: '👨‍🚀' },
+        { id: 'c9', name: '魔法使い', color: '#9b59b6', speedBase: 200, rarity: 'R', icon: '🧙' },
+        { id: 'c98', name: 'たぬき(真・裏限定)', color: '#a0522d', speedBase: 260, rarity: 'SSR', icon: '🦝' },
+        { id: 'c99', name: '招き猫(裏限定)', color: '#f1c40f', speedBase: 250, rarity: 'SSR', icon: '🐱' }
+    ],
+    PETS: [
+        { id: 'p0', name: 'なし', buff: 'NONE', icon: '❌' },
+        { id: 'p1', name: 'ポチ(犬)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🐶' },
+        { id: 'p2', name: 'ミケ(猫)', buff: 'COIN', val: 1.5, rarity: 'R', icon: '🐈' },
+        { id: 'p3', name: 'ウサギ', buff: 'SPEED', val: 1.2, rarity: 'R', icon: '🐰' },
+        { id: 'p4', name: 'カメ', buff: 'MASK', val: 1.5, rarity: 'N', icon: '🐢' },
+        { id: 'p5', name: 'ミニドラゴン', buff: 'MASK', val: 2.0, rarity: 'SR', icon: '🐉' },
+        { id: 'p6', name: '不死鳥', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🦚' }
+    ],
+    ONI_TYPES: {
+        NORMAL: 0, FUWATTY: 1, SQUAT: 2, 
+        JELLY: 3, DEMON: 4, ICE: 5, FIRE: 6, SLIME: 7, SPIDER: 8, MUMMY: 9, NINJA: 10, GIANT: 11, GHOST: 12, BOMB: 13, SNIPER: 14, POISON: 15, ZOMBIE: 16, METAL: 17
+    },
+    ONI_DATA: [
+        { id: 'o0', type: 0, name: '青鬼', rarity: 'N' },
+        { id: 'o1', type: 1, name: 'フワッティー', rarity: 'R' },
+        { id: 'o2', type: 2, name: 'スクワット鬼', rarity: 'R' },
+        { id: 'o3', type: 3, name: 'クラゲ鬼', rarity: 'SR' },
+        { id: 'o4', type: 4, name: '魔王鬼', rarity: 'SSR' },
+        { id: 'o5', type: 5, name: '氷鬼', rarity: 'SR' },
+        { id: 'o6', type: 6, name: '炎鬼', rarity: 'SR' },
+        { id: 'o7', type: 7, name: 'スライム鬼', rarity: 'R' },
+        { id: 'o8', type: 8, name: 'クモ鬼', rarity: 'SR' },
+        { id: 'o9', type: 9, name: 'ミイラ鬼', rarity: 'R' },
+        { id: 'o10', type: 10, name: '忍者鬼', rarity: 'SR' },
+        { id: 'o11', type: 11, name: '巨人鬼', rarity: 'SR' },
+        { id: 'o12', type: 12, name: '亡霊鬼', rarity: 'R' },
+        { id: 'o13', type: 13, name: '爆弾鬼', rarity: 'SR' },
+        { id: 'o14', type: 14, name: 'スナイパー鬼', rarity: 'SSR' },
+        { id: 'o15', type: 15, name: '毒鬼', rarity: 'SR' },
+        { id: 'o16', type: 16, name: 'ゾンビ鬼', rarity: 'R' },
+        { id: 'o17', type: 17, name: 'メタル鬼', rarity: 'SSR' }
+    ],
+    NPC_NAMES: [
+        "ゲスト", "初心者", "プロゲーマー", "逃走中", "青鬼ハンター", "名無し", "Bot", "ゆうた", "伝説の男",
+        "ひろし", "タケル", "ミカ", "タクヤ", "卍最強卍", "逃げ切りたい", "あ", "いいい", "草", "神回避", "課金勢"
+    ]
+};
+
+const CONFIG = {
+    FPS: 60, TILE_SIZE: 48, GACHA_COST: 100, ORB_COST: 1,
+    SURVIVAL: { COLS: 80, ROWS: 80, PLAYERS: 100, ONIS: 5, CHESTS: 100, LOCKERS: 40 },
+    TOWER: { COLS: 30, ROWS: 30, PLAYERS: 1, ONIS: 3, CHESTS: 5, LOCKERS: 0 },
+    ONIMODE: { COLS: 40, ROWS: 40, PLAYERS: 30, ONIS: 0 },
+    URA: { COLS: 15, ROWS: 150 } 
+};
+
+let memStorage = {};
+function safeGet(k){ try{return localStorage.getItem(k);}catch(e){return memStorage[k]||null;} }
+function safeSet(k,v){ try{localStorage.setItem(k,v);}catch(e){memStorage[k]=v;} }
+
+class SaveData {
+    constructor() {
+        this.playerName = "ゲスト";
+        this.coins = 500;
+        this.orbs = 0; 
+        this.unlockedChars = ['c1'];
+        this.unlockedPets = ['p0'];
+        this.unlockedOnis = ['o0'];
+        this.equipCharId = 'c1';
+        this.equipPetId = 'p0';
+        this.equipOniId = 'o0';
+        this.highestTowerFloor = 1;
+        this.encounteredOnis = [];
+        this.hasPendingUra = false;
+        this.load();
+    }
+    save() { safeSet('aooni_save_v3', JSON.stringify(this)); }
+    load() {
+        const data = safeGet('aooni_save_v3') || safeGet('aooni_save_v2'); 
+        if (data) {
+            try {
+                const parsed = JSON.parse(data);
+                Object.assign(this, parsed);
+                if(!this.unlockedChars.includes(this.equipCharId)) this.equipCharId = 'c1';
+                if(!this.unlockedOnis) this.unlockedOnis = ['o0'];
+                if(!this.encounteredOnis) this.encounteredOnis = [];
+                if(!this.playerName) this.playerName = "ゲスト";
+                if(this.orbs === undefined) this.orbs = 0;
+            } catch(e) {}
+        }
+    }
+    addCoin(amount) { this.coins += Math.floor(amount); this.save(); }
+    addOrb(amount) { this.orbs += Math.floor(amount); this.save(); }
+    recordOni(type) { if(!this.encounteredOnis.includes(type)) { this.encounteredOnis.push(type); this.save(); } }
+    getCharData() { return DB.CHARACTERS.find(c => c.id === this.equipCharId) || DB.CHARACTERS[0]; }
+    getPetData() { return DB.PETS.find(p => p.id === this.equipPetId) || DB.PETS[0]; }
+    getOniData() { return DB.ONI_DATA.find(o => o.id === this.equipOniId) || DB.ONI_DATA[0]; }
+}
+const saveData = new SaveData();
+
+class AudioController {
+    constructor() {
+        this.chaseAudio = new Audio();
+        this.chaseAudio.loop = true;
+        this.uraAudio = new Audio();
+        this.uraAudio.loop = true;
+        this.currentBGM = null;
+    }
+    setupFiles() {
+        const chaseInput = document.getElementById('audio-chase');
+        const uraInput = document.getElementById('audio-ura');
+        chaseInput.addEventListener('change', (e) => {
+            if(e.target.files[0]) this.chaseAudio.src = URL.createObjectURL(e.target.files[0]);
+        });
+        uraInput.addEventListener('change', (e) => {
+            if(e.target.files[0]) this.uraAudio.src = URL.createObjectURL(e.target.files[0]);
+        });
+    }
+    playChase() {
+        if(this.currentBGM === this.chaseAudio || !this.chaseAudio.src) return;
+        this.stopAll();
+        this.currentBGM = this.chaseAudio;
+        this.currentBGM.play().catch(e=>console.log("Audio play prevented"));
+    }
+    playUra() {
+        if(this.currentBGM === this.uraAudio || !this.uraAudio.src) return;
+        this.stopAll();
+        this.currentBGM = this.uraAudio;
+        this.currentBGM.play().catch(e=>console.log("Audio play prevented"));
+    }
+    stopAll() {
+        if(this.currentBGM) { this.currentBGM.pause(); this.currentBGM.currentTime = 0; this.currentBGM = null; }
+    }
+}
+const audioCtrl = new AudioController();
+
+// --- ユーティリティ ---
+const Utils = {
+    random: (min, max) => Math.random() * (max - min) + min,
+    randomInt: (min, max) => Math.floor(Math.random() * (max - min)) + min,
+    distance: (x1, y1, x2, y2) => Math.sqrt((x2-x1)**2 + (y2-y1)**2),
+    checkCollision: (r1, r2) => (r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y)
+};
+
+const TILE = { EMPTY: 0, WALL: 1, FLOOR: 2, GOAL: 3 };
+
+class MapGenerator {
+    static generateBSP(cols, rows) {
+        let grid = Array.from({ length: rows }, () => Array(cols).fill(TILE.WALL));
+        let rooms = [];
+        let leaves = [{ x: 1, y: 1, w: cols - 2, h: rows - 2 }];
         
-        // 色定数（リアルな質感を表現するためのグラデーションベースカラー）
-        const COLORS = {
-            floor: '#2c3e50',
-            wall: '#34495e',
-            wallTop: '#2c3e50',
-            doorClosed: '#7f8c8d',
-            doorOpen: '#bdc3c7',
-            safeZone: 'rgba(46, 204, 113, 0.3)',
-            gas: 'rgba(155, 89, 182, 0.6)'
-        };
-
-        // リアルな青鬼5種の定義 (色だけではない特性)
-        const ONI_TYPES = [
-            { id: 0, name: "ノーマル青鬼", speed: 4.0, size: 1.0, color: '#3498db', sightRadius: 10, pattern: 'chase' },
-            { id: 1, name: "筋肉青鬼", speed: 3.2, size: 1.5, color: '#2980b9', sightRadius: 8, pattern: 'breakDoors' }, // ドアを破壊する
-            { id: 2, name: "スパイダー青鬼", speed: 5.5, size: 0.8, color: '#1abc9c', sightRadius: 12, pattern: 'wallCrawling' }, // 壁を無視する(低確率)
-            { id: 3, name: "巨大青鬼", speed: 2.5, size: 2.5, color: '#16a085', sightRadius: 15, pattern: 'areaDenial' }, // 判定がでかい
-            { id: 4, name: "影青鬼", speed: 4.5, size: 1.0, color: '#111111', sightRadius: 8, pattern: 'stealth' } // 暗闇に紛れる、透明になる
-        ];
-
-        // 100種類のコスチューム用絵文字配列
-        const COSTUMES = [
-            "👦","👧","👨","👩","👴","👵","🧑‍🦰","👱‍♂️","👱‍♀️","🧔‍♂️",
-            "👨‍🦲","👩‍🦲","👮‍♂️","👮‍♀️","🕵️‍♂️","🕵️‍♀️","💂‍♂️","💂‍♀️","👷‍♂️","👷‍♀️",
-            "🤴","👸","👳‍♂️","👳‍♀️","👲","🧕","🤵","👰","🤰","🤱",
-            "👼","🎅","🤶","🦸‍♂️","🦸‍♀️","🦹‍♂️","🦹‍♀️","🧙‍♂️","🧙‍♀️","🧚‍♂️",
-            "🧚‍♀️","🧛‍♂️","🧛‍♀️","🧜‍♂️","🧜‍♀️","🧝‍♂️","🧝‍♀️","🧞‍♂️","🧞‍♀️","🧟‍♂️",
-            "🧟‍♀️","💆‍♂️","💆‍♀️","💇‍♂️","💇‍♀️","🚶‍♂️","🚶‍♀️","🏃‍♂️","🏃‍♀️","🕺",
-            "💃","🕴️","👯‍♂️","👯‍♀️","🤺","🏇","⛷️","🏂","🏌️‍♂️","🏌️‍♀️",
-            "🏄‍♂️","🏄‍♀️","🚣‍♂️","🚣‍♀️","🏊‍♂️","🏊‍♀️","⛹️‍♂️","⛹️‍♀️","🏋️‍♂️","🏋️‍♀️",
-            "🚴‍♂️","🚴‍♀️","🚵‍♂️","🚵‍♀️","🤸‍♂️","🤸‍♀️","🤼‍♂️","🤼‍♀️","🤽‍♂️","🤽‍♀️",
-            "🤾‍♂️","🤾‍♀️","🤹‍♂️","🤹‍♀️","🧘‍♂️","🧘‍♀️","🐶","🐱","🐭","🐹"
-        ]; // 後半は動物などネタ系
-
-        const Utils = {
-            distance: (x1, y1, x2, y2) => Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)),
-            randomInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
-            randomFloat: (min, max) => Math.random() * (max - min) + min,
-            checkCollision: (rect1, rect2) => {
-                return (rect1.x < rect2.x + rect2.width &&
-                        rect1.x + rect1.width > rect2.x &&
-                        rect1.y < rect2.y + rect2.height &&
-                        rect1.y + rect1.height > rect2.y);
-            }
-        };
-
-        const Input = {
-            keys: { w:false, a:false, s:false, d:false, up:false, left:false, down:false, right:false, space:false },
-            pad: { x: 0, y: 0, active: false },
-            actionPressed: false,
-
-            init() {
-                window.addEventListener('keydown', (e) => {
-                    if (e.key === 'w' || e.key === 'ArrowUp') this.keys.up = true;
-                    if (e.key === 'a' || e.key === 'ArrowLeft') this.keys.left = true;
-                    if (e.key === 's' || e.key === 'ArrowDown') this.keys.down = true;
-                    if (e.key === 'd' || e.key === 'ArrowRight') this.keys.right = true;
-                    if (e.key === ' ') this.keys.space = true;
-                });
-
-                window.addEventListener('keyup', (e) => {
-                    if (e.key === 'w' || e.key === 'ArrowUp') this.keys.up = false;
-                    if (e.key === 'a' || e.key === 'ArrowLeft') this.keys.left = false;
-                    if (e.key === 's' || e.key === 'ArrowDown') this.keys.down = false;
-                    if (e.key === 'd' || e.key === 'ArrowRight') this.keys.right = false;
-                    if (e.key === ' ') { this.keys.space = false; this.actionPressed = false; }
-                });
-
-                // タッチパッド処理
-                const padArea = document.getElementById('virtual-pad');
-                const stick = document.getElementById('pad-stick');
-                const actionBtn = document.getElementById('action-btn');
-
-                let padCenter = { x: 0, y: 0 };
-                let maxRadius = 45;
-
-                const handleTouch = (e) => {
-                    e.preventDefault();
-                    if (!this.pad.active) return;
-                    let touch = e.touches[0];
-                    for(let i=0; i<e.touches.length; i++) {
-                        let t = e.touches[i];
-                        if(t.target === padArea || t.target === stick) touch = t;
-                    }
-                    if(!touch) return;
-
-                    let rect = padArea.getBoundingClientRect();
-                    let dx = touch.clientX - padCenter.x;
-                    let dy = touch.clientY - padCenter.y;
-                    let dist = Math.sqrt(dx*dx + dy*dy);
-                    
-                    if (dist > maxRadius) {
-                        dx = (dx / dist) * maxRadius;
-                        dy = (dy / dist) * maxRadius;
-                    }
-
-                    stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-                    
-                    // 正規化 (-1.0 ~ 1.0)
-                    this.pad.x = dx / maxRadius;
-                    this.pad.y = dy / maxRadius;
-                };
-
-                padArea.addEventListener('touchstart', (e) => {
-                    let rect = padArea.getBoundingClientRect();
-                    padCenter = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
-                    this.pad.active = true;
-                    handleTouch(e);
-                }, {passive: false});
-
-                padArea.addEventListener('touchmove', handleTouch, {passive: false});
-
-                padArea.addEventListener('touchend', (e) => {
-                    this.pad.active = false;
-                    this.pad.x = 0;
-                    this.pad.y = 0;
-                    stick.style.transform = `translate(-50%, -50%)`;
-                });
-
-                actionBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.keys.space = true; });
-                actionBtn.addEventListener('touchend', (e) => { e.preventDefault(); this.keys.space = false; this.actionPressed = false; });
-            },
-
-            getMovementVector() {
-                let dx = 0, dy = 0;
-                if (this.keys.up) dy -= 1;
-                if (this.keys.down) dy += 1;
-                if (this.keys.left) dx -= 1;
-                if (this.keys.right) dx += 1;
-
-                if (this.pad.active) {
-                    dx = this.pad.x;
-                    dy = this.pad.y;
-                }
-
-                // 正規化
-                let length = Math.sqrt(dx*dx + dy*dy);
-                if (length > 0) {
-                    dx /= length;
-                    dy /= length;
-                }
-                return { x: dx, y: dy };
-            },
-
-            isActionJustPressed() {
-                if (this.keys.space && !this.actionPressed) {
-                    this.actionPressed = true;
-                    return true;
-                }
-                return false;
-            }
-        };
-
-        const MapGen = {
-            width: 0,
-            height: 0,
-            grid: [],
-            rooms: [],
-            doors: [],
-
-            // タイル種別
-            TILE_EMPTY: 0,
-            TILE_WALL: 1,
-            TILE_FLOOR: 2,
-            TILE_DOOR: 3,
-
-            generate(w, h, roomCount) {
-                this.width = w;
-                this.height = h;
-                this.grid = Array(h).fill().map(() => Array(w).fill(this.TILE_WALL));
-                this.rooms = [];
-                this.doors = [];
-
-                // BSPノード
-                class Leaf {
-                    constructor(x, y, width, height) {
-                        this.x = x; this.y = y;
-                        this.width = width; this.height = height;
-                        this.leftChild = null; this.rightChild = null;
-                        this.room = null;
-                        this.halls = [];
-                    }
-                    split() {
-                        if (this.leftChild || this.rightChild) return false;
-                        let splitH = Math.random() > 0.5;
-                        if (this.width > this.height && this.width / this.height >= 1.25) splitH = false;
-                        else if (this.height > this.width && this.height / this.width >= 1.25) splitH = true;
-
-                        let max = (splitH ? this.height : this.width) - 10; // 最小サイズ担保
-                        if (max <= 10) return false;
-                        let splitPos = Utils.randomInt(10, max);
-
-                        if (splitH) {
-                            this.leftChild = new Leaf(this.x, this.y, this.width, splitPos);
-                            this.rightChild = new Leaf(this.x, this.y + splitPos, this.width, this.height - splitPos);
-                        } else {
-                            this.leftChild = new Leaf(this.x, this.y, splitPos, this.height);
-                            this.rightChild = new Leaf(this.x + splitPos, this.y, this.width - splitPos, this.height);
-                        }
-                        return true;
-                    }
-                    createRooms() {
-                        if (this.leftChild || this.rightChild) {
-                            if (this.leftChild) this.leftChild.createRooms();
-                            if (this.rightChild) this.rightChild.createRooms();
-                        } else {
-                            let roomW = Utils.randomInt(5, this.width - 2);
-                            let roomH = Utils.randomInt(5, this.height - 2);
-                            let roomX = Utils.randomInt(1, this.width - roomW - 1);
-                            let roomY = Utils.randomInt(1, this.height - roomH - 1);
-                            this.room = { x: this.x + roomX, y: this.y + roomY, w: roomW, h: roomH };
-                            MapGen.rooms.push(this.room);
-                        }
-                    }
-                }
-
-                let root = new Leaf(0, 0, w, h);
-                let leafs = [root];
-                let didSplit = true;
-                
-                // 分割
-                while (didSplit && leafs.length < roomCount) {
-                    didSplit = false;
-                    for (let i = 0; i < leafs.length; i++) {
-                        let l = leafs[i];
-                        if (l.leftChild === null && l.rightChild === null) {
-                            if (l.width > 20 || l.height > 20 || Math.random() > 0.25) {
-                                if (l.split()) {
-                                    leafs.push(l.leftChild);
-                                    leafs.push(l.rightChild);
-                                    didSplit = true;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                root.createRooms();
-
-                // グリッドに部屋を書き込む
-                for (let r of this.rooms) {
-                    for (let y = r.y; y < r.y + r.h; y++) {
-                        for (let x = r.x; x < r.x + r.w; x++) {
-                            this.grid[y][x] = this.TILE_FLOOR;
-                        }
-                    }
-                }
-
-                // 部屋同士を繋ぐ通路 (簡易版DelaunayやMSTの代わりに総当り近傍接続)
-                for (let i = 0; i < this.rooms.length - 1; i++) {
-                    let r1 = this.rooms[i];
-                    let r2 = this.rooms[i+1];
-                    this.createHall(
-                        {x: r1.x + Math.floor(r1.w/2), y: r1.y + Math.floor(r1.h/2)},
-                        {x: r2.x + Math.floor(r2.w/2), y: r2.y + Math.floor(r2.h/2)}
-                    );
-                }
-
-                // ドアの配置 (部屋と通路の境界)
-                this.placeDoors();
-            },
-
-            createHall(p1, p2) {
-                let x = p1.x; let y = p1.y;
-                while (x !== p2.x) {
-                    if(this.grid[y][x] === this.TILE_WALL) this.grid[y][x] = this.TILE_FLOOR;
-                    x += (p2.x > p1.x) ? 1 : -1;
-                }
-                while (y !== p2.y) {
-                    if(this.grid[y][x] === this.TILE_WALL) this.grid[y][x] = this.TILE_FLOOR;
-                    y += (p2.y > p1.y) ? 1 : -1;
-                }
-            },
-
-            placeDoors() {
-                // 簡易的なドア配置ロジック
-                for (let y = 1; y < this.height - 1; y++) {
-                    for (let x = 1; x < this.width - 1; x++) {
-                        if (this.grid[y][x] === this.TILE_FLOOR) {
-                            // 上下が壁で左右が床 (縦の通路)
-                            if (this.grid[y-1][x] === this.TILE_WALL && this.grid[y+1][x] === this.TILE_WALL &&
-                                this.grid[y][x-1] === this.TILE_FLOOR && this.grid[y][x+1] === this.TILE_FLOOR) {
-                                if(Math.random() < 0.2) { this.grid[y][x] = this.TILE_DOOR; this.doors.push({x, y, open: false, hp: 100}); }
-                            }
-                            // 左右が壁で上下が床 (横の通路)
-                            else if (this.grid[y][x-1] === this.TILE_WALL && this.grid[y][x+1] === this.TILE_WALL &&
-                                     this.grid[y-1][x] === this.TILE_FLOOR && this.grid[y+1][x] === this.TILE_FLOOR) {
-                                if(Math.random() < 0.2) { this.grid[y][x] = this.TILE_DOOR; this.doors.push({x, y, open: false, hp: 100}); }
-                            }
-                        }
-                    }
-                }
-            },
-
-            isSolid(x, y) {
-                if (x < 0 || x >= this.width || y < 0 || y >= this.height) return true;
-                if (this.grid[y][x] === this.TILE_WALL) return true;
-                if (this.grid[y][x] === this.TILE_DOOR) {
-                    let door = this.doors.find(d => d.x === x && d.y === y);
-                    return door && !door.open;
-                }
-                return false;
-            },
-
-            interactDoor(px, py) {
-                // プレイヤーの周囲のドアを探して開閉する
-                let searchRange = 1.5; // タイル単位
-                for (let d of this.doors) {
-                    if (Utils.distance(px, py, d.x + 0.5, d.y + 0.5) < searchRange) {
-                        d.open = !d.open;
-                        return true;
-                    }
-                }
-                return false;
-            },
-
-            getRandomFloorPos() {
-                while(true) {
-                    let x = Utils.randomInt(1, this.width - 2);
-                    let y = Utils.randomInt(1, this.height - 2);
-                    if (this.grid[y][x] === this.TILE_FLOOR) {
-                        return { x: x + 0.5, y: y + 0.5 }; // タイル中央
-                    }
-                }
-            }
-        };
-
-        class Entity {
-            constructor(x, y, radius, speed) {
-                this.x = x;
-                this.y = y;
-                this.radius = radius; // 物理判定の半径(タイル単位)
-                this.speed = speed;   // 移動速度(タイル/秒)
-                this.vx = 0;
-                this.vy = 0;
-                this.alive = true;
-                this.direction = 1; // 1:右, -1:左
-            }
-
-            update(dt) {
-                if (!this.alive) return;
-
-                // 次の位置
-                let nx = this.x + this.vx * this.speed * dt;
-                let ny = this.y + this.vy * this.speed * dt;
-
-                // 壁衝突判定 (AABB/円近似)
-                // 簡易化のため、四隅の点と中心点で判定
-                let checkX = (x) => {
-                    return MapGen.isSolid(Math.floor(x - this.radius), Math.floor(this.y)) ||
-                           MapGen.isSolid(Math.floor(x + this.radius), Math.floor(this.y));
-                };
-                let checkY = (y) => {
-                    return MapGen.isSolid(Math.floor(this.x), Math.floor(y - this.radius)) ||
-                           MapGen.isSolid(Math.floor(this.x), Math.floor(y + this.radius));
-                };
-
-                if (!checkX(nx)) this.x = nx;
-                if (!checkY(ny)) this.y = ny;
-
-                // 向きの更新
-                if (this.vx > 0) this.direction = 1;
-                else if (this.vx < 0) this.direction = -1;
-            }
-        }
-
-        class Player extends Entity {
-            constructor(x, y) {
-                super(x, y, 0.4, 5.0); // 人間の基本速度
-                this.costumeIndex = parseInt(localStorage.getItem('aooni_costume')) || 0;
-                this.role = 'survivor'; // survivor, traitor(裏逃)
-            }
-
-            update(dt) {
-                if (!this.alive) return;
-                let vec = Input.getMovementVector();
-                this.vx = vec.x;
-                this.vy = vec.y;
-
-                if (Input.isActionJustPressed()) {
-                    MapGen.interactDoor(this.x, this.y);
-                }
-
-                super.update(dt);
-            }
-
-            draw(ctx) {
-                if (!this.alive) return;
-                let px = this.x * TILE_SIZE;
-                let py = this.y * TILE_SIZE;
-                
-                // 影
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.beginPath();
-                ctx.ellipse(px, py + TILE_SIZE/3, TILE_SIZE/3, TILE_SIZE/6, 0, 0, Math.PI*2);
-                ctx.fill();
-
-                // コスチューム描画 (絵文字)
-                ctx.font = `${TILE_SIZE}px sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                
-                ctx.save();
-                ctx.translate(px, py - TILE_SIZE/4);
-                if(this.direction < 0) ctx.scale(-1, 1); // 左向き反転
-
-                // 裏切り者の場合は赤く発光
-                if (this.role === 'traitor') {
-                    ctx.shadowColor = 'red';
-                    ctx.shadowBlur = 10;
-                }
-                
-                ctx.fillText(COSTUMES[this.costumeIndex], 0, 0);
-                ctx.restore();
-
-                // プレイヤーマーカー
-                ctx.fillStyle = 'yellow';
-                ctx.beginPath();
-                ctx.moveTo(px, py - TILE_SIZE + 5);
-                ctx.lineTo(px - 5, py - TILE_SIZE - 5);
-                ctx.lineTo(px + 5, py - TILE_SIZE - 5);
-                ctx.fill();
-            }
-        }
-
-        class Bot extends Entity {
-            constructor(x, y) {
-                super(x, y, 0.4, Utils.randomFloat(4.0, 4.8));
-                this.costumeIndex = Utils.randomInt(0, COSTUMES.length - 1);
-                this.state = 'idle'; // idle, wander, flee
-                this.target = null;
-                this.timer = 0;
-            }
-
-            update(dt) {
-                if (!this.alive) return;
-                this.timer -= dt;
-
-                // 簡単なステートマシン
-                if (this.state === 'idle' && this.timer <= 0) {
-                    this.state = 'wander';
-                    this.timer = Utils.randomFloat(1.0, 3.0);
-                    let angle = Math.random() * Math.PI * 2;
-                    this.vx = Math.cos(angle);
-                    this.vy = Math.sin(angle);
-                } else if (this.state === 'wander' && this.timer <= 0) {
-                    this.state = 'idle';
-                    this.timer = Utils.randomFloat(0.5, 2.0);
-                    this.vx = 0;
-                    this.vy = 0;
-                }
-
-                // 逃走ロジック (近くの青鬼から逃げる)
-                let nearestOni = null;
-                let minDist = 10; // 視界
-                for (let oni of Game.onis) {
-                    let d = Utils.distance(this.x, this.y, oni.x, oni.y);
-                    if (d < minDist) {
-                        minDist = d;
-                        nearestOni = oni;
-                    }
-                }
-
-                if (nearestOni) {
-                    this.state = 'flee';
-                    let dx = this.x - nearestOni.x;
-                    let dy = this.y - nearestOni.y;
-                    let len = Math.sqrt(dx*dx + dy*dy);
-                    this.vx = dx / len;
-                    this.vy = dy / len;
-                }
-
-                // 壁にぶつかったらランダムに方向転換 (簡易回避)
-                let nx = this.x + this.vx * this.speed * dt;
-                let ny = this.y + this.vy * this.speed * dt;
-                if (MapGen.isSolid(Math.floor(nx), Math.floor(this.y))) this.vx *= -1;
-                if (MapGen.isSolid(Math.floor(this.x), Math.floor(ny))) this.vy *= -1;
-
-                super.update(dt);
-            }
-
-            draw(ctx) {
-                if (!this.alive) return;
-                let px = this.x * TILE_SIZE;
-                let py = this.y * TILE_SIZE;
-                
-                ctx.font = `${TILE_SIZE * 0.8}px sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                
-                ctx.save();
-                ctx.translate(px, py - TILE_SIZE/5);
-                if(this.direction < 0) ctx.scale(-1, 1);
-                ctx.globalAlpha = 0.8; // BOTは少し透過
-                ctx.fillText(COSTUMES[this.costumeIndex], 0, 0);
-                ctx.restore();
-            }
-        }
-
-        class Oni extends Entity {
-            constructor(x, y, typeId) {
-                let type = ONI_TYPES[typeId];
-                super(x, y, 0.4 * type.size, type.speed);
-                this.type = type;
-                this.state = 'search'; // search, chase
-                this.target = null;
-                
-                // グラフィック生成 (リアルな顔のプロシージャル描画用設定)
-                this.eyeBlink = 0;
-            }
-
-            update(dt) {
-                this.eyeBlink += dt;
-
-                // ターゲット選定 (プレイヤーとBOTを区別せず、最も近いものを狙う)
-                let nearest = null;
-                let minDist = this.type.sightRadius;
-
-                let potentials = [...Game.bots.filter(b=>b.alive)];
-                if (Game.player.alive && Game.player.role !== 'traitor') { // 裏切り者は狙われない
-                    potentials.push(Game.player);
-                }
-
-                for (let p of potentials) {
-                    let d = Utils.distance(this.x, this.y, p.x, p.y);
-                    // 視線が通るか(壁がないか)の簡易チェック(Raycast省略で距離のみ)
-                    if (d < minDist) {
-                        minDist = d;
-                        nearest = p;
-                    }
-                }
-
-                this.target = nearest;
-
-                if (this.target) {
-                    this.state = 'chase';
-                    let dx = this.target.x - this.x;
-                    let dy = this.target.y - this.y;
-                    let len = Math.sqrt(dx*dx + dy*dy);
-                    this.vx = dx / len;
-                    this.vy = dy / len;
-
-                    // 筋肉青鬼：ドア破壊
-                    if (this.type.pattern === 'breakDoors') {
-                        let tx = Math.floor(this.x + this.vx * 1.5);
-                        let ty = Math.floor(this.y + this.vy * 1.5);
-                        if (MapGen.grid[ty] && MapGen.grid[ty][tx] === MapGen.TILE_DOOR) {
-                            let door = MapGen.doors.find(d => d.x === tx && d.y === ty);
-                            if (door && !door.open) {
-                                door.open = true; // 強制開放
-                                // TODO: 破壊エフェクト
-                            }
-                        }
-                    }
+        for (let i = 0; i < 4; i++) {
+            let newLeaves = [];
+            for (let leaf of leaves) {
+                let splitH = Math.random() > 0.5;
+                let max = (splitH ? leaf.h : leaf.w) - 8;
+                if (max <= 5) { newLeaves.push(leaf); continue; }
+                let split = Utils.randomInt(5, max);
+                if (splitH) {
+                    newLeaves.push({ x: leaf.x, y: leaf.y, w: leaf.w, h: split });
+                    newLeaves.push({ x: leaf.x, y: leaf.y + split, w: leaf.w, h: leaf.h - split });
                 } else {
-                    this.state = 'search';
-                    // ランダム徘徊
-                    if (Math.random() < 0.05) {
-                        let angle = Math.random() * Math.PI * 2;
-                        this.vx = Math.cos(angle);
-                        this.vy = Math.sin(angle);
+                    newLeaves.push({ x: leaf.x, y: leaf.y, w: split, h: leaf.h });
+                    newLeaves.push({ x: leaf.x + split, y: leaf.y, w: leaf.w - split, h: leaf.h });
+                }
+            }
+            leaves = newLeaves;
+        }
+
+        for (let leaf of leaves) {
+            let rw = Utils.randomInt(4, leaf.w - 1);
+            let rh = Utils.randomInt(4, leaf.h - 1);
+            let rx = leaf.x + Utils.randomInt(1, leaf.w - rw);
+            let ry = leaf.y + Utils.randomInt(1, leaf.h - rh);
+            rooms.push({ x: rx, y: ry, w: rw, h: rh });
+            for (let y = ry; y < ry + rh; y++) {
+                for (let x = rx; x < rx + rw; x++) grid[y][x] = TILE.FLOOR;
+            }
+        }
+
+        for (let i = 0; i < rooms.length - 1; i++) {
+            let rA = rooms[i], rB = rooms[i + 1];
+            let cxA = Math.floor(rA.x + rA.w/2), cyA = Math.floor(rA.y + rA.h/2);
+            let cxB = Math.floor(rB.x + rB.w/2), cyB = Math.floor(rB.y + rB.h/2);
+            for(let x = Math.min(cxA, cxB); x <= Math.max(cxA, cxB); x++) { grid[cyA][x] = TILE.FLOOR; grid[cyA+1][x] = TILE.FLOOR; }
+            for(let y = Math.min(cyA, cyB); y <= Math.max(cyA, cyB); y++) { grid[y][cxB] = TILE.FLOOR; grid[y][cxB+1] = TILE.FLOOR; }
+        }
+        return { grid, rooms };
+    }
+
+    static generateUraMap(cols, rows) {
+        let grid = Array.from({ length: rows }, () => Array(cols).fill(TILE.WALL));
+        for(let y=1; y<rows-1; y++){
+            for(let x=2; x<cols-2; x++) grid[y][x] = TILE.FLOOR;
+        }
+        return { grid, rooms:[{x:2, y:2, w:cols-4, h:4}] }; 
+    }
+
+    static getRandomFloor(grid, cols, rows) {
+        let maxAttempts = 1000;
+        while (maxAttempts-- > 0) {
+            let x = Utils.randomInt(1, cols - 1);
+            let y = Utils.randomInt(1, rows - 1);
+            if (grid[y][x] === TILE.FLOOR) return { x: x * CONFIG.TILE_SIZE, y: y * CONFIG.TILE_SIZE };
+        }
+        return { x: 2 * CONFIG.TILE_SIZE, y: 2 * CONFIG.TILE_SIZE };
+    }
+}
+
+class Pathfinder {
+    static findPath(grid, startX, startY, goalX, goalY) {
+        const rows = grid.length, cols = grid[0].length;
+        const queue = [{x: startX, y: startY, path: []}];
+        const visited = new Set();
+        visited.add(`${startX},${startY}`);
+        const dirs = [{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}];
+        let steps = 0;
+
+        while(queue.length > 0 && steps < 100) { 
+            let curr = queue.shift();
+            steps++;
+            if(curr.x === goalX && curr.y === goalY) return curr.path;
+
+            for(let d of dirs) {
+                let nx = curr.x + d.x, ny = curr.y + d.y;
+                if(nx>=0 && nx<cols && ny>=0 && ny<rows && grid[ny][nx] !== TILE.WALL) {
+                    let key = `${nx},${ny}`;
+                    if(!visited.has(key)) {
+                        visited.add(key);
+                        queue.push({x: nx, y: ny, path: [...curr.path, {x:nx, y:ny}]});
                     }
                 }
+            }
+        }
+        return [];
+    }
+}
 
-                super.update(dt);
+class Entity {
+    constructor(x, y, w, h) { this.x = x; this.y = y; this.w = w; this.h = h; this.isDead = false; }
+    getRect() { return { x: this.x, y: this.y, w: this.w, h: this.h }; }
+    getCenter() { return { x: this.x + this.w/2, y: this.y + this.h/2 }; }
+}
 
-                // 捕食判定
-                if (this.target && Utils.distance(this.x, this.y, this.target.x, this.target.y) < (this.radius + this.target.radius)) {
-                    this.target.alive = false;
-                    if (this.target === Game.player) {
-                        Game.gameOver();
+class Character extends Entity {
+    constructor(x, y, color, speed) {
+        super(x, y, 24, 24);
+        this.color = color;
+        this.baseSpeed = speed;
+        this.speed = speed;
+        this.dir = 0;
+        this.isMoving = false;
+        this.anim = 0;
+        this.buffs = { MASK: 0, SKATE: 0, SLOW: 0, POISON: 0 }; 
+        this.isHidden = false;
+    }
+    
+    update(dt, game) {
+        if(this.isDead || this.isHidden) return;
+        for(let key in this.buffs) {
+            if(this.buffs[key] > 0) this.buffs[key] = Math.max(0, this.buffs[key] - dt);
+        }
+        if(this.isMoving) this.anim += dt * 10;
+        else this.anim = 0;
+    }
+
+    move(dx, dy, grid, cols, rows) {
+        if(this.isDead || this.isHidden) return;
+        if (dx === 0 && dy === 0) { this.isMoving = false; return; }
+
+        this.isMoving = true;
+        if(Math.abs(dx) > Math.abs(dy)) this.dir = dx > 0 ? 2 : 1;
+        else this.dir = dy > 0 ? 0 : 3;
+
+        let len = Math.sqrt(dx*dx + dy*dy);
+        if(len === 0) return;
+
+        let actualSpeed = this.speed;
+        if(this.buffs.SKATE > 0) actualSpeed *= 1.5;
+        if(this.buffs.SLOW > 0 || this.buffs.POISON > 0) actualSpeed *= 0.5;
+
+        let vx = (dx/len) * actualSpeed * game.deltaTime;
+        let vy = (dy/len) * actualSpeed * game.deltaTime;
+
+        this.x += vx;
+        if(this.checkWall(grid, cols, rows)) this.x -= vx;
+        this.y += vy;
+        if(this.checkWall(grid, cols, rows)) this.y -= vy;
+    }
+
+    checkWall(grid, cols, rows) {
+        let left = Math.floor(this.x / CONFIG.TILE_SIZE), right = Math.floor((this.x + this.w) / CONFIG.TILE_SIZE);
+        let top = Math.floor(this.y / CONFIG.TILE_SIZE), bottom = Math.floor((this.y + this.h) / CONFIG.TILE_SIZE);
+        if(left<0 || right>=cols || top<0 || bottom>=rows) return true;
+        return grid[top][left]===TILE.WALL || grid[top][right]===TILE.WALL || grid[bottom][left]===TILE.WALL || grid[bottom][right]===TILE.WALL;
+    }
+
+    draw(ctx) {
+        if(this.isDead || this.isHidden) return;
+        let bob = this.isMoving ? Math.sin(this.anim)*3 : 0;
+        let cx = this.x - 8, cy = this.y - 24;
+
+        ctx.fillStyle = "rgba(0,0,0,0.3)";
+        ctx.beginPath(); ctx.ellipse(this.x+this.w/2, this.y+this.h, 12, 4, 0, 0, Math.PI*2); ctx.fill();
+
+        if(this.buffs.SKATE > 0) {
+            ctx.fillStyle = "rgba(241, 196, 15, 0.5)";
+            ctx.fillRect(cx+6, cy+bob, 28, 40);
+        }
+
+        ctx.fillStyle = (this.buffs.POISON > 0) ? "#8e44ad" : this.color; 
+        ctx.fillRect(cx+8, cy+16+bob, 24, 24);
+        ctx.fillStyle = "#FFDCB6";
+        ctx.fillRect(cx+6, cy+bob, 28, 20);
+        
+        ctx.fillStyle = "#000";
+        if(this.dir===0 || this.dir===2) ctx.fillRect(cx+18, cy+8+bob, 4, 4);
+        if(this.dir===0 || this.dir===1) ctx.fillRect(cx+10, cy+8+bob, 4, 4);
+        
+        if(this.buffs.MASK > 0) {
+            ctx.fillStyle = "#555";
+            ctx.fillRect(cx+10, cy+12+bob, 12, 8);
+        }
+    }
+}
+
+class NPC extends Character {
+    constructor(x, y) {
+        let skin = DB.CHARACTERS[Utils.randomInt(0, 9)]; 
+        super(x, y, skin.color, skin.speedBase + Utils.random(-15, 15));
+        this.icon = skin.icon;
+        this.name = DB.NPC_NAMES[Utils.randomInt(0, DB.NPC_NAMES.length)];
+        this.state = 'IDLE';
+        this.stateTimer = 0;
+        this.targetX = x; this.targetY = y;
+    }
+
+    update(dt, game) {
+        super.update(dt, game);
+        if(this.isDead || this.isHidden) return;
+        this.stateTimer -= dt;
+        let mapCx = (game.cols*CONFIG.TILE_SIZE)/2, mapCy = (game.rows*CONFIG.TILE_SIZE)/2;
+        let distFromCenter = Utils.distance(this.x, this.y, mapCx, mapCy);
+
+        let nearestOni = null, minDist = 350;
+        if(game.mode === 'ONIMODE') {
+            let d = Utils.distance(this.x, this.y, game.player.x, game.player.y);
+            if(d < minDist) { minDist = d; nearestOni = game.player; }
+        } else {
+            for(let oni of game.onis) {
+                let d = Utils.distance(this.x, this.y, oni.x, oni.y);
+                if(d < minDist) { minDist = d; nearestOni = oni; }
+            }
+        }
+
+        if(nearestOni) {
+            this.state = 'FLEE';
+            let dx = this.x - nearestOni.x, dy = this.y - nearestOni.y;
+            dx += Utils.random(-50, 50); dy += Utils.random(-50, 50);
+            this.move(dx, dy, game.grid, game.cols, game.rows);
+        } else if (game.mode === 'SURVIVAL' && distFromCenter > game.zoneRadius - 100) {
+            this.state = 'SAFE_ZONE';
+            let dx = mapCx - this.x, dy = mapCy - this.y;
+            this.move(dx, dy, game.grid, game.cols, game.rows);
+        } else {
+            if(this.stateTimer <= 0) {
+                this.state = 'WANDER'; this.stateTimer = Utils.random(1, 3);
+                this.targetX = this.x + Utils.random(-300, 300); this.targetY = this.y + Utils.random(-300, 300);
+            }
+            let dx = this.targetX - this.x, dy = this.targetY - this.y;
+            if(Math.abs(dx) > 10 || Math.abs(dy) > 10) this.move(dx, dy, game.grid, game.cols, game.rows);
+            else this.isMoving = false;
+        }
+    }
+
+    draw(ctx) {
+        super.draw(ctx);
+        if(this.isDead || this.isHidden) return;
+        ctx.font = "20px Arial";
+        ctx.fillText(this.icon, this.x - 6, this.y - 30 + (this.isMoving ? Math.sin(this.anim)*3 : 0));
+        ctx.fillStyle = "#fff"; ctx.font = "10px sans-serif";
+        ctx.fillText(this.name, this.x - 10, this.y - 50);
+    }
+}
+
+class Player extends Character {
+    constructor(x, y, charData, petData) {
+        super(x, y, charData.color, charData.speedBase);
+        this.charData = charData;
+        this.petData = petData;
+        if(petData.buff === 'SPEED') this.speed *= petData.val;
+    }
+
+    draw(ctx) {
+        if(this.isDead || this.isHidden) return;
+        if(game.mode === 'ONIMODE') {
+            EnemyOni.drawCustomOni(ctx, this.x, this.y, this.w, this.h, saveData.getOniData().type, this.anim, this.dir, true);
+            ctx.fillStyle = "#fff"; ctx.font = "14px sans-serif";
+            ctx.fillText("YOU (鬼)", this.x - 5, this.y - 60);
+            return;
+        }
+
+        super.draw(ctx);
+        
+        if(this.petData.id !== 'p0') {
+            let px = this.x - 20, py = this.y + (this.isMoving ? Math.cos(this.anim)*5 : 0);
+            ctx.font = "20px Arial"; ctx.fillText(this.petData.icon, px, py);
+        }
+        ctx.font = "20px Arial";
+        ctx.fillText(this.charData.icon, this.x - 6, this.y - 35 + (this.isMoving ? Math.sin(this.anim)*3 : 0));
+
+        ctx.fillStyle = "#fff"; ctx.font = "12px sans-serif";
+        ctx.fillText(saveData.playerName, this.x - 10, this.y - 55);
+    }
+}
+
+class EnemyOni extends Entity {
+    constructor(x, y, type = DB.ONI_TYPES.NORMAL) {
+        super(x, y, 32, 32);
+        this.type = type;
+        this.speed = 190;
+        this.dir = 0;
+        this.anim = 0;
+        this.path = [];
+        this.target = null;
+        this.stateTimer = 0;
+        this.initType(type);
+    }
+
+    initType(type) {
+        switch(type) {
+            case DB.ONI_TYPES.FUWATTY: this.speed = 300; break;
+            case DB.ONI_TYPES.SQUAT: this.speed = 150; break;
+            case DB.ONI_TYPES.DEMON: this.speed = 220; break;
+            case DB.ONI_TYPES.NINJA: this.speed = 250; break;
+            case DB.ONI_TYPES.GIANT: this.w=48; this.h=48; this.speed=140; break;
+            case DB.ONI_TYPES.METAL: this.speed = 400; break;
+            default: this.speed = 190; break;
+        }
+    }
+
+    update(dt, game) {
+        this.anim += dt * 8;
+        this.stateTimer -= dt;
+
+        let nearest = null;
+        let minDist = 500;
+        const targets = [game.player, ...game.npcs].filter(t => !t.isDead && !t.isHidden);
+        for(let t of targets) {
+            let d = Utils.distance(this.x, this.y, t.x, t.y);
+            if(d < minDist) { minDist = d; nearest = t; }
+        }
+        this.target = nearest;
+        let isChasingPlayer = (nearest === game.player && minDist < 300);
+        
+        if(isChasingPlayer && (game.mode === 'SURVIVAL' || game.mode === 'TOWER')) {
+            saveData.recordOni(this.type);
+            audioCtrl.playChase();
+        }
+
+        this.applyAbility(dt, game, targets);
+        this.moveLogic(dt, game);
+
+        const hitRect = this.getRect();
+        for(let c of targets) {
+            if(Utils.checkCollision(hitRect, c.getRect())) {
+                game.killCharacter(c, "青鬼に捕食された");
+                if(c === game.player) saveData.recordOni(this.type);
+            }
+        }
+    }
+    
+    applyAbility(dt, game, targets) {
+        let pc = this.getCenter();
+        switch(this.type) {
+            case DB.ONI_TYPES.ICE:
+                if(this.stateTimer <= 0) {
+                    this.stateTimer = 1.0;
+                    targets.forEach(t => { if(Utils.distance(pc.x, pc.y, t.getCenter().x, t.getCenter().y) < 150) t.buffs.SLOW = 2.0; });
+                }
+                break;
+            case DB.ONI_TYPES.POISON:
+                if(this.stateTimer <= 0) {
+                    this.stateTimer = 0.5;
+                    targets.forEach(t => { if(Utils.distance(pc.x, pc.y, t.getCenter().x, t.getCenter().y) < 100) t.buffs.POISON = 1.0; });
+                }
+                break;
+            case DB.ONI_TYPES.BOMB:
+                if(this.stateTimer <= -5) { 
+                    targets.forEach(t => { if(Utils.distance(pc.x, pc.y, t.getCenter().x, t.getCenter().y) < 120) game.killCharacter(t, "爆弾鬼の爆発に巻き込まれた"); });
+                    this.isDead = true; 
+                }
+                break;
+            case DB.ONI_TYPES.SLIME:
+                this.w = 32 + Math.sin(this.anim)*10; this.h = 32 - Math.sin(this.anim)*10;
+                break;
+        }
+    }
+
+    moveLogic(dt, game) {
+        if(this.type === DB.ONI_TYPES.FUWATTY || this.type === DB.ONI_TYPES.METAL) {
+            if(this.stateTimer <= 0) {
+                if(this.isDashing) { this.isDashing = false; this.stateTimer = Utils.random(1, 2); }
+                else {
+                    this.isDashing = true; this.stateTimer = 1.0;
+                    if(this.target) {
+                        let dx = this.target.x - this.x, dy = this.target.y - this.y;
+                        let len = Math.sqrt(dx*dx+dy*dy);
+                        if(len > 0) { this.dashVx = (dx/len) * this.speed; this.dashVy = (dy/len) * this.speed; }
                     } else {
-                        Game.survivors--;
+                        this.dashVx = (Math.random()-0.5)*this.speed; this.dashVy = (Math.random()-0.5)*this.speed;
                     }
                 }
             }
-
-            draw(ctx) {
-                // リアルな青鬼の描画 (Canvas APIを駆使して絵文字を使わずに描画)
-                let px = this.x * TILE_SIZE;
-                let py = this.y * TILE_SIZE;
-                let s = TILE_SIZE * this.type.size;
-
-                ctx.save();
-                ctx.translate(px, py - s/4);
-                if (this.direction < 0) ctx.scale(-1, 1);
-
-                // 影青鬼のステルス処理
-                if (this.type.pattern === 'stealth') {
-                    let dToPlayer = Utils.distance(this.x, this.y, Game.player.x, Game.player.y);
-                    ctx.globalAlpha = Math.max(0, 1 - (dToPlayer / 6)); // 近づくまで見えない
-                }
-
-                // 頭部 (楕円形グラデーション)
-                let grad = ctx.createRadialGradient(0, -s/4, s/8, 0, 0, s/2);
-                grad.addColorStop(0, this.type.color); // ベース色
-                grad.addColorStop(1, '#000000'); // 影
-
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                // いびつな頭の形
-                ctx.ellipse(0, 0, s/2.2, s/1.8, 0, 0, Math.PI*2);
-                ctx.fill();
-
-                // 巨大な目
-                ctx.fillStyle = '#ffffff';
-                let eyeY = -s/6;
-                let eyeX = s/6;
-                let eyeW = s/5;
-                let eyeH = s/4;
+            if(this.isDashing) {
+                this.x += this.dashVx * dt; if(this.checkWall(game.grid, game.cols, game.rows)) { this.x -= this.dashVx*dt; this.dashVx *= -1; }
+                this.y += this.dashVy * dt; if(this.checkWall(game.grid, game.cols, game.rows)) { this.y -= this.dashVy*dt; this.dashVy *= -1; }
+            }
+        } 
+        else if (this.type === DB.ONI_TYPES.GHOST) {
+            if(this.target) {
+                let dx = this.target.x - this.x, dy = this.target.y - this.y;
+                let len = Math.sqrt(dx*dx+dy*dy);
+                if(len > 0) { this.x += (dx/len) * this.speed * dt; this.y += (dy/len) * this.speed * dt; }
+            }
+        }
+        else {
+            if(this.target && this.stateTimer <= 0) {
+                let sx = Math.floor(this.x/CONFIG.TILE_SIZE), sy = Math.floor(this.y/CONFIG.TILE_SIZE);
+                let gx = Math.floor(this.target.x/CONFIG.TILE_SIZE), gy = Math.floor(this.target.y/CONFIG.TILE_SIZE);
+                this.path = Pathfinder.findPath(game.grid, sx, sy, gx, gy);
+                this.stateTimer = 0.5;
+            }
+            if(this.path && this.path.length > 0) {
+                let next = this.path[0];
+                let tx = next.x * CONFIG.TILE_SIZE, ty = next.y * CONFIG.TILE_SIZE;
+                let dx = tx - this.x, dy = ty - this.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
                 
-                // まばたき
-                if (Math.sin(this.eyeBlink * 5) > 0.95) eyeH = 2;
-
-                // 左目
-                ctx.beginPath(); ctx.ellipse(-eyeX, eyeY, eyeW, eyeH, -0.2, 0, Math.PI*2); ctx.fill();
-                // 右目
-                ctx.beginPath(); ctx.ellipse(eyeX, eyeY, eyeW, eyeH, 0.2, 0, Math.PI*2); ctx.fill();
-
-                // 瞳孔（プレイヤーの方を向く）
-                ctx.fillStyle = '#000000';
-                let pupX = this.vx * 3;
-                let pupY = this.vy * 3;
-                ctx.beginPath(); ctx.arc(-eyeX + pupX, eyeY + pupY, eyeW/2.5, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(eyeX + pupX, eyeY + pupY, eyeW/2.5, 0, Math.PI*2); ctx.fill();
-
-                // 恐ろしい口
-                ctx.fillStyle = '#330000';
-                ctx.beginPath();
-                if (this.state === 'chase') {
-                    // 開いた口
-                    ctx.ellipse(0, s/4, s/3, s/4, 0, 0, Math.PI*2);
-                    ctx.fill();
-                    // 歯
-                    ctx.fillStyle = '#ffffff';
-                    for(let i=-2; i<=2; i++) {
-                        ctx.fillRect(i*(s/8) - s/20, s/8, s/10, s/8);
-                    }
-                } else {
-                    // 閉じた口(歪んだ線)
-                    ctx.lineWidth = 3;
-                    ctx.strokeStyle = '#000';
-                    ctx.moveTo(-s/4, s/4);
-                    ctx.quadraticCurveTo(0, s/3, s/4, s/4);
-                    ctx.stroke();
+                if(dist < 5) this.path.shift();
+                else {
+                    let vx = (dx/dist) * this.speed * dt, vy = (dy/dist) * this.speed * dt;
+                    this.x += vx; if(this.checkWall(game.grid, game.cols, game.rows)) this.x -= vx;
+                    this.y += vy; if(this.checkWall(game.grid, game.cols, game.rows)) this.y -= vy;
+                    if (Math.abs(dx) > Math.abs(dy)) this.dir = dx > 0 ? 2 : 1; else this.dir = dy > 0 ? 0 : 3;
                 }
+            }
+        }
+    }
 
-                ctx.restore();
+    checkWall(grid, cols, rows) {
+        if(this.type === DB.ONI_TYPES.GHOST) return false;
+        let left = Math.floor(this.x / CONFIG.TILE_SIZE), right = Math.floor((this.x + this.w) / CONFIG.TILE_SIZE);
+        let top = Math.floor(this.y / CONFIG.TILE_SIZE), bottom = Math.floor((this.y + this.h) / CONFIG.TILE_SIZE);
+        if(left<0 || right>=cols || top<0 || bottom>=rows) return true;
+        return grid[top][left]===1 || grid[top][right]===1 || grid[bottom][left]===1 || grid[bottom][right]===1;
+    }
+
+    draw(ctx) { EnemyOni.drawCustomOni(ctx, this.x, this.y, this.w, this.h, this.type, this.anim, this.dir, false, this.stateTimer); }
+
+    static drawCustomOni(ctx, x, y, w, h, type, anim, dir, isPlayer, stateTimer=0) {
+        let cx = x - (w==48?4:12), cy = y - (h==48?60:40);
+        let bob = Math.sin(anim)*5;
+        if(type === DB.ONI_TYPES.SQUAT) bob = stateTimer < 0.4 ? -20 : 0; 
+        
+        ctx.save();
+        ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath(); ctx.ellipse(x+w/2, y+h, w/2, h/4, 0, 0, Math.PI*2); ctx.fill();
+
+        let baseColor = '#8e44ad', headW = 56, headH = 40, bodyW = 40, bodyH = 42;
+        let scale = (type === DB.ONI_TYPES.GIANT) ? 1.5 : 1;
+        if(type === DB.ONI_TYPES.GIANT) { cx -= 14; cy -= 20; headW*=scale; headH*=scale; bodyW*=scale; bodyH*=scale; }
+        
+        switch(type) {
+            case DB.ONI_TYPES.FUWATTY: baseColor = '#e74c3c'; break;
+            case DB.ONI_TYPES.SQUAT: baseColor = '#27ae60'; break;
+            case DB.ONI_TYPES.JELLY: baseColor = 'rgba(52, 152, 219, 0.7)'; break;
+            case DB.ONI_TYPES.DEMON: baseColor = '#c0392b'; break;
+            case DB.ONI_TYPES.ICE: baseColor = '#00ced1'; break;
+            case DB.ONI_TYPES.FIRE: baseColor = '#ff4500'; break;
+            case DB.ONI_TYPES.SLIME: baseColor = 'rgba(46, 204, 113, 0.8)'; break;
+            case DB.ONI_TYPES.SPIDER: baseColor = '#2c3e50'; break;
+            case DB.ONI_TYPES.MUMMY: baseColor = '#f5f5dc'; break;
+            case DB.ONI_TYPES.NINJA: baseColor = '#1a252f'; break;
+            case DB.ONI_TYPES.GHOST: baseColor = 'rgba(236, 240, 241, 0.6)'; break;
+            case DB.ONI_TYPES.BOMB: baseColor = '#111'; break;
+            case DB.ONI_TYPES.SNIPER: baseColor = '#556b2f'; break;
+            case DB.ONI_TYPES.POISON: baseColor = '#9932cc'; break;
+            case DB.ONI_TYPES.ZOMBIE: baseColor = '#6b8e23'; break;
+            case DB.ONI_TYPES.METAL: 
+                let grad = ctx.createLinearGradient(cx, cy, cx+headW, cy+headH);
+                grad.addColorStop(0, "#ccc"); grad.addColorStop(0.5, "#fff"); grad.addColorStop(1, "#777");
+                baseColor = grad; break;
+        }
+
+        ctx.fillStyle = baseColor;
+        
+        if(type === DB.ONI_TYPES.SLIME || type === DB.ONI_TYPES.JELLY || type === DB.ONI_TYPES.BOMB) {
+            ctx.beginPath(); ctx.ellipse(cx+headW/2, cy+bob+bodyH/2, headW/2, bodyH/1.5, 0, 0, Math.PI*2); ctx.fill();
+        } else {
+            if(type !== DB.ONI_TYPES.GHOST) ctx.fillRect(cx+(headW-bodyW)/2, cy+30*scale+bob, bodyW, bodyH); 
+            ctx.fillRect(cx, cy+bob, headW, headH); 
+        }
+
+        if(type === DB.ONI_TYPES.DEMON) { ctx.fillStyle="#000"; ctx.beginPath(); ctx.moveTo(cx+10, cy+bob); ctx.lineTo(cx+20, cy-20+bob); ctx.lineTo(cx+30, cy+bob); ctx.fill(); ctx.moveTo(cx+headW-10, cy+bob); ctx.lineTo(cx+headW-20, cy-20+bob); ctx.lineTo(cx+headW-30, cy+bob); ctx.fill(); }
+        if(type === DB.ONI_TYPES.ICE) { ctx.fillStyle="#fff"; ctx.beginPath(); ctx.moveTo(cx+headW/2, cy-15+bob); ctx.lineTo(cx+headW/2-10, cy+bob); ctx.lineTo(cx+headW/2+10, cy+bob); ctx.fill(); }
+        if(type === DB.ONI_TYPES.FIRE) { ctx.fillStyle="#ffeb3b"; ctx.beginPath(); ctx.moveTo(cx+headW/2, cy-20+bob); ctx.lineTo(cx+headW/2-15, cy+bob); ctx.lineTo(cx+headW/2+15, cy+bob); ctx.fill(); }
+        if(type === DB.ONI_TYPES.SPIDER) { ctx.strokeStyle="#2c3e50"; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(cx, cy+20+bob); ctx.lineTo(cx-15, cy+10+bob); ctx.moveTo(cx+headW, cy+20+bob); ctx.lineTo(cx+headW+15, cy+10+bob); ctx.stroke(); }
+        if(type === DB.ONI_TYPES.MUMMY) { ctx.strokeStyle="rgba(0,0,0,0.2)"; ctx.lineWidth=2; for(let i=0; i<4; i++){ ctx.beginPath(); ctx.moveTo(cx, cy+i*10+bob); ctx.lineTo(cx+headW, cy+i*10+bob+5); ctx.stroke(); } }
+        if(type === DB.ONI_TYPES.BOMB) { ctx.strokeStyle="#f1c40f"; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(cx+headW/2, cy+bob); ctx.quadraticCurveTo(cx+headW, cy-20+bob, cx+headW/2+10, cy-30+bob); ctx.stroke(); ctx.fillStyle="#e74c3c"; ctx.beginPath(); ctx.arc(cx+headW/2+10, cy-30+bob, 4, 0, Math.PI*2); ctx.fill(); }
+
+        ctx.fillStyle = (type===DB.ONI_TYPES.METAL || type===DB.ONI_TYPES.DEMON || type===DB.ONI_TYPES.ZOMBIE) ? "#e74c3c" : "#fff";
+        let eSize = 12 * scale;
+        ctx.fillRect(cx+10*scale, cy+15*scale+bob, eSize, eSize); ctx.fillRect(cx+34*scale, cy+15*scale+bob, eSize, eSize);
+        ctx.fillStyle = "#000";
+        let eOff = dir===1 ? -4*scale : (dir===2 ? 4*scale : 0);
+        
+        if(type === DB.ONI_TYPES.SNIPER) { ctx.fillStyle = "#2ecc71"; ctx.fillRect(cx+10*scale, cy+15*scale+bob, eSize, eSize); ctx.fillStyle="#000"; }
+        
+        ctx.fillRect(cx+14*scale+eOff, cy+18*scale+bob, 4*scale, 4*scale); ctx.fillRect(cx+38*scale+eOff, cy+18*scale+bob, 4*scale, 4*scale);
+        
+        if(type !== DB.ONI_TYPES.NINJA) {
+            ctx.fillRect(cx+18*scale, cy+32*scale+bob, 20*scale, 6*scale);
+            if(type === DB.ONI_TYPES.ZOMBIE) { ctx.fillStyle="#fff"; ctx.fillRect(cx+20*scale, cy+32*scale+bob, 4*scale, 6*scale); ctx.fillRect(cx+28*scale, cy+32*scale+bob, 4*scale, 6*scale); }
+        }
+        ctx.restore();
+    }
+}
+
+class AdvancedSenjuBoss {
+    constructor(isShin) {
+        this.isShin = isShin;
+        this.y = 0; 
+        this.baseColor = isShin ? '#c0392b' : '#8e44ad';
+        this.hatColor = isShin ? '#e74c3c' : '#f1c40f';
+        this.eyeColor = isShin ? '#e74c3c' : '#000';
+        
+        this.leftArm = { x: 0, y: 0, state: 1, timer: 0, ext: 0 };
+        this.rightArm = { x: 0, y: 0, state: 5, timer: 0, ext: 0 };
+        
+        this.sideArms = []; 
+        this.sideArmTimer = 0;
+        
+        this.speed = isShin ? 200 : 150; 
+    }
+
+    update(dt, game) {
+        this.y += this.speed * dt;
+        
+        this.updateArm(dt, this.leftArm, game, true);
+        this.updateArm(dt, this.rightArm, game, false);
+
+        let bossBodyRect = { x: game.camera.x + game.canvas.width/2 - 60, y: this.y, w: 120, h: 100 };
+        if (game.player.y < this.y + 100) { game.player.y = this.y + 100; }
+
+        if(Utils.checkCollision(bossBodyRect, game.player.getRect())) {
+             game.killCharacter(game.player, this.isShin ? "真・千手観音に飲み込まれた" : "千手観音鬼に飲み込まれた");
+        }
+
+        if(this.isShin) {
+            this.sideArmTimer -= dt;
+            if(this.sideArmTimer <= 0) {
+                this.sideArmTimer = 2.0;
+                let isLeft = Math.random() > 0.5;
+                this.sideArms.push({ x: isLeft ? game.camera.x : game.camera.x+game.canvas.width, y: game.player.y + Utils.random(-100, 100), w: 0, h: 40, isLeft: isLeft, life: 3.0 });
+            }
+            for(let i = this.sideArms.length-1; i>=0; i--) {
+                let arm = this.sideArms[i];
+                arm.life -= dt;
+                if(arm.life > 1.5) arm.w += 400 * dt;
+                else arm.w -= 400 * dt;
+                
+                let rect = arm.isLeft ? {x: arm.x, y: arm.y, w: arm.w, h: arm.h} : {x: arm.x - arm.w, y: arm.y, w: arm.w, h: arm.h};
+                if(Utils.checkCollision(rect, game.player.getRect())) game.killCharacter(game.player, "真・千手観音の横槍に貫かれた");
+                if(arm.life <= 0) this.sideArms.splice(i, 1);
+            }
+        }
+    }
+
+    updateArm(dt, arm, game, isLeft) {
+        arm.timer -= dt;
+        let baseX = game.camera.x + (isLeft ? game.canvas.width*0.2 : game.canvas.width*0.8);
+        
+        switch(arm.state) {
+            case 1: 
+                if(arm.timer <= 0) { arm.state = 2; arm.timer = Utils.random(0.2, 0.8); }
+                arm.x = baseX + Math.sin(Date.now()/300)*50;
+                break;
+            case 2: // プレイヤーに向かって横移動
+                if(arm.timer <= 0) { arm.state = 3; arm.timer = 1.0; } // 調整: 待機時間を長く
+                arm.x += (game.player.x - arm.x) * 3 * dt;
+                break;
+            case 3: // 奥に腕を伸ばす
+                arm.ext += 400 * dt; // 調整: 速度を半分に
+                if(arm.timer <= 0) { arm.state = 4; arm.timer = 1.0; } // 調整: 伸ばす時間を倍に
+                this.checkHit(arm, game);
+                break;
+            case 4: // 戻す
+                arm.ext -= 400 * dt; // 調整: 速度を半分に
+                if(arm.ext <= 0) { arm.ext = 0; arm.state = 5; arm.timer = Utils.random(0.5, 1.5); }
+                break;
+            case 5: 
+                if(arm.timer <= 0) { arm.state = 6; arm.timer = 1.0; } // 調整: 待機時間を長く
+                arm.x = baseX + Math.sin(Date.now()/200)*100;
+                break;
+            case 6: // 直接腕を伸ばしながら手を奥に伸ばす
+                arm.ext += 500 * dt; // 調整: 速度を半分に
+                arm.x += (game.player.x - arm.x) * 2 * dt;
+                if(arm.timer <= 0) { arm.state = 7; arm.timer = 1.0; } // 調整: 伸ばす時間を倍に
+                this.checkHit(arm, game);
+                break;
+            case 7: // 1へ戻る
+                arm.ext -= 500 * dt; // 調整: 速度を半分に
+                if(arm.ext <= 0) { arm.ext = 0; arm.state = 1; arm.timer = Utils.random(0.5, 1.5); }
+                break;
+        }
+        arm.y = this.y + 100; 
+    }
+
+    checkHit(arm, game) {
+        let handRect = { x: arm.x - 30, y: arm.y + arm.ext, w: 60, h: 60 };
+        if(Utils.checkCollision(handRect, game.player.getRect())) {
+            game.killCharacter(game.player, this.isShin ? "真・千手観音に叩き潰された" : "千手観音鬼の手に捕まれた");
+        }
+    }
+
+    draw(ctx, game) {
+        let cx = game.camera.x + game.canvas.width/2 - 60;
+        let cy = this.y;
+
+        this.drawMainArm(ctx, this.leftArm);
+        this.drawMainArm(ctx, this.rightArm);
+        
+        if(this.isShin) {
+            ctx.fillStyle = this.baseColor;
+            for(let arm of this.sideArms) {
+                if(arm.isLeft) ctx.fillRect(arm.x, arm.y, arm.w, arm.h);
+                else ctx.fillRect(arm.x - arm.w, arm.y, arm.w, arm.h);
             }
         }
 
-        const Renderer = {
-            canvas: null,
-            ctx: null,
-            camera: { x: 0, y: 0, zoom: 1.5 },
-            width: 0,
-            height: 0,
+        ctx.fillStyle = this.baseColor;
+        ctx.fillRect(cx, cy, 120, 100); 
+        
+        ctx.fillStyle = this.hatColor;
+        ctx.beginPath(); ctx.moveTo(cx-20, cy); ctx.lineTo(cx+140, cy); ctx.lineTo(cx+60, cy-40); ctx.fill();
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx+60, cy-20, 10, 0, Math.PI*2); ctx.fill();
 
-            init() {
-                this.canvas = document.getElementById('gameCanvas');
-                this.ctx = this.canvas.getContext('2d');
-                this.resize();
-                window.addEventListener('resize', () => this.resize());
-            },
+        ctx.fillStyle = "#fff"; ctx.fillRect(cx+20, cy+30, 24, 24); ctx.fillRect(cx+76, cy+30, 24, 24);
+        ctx.fillStyle = this.eyeColor; ctx.fillRect(cx+28, cy+38, 8, 8); ctx.fillRect(cx+84, cy+38, 8, 8);
+        ctx.fillStyle = "#000"; ctx.fillRect(cx+36, cy+70, 48, 12);
+    }
 
-            resize() {
-                // コンテナのサイズに合わせる
-                let container = document.getElementById('game-container');
-                this.width = container.clientWidth;
-                this.height = container.clientHeight;
-                this.canvas.width = this.width;
-                this.canvas.height = this.height;
-            },
+    drawMainArm(ctx, arm) {
+        ctx.fillStyle = "#f1c40f"; 
+        ctx.fillRect(arm.x - 10, arm.y, 20, arm.ext);
+        
+        ctx.fillStyle = this.baseColor;
+        let handY = arm.y + arm.ext;
+        ctx.beginPath(); ctx.arc(arm.x, handY+20, 30, 0, Math.PI, false); ctx.fill();
+        ctx.fillRect(arm.x-30, handY, 60, 20); 
+        for(let i=0; i<4; i++) ctx.fillRect(arm.x-25 + i*15, handY-20, 10, 20); 
+    }
+}
 
-            updateCamera() {
-                if (!Game.player) return;
-                // カメラをプレイヤーに追従させる (Lerpで滑らかに)
-                let targetX = Game.player.x * TILE_SIZE;
-                let targetY = Game.player.y * TILE_SIZE;
-                
-                this.camera.x += (targetX - this.camera.x) * 0.1;
-                this.camera.y += (targetY - this.camera.y) * 0.1;
-            },
+class Chest extends Entity {
+    constructor(x, y) { super(x, y, 40, 40); this.isOpen = false; }
+    draw(ctx) {
+        ctx.fillStyle = this.isOpen ? "#8B4513" : "#D2691E";
+        ctx.fillRect(this.x+4, this.y+8, 32, 32);
+        if(!this.isOpen) { ctx.fillStyle = "#FFD700"; ctx.fillRect(this.x+16, this.y+20, 8, 8); }
+    }
+}
+class Locker extends Entity {
+    constructor(x, y) { super(x, y, 40, 48); this.occupant = null; }
+    draw(ctx) {
+        ctx.fillStyle = "#7f8c8d"; ctx.fillRect(this.x+4, this.y, 32, 48);
+        ctx.strokeStyle = "#2c3e50"; ctx.strokeRect(this.x+4, this.y, 32, 48);
+    }
+}
 
-            draw() {
-                this.ctx.fillStyle = '#000';
-                this.ctx.fillRect(0, 0, this.width, this.height);
+class GameEngine {
+    constructor() {
+        this.canvas = document.getElementById('game-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.state = 'TITLE'; 
+        this.mode = '';
+        this.lastTime = 0;
+        this.keys = {};
+        this.joy = {x:0, y:0, active:false};
+        this.actionBtn = false;
+        this.camera = {x:0, y:0};
 
-                if (!Game.isPlaying) return;
+        this.initEvents();
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        requestAnimationFrame((t) => this.loop(t));
 
-                this.ctx.save();
-                
-                // カメラ適用 (画面中央を原点に)
-                this.ctx.translate(this.width / 2, this.height / 2);
-                this.ctx.scale(this.camera.zoom, this.camera.zoom);
-                this.ctx.translate(-this.camera.x, -this.camera.y);
+        document.getElementById('title-screen').addEventListener('click', () => {
+            uiManager.showScreen('home-screen');
+            audioCtrl.setupFiles();
+            this.drawTitleBackground(); 
+        });
+        
+        this.drawTitleBackground();
+    }
+    
+    drawTitleBackground() {
+        if(this.state !== 'TITLE') return;
+        const bgc = document.getElementById('title-bg-canvas');
+        if(!bgc) return;
+        const bctx = bgc.getContext('2d');
+        bgc.width = window.innerWidth; bgc.height = window.innerHeight;
+        let t = Date.now() / 1000;
+        
+        bctx.clearRect(0,0,bgc.width,bgc.height);
+        EnemyOni.drawCustomOni(bctx, bgc.width/2, bgc.height/2 + Math.sin(t)*50, 48, 48, 0, t, 0, false);
+        requestAnimationFrame(() => this.drawTitleBackground());
+    }
 
-                // --- 背景・マップ描画 ---
-                let startCol = Math.floor((this.camera.x - (this.width/2)/this.camera.zoom) / TILE_SIZE) - 1;
-                let endCol = Math.ceil((this.camera.x + (this.width/2)/this.camera.zoom) / TILE_SIZE) + 1;
-                let startRow = Math.floor((this.camera.y - (this.height/2)/this.camera.zoom) / TILE_SIZE) - 1;
-                let endRow = Math.ceil((this.camera.y + (this.height/2)/this.camera.zoom) / TILE_SIZE) + 1;
+    initEvents() {
+        window.addEventListener('keydown', e => { this.keys[e.code] = true; if(e.code==='Space') this.actionBtn = true; });
+        window.addEventListener('keyup', e => this.keys[e.code] = false);
 
-                // 範囲制限
-                startCol = Math.max(0, startCol); endCol = Math.min(MapGen.width - 1, endCol);
-                startRow = Math.max(0, startRow); endRow = Math.min(MapGen.height - 1, endRow);
+        const z = document.getElementById('joystick-zone'), k = document.getElementById('joystick-knob');
+        const handleTouch = (e) => {
+            e.preventDefault();
+            if(!e.targetTouches[0]) { this.joy.active=false; k.style.transform=`translate(-50%,-50%)`; return; }
+            let rect = z.getBoundingClientRect(), r = rect.width/2;
+            let dx = e.targetTouches[0].clientX - (rect.left+r), dy = e.targetTouches[0].clientY - (rect.top+r);
+            let dist = Math.sqrt(dx*dx+dy*dy);
+            if(dist>r) { dx=(dx/dist)*r; dy=(dy/dist)*r; }
+            k.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            this.joy.x = dx/r; this.joy.y = dy/r; this.joy.active = true;
+        }
+        z.addEventListener('touchstart', handleTouch); z.addEventListener('touchmove', handleTouch);
+        z.addEventListener('touchend', () => { this.joy.active=false; this.joy.x=0; this.joy.y=0; k.style.transform=`translate(-50%,-50%)`; });
+        document.getElementById('action-btn').addEventListener('touchstart', e => { e.preventDefault(); this.actionBtn = true; });
+    }
 
-                for (let y = startRow; y <= endRow; y++) {
-                    for (let x = startCol; x <= endCol; x++) {
-                        let tile = MapGen.grid[y][x];
-                        let px = x * TILE_SIZE;
-                        let py = y * TILE_SIZE;
+    resize() { this.canvas.width = window.innerWidth; this.canvas.height = window.innerHeight; }
 
-                        if (tile === MapGen.TILE_FLOOR || tile === MapGen.TILE_DOOR) {
-                            // 床描画 (市松模様で洋館風)
-                            this.ctx.fillStyle = ((x+y)%2===0) ? '#2c3e50' : '#273746';
-                            this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-                        } else if (tile === MapGen.TILE_WALL) {
-                            // 壁描画 (立体的に)
-                            this.ctx.fillStyle = COLORS.wallTop;
-                            this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-                            // 下が床なら壁の側面を描画
-                            if (y < MapGen.height - 1 && (MapGen.grid[y+1][x] === MapGen.TILE_FLOOR || MapGen.grid[y+1][x] === MapGen.TILE_DOOR)) {
-                                this.ctx.fillStyle = COLORS.wall;
-                                this.ctx.fillRect(px, py + TILE_SIZE - 10, TILE_SIZE, 10);
-                            }
-                        }
-                    }
-                }
+    startMode(modeName) {
+        this.mode = modeName;
+        this.state = modeName;
+        uiManager.hideAll();
+        document.getElementById('hud').classList.remove('hidden');
+        document.getElementById('kill-log').innerHTML = ''; 
+        
+        let conf = CONFIG[modeName];
+        if(!conf) conf = CONFIG.SURVIVAL;
+        this.cols = conf.COLS; this.rows = conf.ROWS;
 
-                // ドア描画
-                for (let d of MapGen.doors) {
-                    if (d.x >= startCol && d.x <= endCol && d.y >= startRow && d.y <= endRow) {
-                        let px = d.x * TILE_SIZE;
-                        let py = d.y * TILE_SIZE;
-                        this.ctx.fillStyle = d.open ? COLORS.doorOpen : COLORS.doorClosed;
-                        if (!d.open) {
-                            this.ctx.fillRect(px, py + TILE_SIZE/4, TILE_SIZE, TILE_SIZE/2);
-                            // ドアノブ
-                            this.ctx.fillStyle = 'gold';
-                            this.ctx.beginPath();
-                            this.ctx.arc(px + TILE_SIZE - 10, py + TILE_SIZE/2, 4, 0, Math.PI*2);
-                            this.ctx.fill();
-                        } else {
-                            // 開いている状態 (端に寄せる)
-                            this.ctx.fillRect(px, py, 10, TILE_SIZE);
-                        }
-                    }
-                }
+        if(modeName === 'URA' || modeName === 'SHIN_URA') {
+            const map = MapGenerator.generateUraMap(this.cols, this.rows);
+            this.grid = map.grid; this.rooms = map.rooms;
+        } else {
+            const map = MapGenerator.generateBSP(this.cols, this.rows);
+            this.grid = map.grid; this.rooms = map.rooms;
+        }
 
-                // 毒ガスエリア描画 (サバイバルモード用)
-                if (Game.gasRadius < MapGen.width * TILE_SIZE) {
-                    this.ctx.fillStyle = COLORS.gas;
-                    this.ctx.beginPath();
-                    // 外側全体を覆い、内側をくり抜く (Even-Odd rule)
-                    this.ctx.rect(-1000, -1000, MapGen.width * TILE_SIZE + 2000, MapGen.height * TILE_SIZE + 2000);
-                    this.ctx.arc(Game.gasCenter.x * TILE_SIZE, Game.gasCenter.y * TILE_SIZE, Game.gasRadius, 0, Math.PI*2, true);
-                    this.ctx.fill('evenodd');
-                }
+        let pPos = this.rooms[0]; 
+        let px = (pPos.x + 2) * CONFIG.TILE_SIZE, py = (pPos.y + 2) * CONFIG.TILE_SIZE;
+        this.player = new Player(px, py, saveData.getCharData(), saveData.getPetData());
 
-                // --- エンティティ描画 (Y座標でソートして奥から描画) ---
-                let entities = [Game.player, ...Game.bots.filter(b=>b.alive), ...Game.onis];
-                entities.sort((a, b) => a.y - b.y);
-
-                for (let e of entities) {
-                    e.draw(this.ctx);
-                }
-
-                // --- 視界の暗闇 (Fog of War) ---
-                // プレイヤーの周囲だけ明るく、それ以外は暗くする
-                let viewRadius = TILE_SIZE * 6; // 視界半径
-                let ppx = Game.player.x * TILE_SIZE;
-                let ppy = Game.player.y * TILE_SIZE;
-
-                let darkGrad = this.ctx.createRadialGradient(ppx, ppy, viewRadius * 0.5, ppx, ppy, viewRadius);
-                darkGrad.addColorStop(0, 'rgba(0,0,0,0)');
-                darkGrad.addColorStop(1, 'rgba(0,0,0,0.95)');
-
-                this.ctx.fillStyle = darkGrad;
-                this.ctx.fillRect(ppx - viewRadius, ppy - viewRadius, viewRadius*2, viewRadius*2);
-                
-                // 視界外を真っ黒に
-                this.ctx.fillStyle = 'rgba(0,0,0,0.95)';
-                this.ctx.beginPath();
-                this.ctx.rect(startCol*TILE_SIZE, startRow*TILE_SIZE, (endCol-startCol+1)*TILE_SIZE, (endRow-startRow+1)*TILE_SIZE);
-                this.ctx.arc(ppx, ppy, viewRadius, 0, Math.PI*2, true);
-                this.ctx.fill('evenodd');
-
-                this.ctx.restore();
+        this.npcs = []; this.onis = []; this.chests = []; this.lockers = [];
+        this.uraGoalGenerated = false;
+        
+        if(modeName === 'SURVIVAL') {
+            for(let i=0; i<conf.PLAYERS-1; i++) { let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); this.npcs.push(new NPC(p.x, p.y)); }
+            for(let i=0; i<conf.ONIS; i++) { 
+                let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); 
+                let type = Utils.randomInt(0, 18);
+                this.onis.push(new EnemyOni(p.x, p.y, type)); 
             }
-        };
-
-        const UI = {
-            screens: ['screen-home', 'screen-costume', 'screen-result', 'screen-loading'],
-            
-            init() {
-                // コスチューム画面の生成
-                let container = document.getElementById('costume-container');
-                let savedIndex = parseInt(localStorage.getItem('aooni_costume')) || 0;
-                let unlockedCount = parseInt(localStorage.getItem('aooni_unlocked')) || 10; // 初期10個解放
-
-                for (let i = 0; i < COSTUMES.length; i++) {
-                    let div = document.createElement('div');
-                    div.className = 'costume-item';
-                    if (i === savedIndex) div.classList.add('selected');
-                    if (i >= unlockedCount) div.classList.add('locked');
-                    
-                    div.innerText = COSTUMES[i];
-                    div.onclick = () => {
-                        if (i < unlockedCount) {
-                            document.querySelectorAll('.costume-item').forEach(el => el.classList.remove('selected'));
-                            div.classList.add('selected');
-                            localStorage.setItem('aooni_costume', i);
-                        } else {
-                            // TODO: 青銭で購入処理
-                            let price = 500 + i * 10;
-                            if(confirm(`このコスチュームを ${price} 青銭で解放しますか？`)) {
-                                let zeni = parseInt(localStorage.getItem('aooni_zeni')) || 1500;
-                                if(zeni >= price) {
-                                    localStorage.setItem('aooni_zeni', zeni - price);
-                                    localStorage.setItem('aooni_unlocked', i + 1);
-                                    div.classList.remove('locked');
-                                    div.click();
-                                    this.updateStats();
-                                }
-                            }
-                        }
-                    };
-                    container.appendChild(div);
-                }
-
-                this.updateStats();
-            },
-
-            showScreen(id) {
-                this.screens.forEach(s => {
-                    document.getElementById(s).classList.add('hidden');
-                });
-                if (id) document.getElementById(id).classList.remove('hidden');
-            },
-
-            updateStats() {
-                document.getElementById('ao-zeni-display').innerText = localStorage.getItem('aooni_zeni') || 1500;
-            },
-
-            updateHUD() {
-                document.getElementById('survivors-count').innerText = `生存者: ${Game.survivors}/${Game.totalPlayers}`;
-                
-                let min = Math.floor(Game.timeRemain / 60).toString().padStart(2, '0');
-                let sec = Math.floor(Game.timeRemain % 60).toString().padStart(2, '0');
-                let timeEl = document.getElementById('timer-display');
-                timeEl.innerText = `TIME: ${min}:${sec}`;
-                
-                if (Game.timeRemain <= 30) {
-                    timeEl.style.color = '#f44336';
-                    if (Math.floor(Game.timeRemain*10) % 5 === 0) timeEl.style.opacity = 0;
-                    else timeEl.style.opacity = 1;
-                } else {
-                    timeEl.style.color = '#ffeb3b';
-                    timeEl.style.opacity = 1;
-                }
-
-                if (Game.mode === 'tower') {
-                    document.getElementById('floor-display').style.display = 'block';
-                    document.getElementById('floor-display').innerText = `第 ${Game.floor} 階`;
-                } else {
-                    document.getElementById('floor-display').style.display = 'none';
-                }
-            },
-
-            showMessage(text, color = '#ff3b3b') {
-                let el = document.getElementById('status-message');
-                el.innerText = text;
-                el.style.color = color;
-                el.style.opacity = 1;
-                setTimeout(() => { el.style.opacity = 0; }, 3000);
-            },
-
-            showResult(rank, reward) {
-                this.showScreen('screen-result');
-                document.getElementById('result-rank').innerText = rank;
-                document.getElementById('result-reward').innerText = reward;
-                
-                let title = document.getElementById('result-title');
-                if (rank === 1) {
-                    title.innerText = "VICTORY (青逃げ)";
-                    title.style.color = "#4caf50";
-                } else {
-                    title.innerText = "GAME OVER";
-                    title.style.color = "#f44336";
-                }
-
-                let currentZeni = parseInt(localStorage.getItem('aooni_zeni')) || 1500;
-                localStorage.setItem('aooni_zeni', currentZeni + reward);
-                this.updateStats();
+            for(let i=0; i<conf.CHESTS; i++) { let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); this.chests.push(new Chest(p.x, p.y)); }
+            for(let i=0; i<conf.LOCKERS; i++) { let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); this.lockers.push(new Locker(p.x, p.y)); }
+            this.zoneRadius = (Math.max(this.cols, this.rows) * CONFIG.TILE_SIZE);
+        } 
+        else if (modeName === 'TOWER') {
+            document.getElementById('tower-info-panel').classList.remove('hidden');
+            document.getElementById('tower-floor').textContent = saveData.highestTowerFloor;
+            let enemyCount = Math.min(10, 2 + Math.floor(saveData.highestTowerFloor / 2));
+            for(let i=0; i<enemyCount; i++) { 
+                let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); 
+                this.onis.push(new EnemyOni(p.x, p.y, Utils.randomInt(0, 5))); 
             }
-        };
+            let endRoom = this.rooms[this.rooms.length-1];
+            this.grid[endRoom.y+1][endRoom.x+1] = TILE.GOAL;
+            this.zoneRadius = 99999;
+        }
+        else if (modeName === 'ONIMODE') {
+            this.player.w = 32; this.player.h = 32; this.player.speed = 280;
+            for(let i=0; i<conf.PLAYERS; i++) { let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); this.npcs.push(new NPC(p.x, p.y)); }
+            this.zoneRadius = 99999;
+        }
+        else if (modeName === 'URA' || modeName === 'SHIN_URA') {
+            audioCtrl.playUra();
+            this.boss = new AdvancedSenjuBoss(modeName === 'SHIN_URA');
+            this.boss.y = this.player.y - 400;
+            this.zoneRadius = 99999;
+            this.state = 'COUNTDOWN';
+            this.countdown = 3.9;
+        }
 
-        const Game = {
-            mode: '', // 'survival', 'betrayal', 'tower'
-            isPlaying: false,
-            lastTime: 0,
-            
-            // ステート
-            player: null,
-            bots: [],
-            onis: [],
-            totalPlayers: 100,
-            survivors: 100,
-            timeRemain: 180, // 3分
-            floor: 1, // 塔モード用
-            
-            // 毒ガス (サバイバル)
-            gasCenter: {x:0, y:0},
-            gasRadius: 10000,
-            
-            startMode(mode) {
-                this.mode = mode;
-                UI.showScreen('screen-loading');
-                
-                // 初期化処理を非同期で行いプログレスバーを回すフリをする
-                let progress = 0;
-                let bar = document.getElementById('loading-bar');
-                let interval = setInterval(() => {
-                    progress += 20;
-                    bar.style.width = progress + '%';
-                    if (progress >= 100) {
-                        clearInterval(interval);
-                        this.initGame();
-                    }
-                }, 100);
-            },
+        this.aliveCount = this.npcs.length + (modeName==='ONIMODE'?0:1);
+        this.gameTime = 0;
+        uiManager.updateHUD();
+    }
 
-            initGame() {
-                // マップ生成
-                let w = 50, h = 50, rooms = 20;
-                if (this.mode === 'survival') { w=80; h=80; rooms=40; }
-                else if (this.mode === 'tower') { w=30 + this.floor*5; h=30 + this.floor*5; rooms=10+this.floor; }
+    loop(t) {
+        this.deltaTime = Math.min((t - this.lastTime) / 1000, 0.1);
+        this.lastTime = t;
 
-                MapGen.generate(w, h, rooms);
+        if(this.state === 'COUNTDOWN') {
+            this.countdown -= this.deltaTime;
+            if(this.countdown > 1) uiManager.showMessage(Math.floor(this.countdown));
+            else if(this.countdown > 0) uiManager.showMessage("GO!!");
+            else { this.state = this.mode; uiManager.showMessage(""); }
+            this.draw();
+        }
+        else if(['SURVIVAL','TOWER','ONIMODE','URA','SHIN_URA'].includes(this.state)) {
+            this.update();
+            this.draw();
+        }
+        requestAnimationFrame((t) => this.loop(t));
+    }
 
-                // エンティティ初期化
-                this.bots = [];
-                this.onis = [];
-                
-                let pPos = MapGen.getRandomFloorPos();
-                this.player = new Player(pPos.x, pPos.y);
+    update() {
+        this.gameTime += this.deltaTime;
 
-                this.totalPlayers = this.mode === 'tower' ? 10 : 100;
-                this.survivors = this.totalPlayers;
-                this.timeRemain = this.mode === 'survival' ? 180 : (this.mode === 'tower' ? 60 : 120);
-
-                // BOT配置
-                for (let i = 0; i < this.totalPlayers - 1; i++) {
-                    let pos = MapGen.getRandomFloorPos();
-                    this.bots.push(new Bot(pos.x, pos.y));
-                }
-
-                // 青鬼初期配置
-                let oniCount = this.mode === 'tower' ? 1 + Math.floor(this.floor/2) : 5;
-                for (let i = 0; i < oniCount; i++) {
-                    let pos = MapGen.getRandomFloorPos();
-                    // プレイヤーから離れた場所に
-                    while(Utils.distance(pos.x, pos.y, pPos.x, pPos.y) < 20) {
-                        pos = MapGen.getRandomFloorPos();
-                    }
-                    // 青鬼の種類をランダムに
-                    let typeId = Utils.randomInt(0, ONI_TYPES.length - 1);
-                    this.onis.push(new Oni(pos.x, pos.y, typeId));
-                }
-
-                // モード特殊処理
-                if (this.mode === 'betrayal') {
-                    UI.showMessage("あなたは 裏切り者 です。他の生存者を全滅させろ！", "#ba55d3");
-                    this.player.role = 'traitor';
-                    this.player.speed = 6.0; // 少し速い
-                } else if (this.mode === 'survival') {
-                    UI.showMessage("100人サバイバル 開始！", "#4caf50");
-                    // 毒ガスの中心を決める
-                    this.gasCenter = MapGen.getRandomFloorPos();
-                    this.gasRadius = Math.max(w, h) * TILE_SIZE * 1.5;
-                } else if (this.mode === 'tower') {
-                    UI.showMessage(`${this.floor}階 スタート！鍵を探して扉を開けろ！`, "#ffeb3b");
-                }
-
-                this.isPlaying = true;
-                this.lastTime = performance.now();
-                UI.showScreen(''); // HUDのみにする
-                requestAnimationFrame((t) => this.loop(t));
-            },
-
-            loop(timestamp) {
-                if (!this.isPlaying) return;
-
-                let dt = (timestamp - this.lastTime) / 1000; // 秒
-                if (dt > 0.1) dt = 0.1; // タイムステップの制限
-                this.lastTime = timestamp;
-
-                this.update(dt);
-                Renderer.updateCamera();
-                Renderer.draw();
-                UI.updateHUD();
-
-                if (this.isPlaying) {
-                    requestAnimationFrame((t) => this.loop(t));
-                }
-            },
-
-            update(dt) {
-                this.timeRemain -= dt;
-
-                // 毒ガスの縮小 (サバイバル)
-                if (this.mode === 'survival') {
-                    this.gasRadius -= dt * (TILE_SIZE * 0.5); // 毎秒半タイル分縮小
-                    if (this.gasRadius < 0) this.gasRadius = 0;
-
-                    // ガスダメージ判定
-                    let checkGas = (entity) => {
-                        if(!entity.alive) return;
-                        let d = Utils.distance(entity.x * TILE_SIZE, entity.y * TILE_SIZE, this.gasCenter.x * TILE_SIZE, this.gasCenter.y * TILE_SIZE);
-                        if (d > this.gasRadius) {
-                            entity.alive = false;
-                            if(entity === this.player) this.gameOver("毒ガスで死亡");
-                            else this.survivors--;
-                        }
-                    };
-                    checkGas(this.player);
-                    this.bots.forEach(checkGas);
-                }
-
-                // エンティティ更新
-                this.player.update(dt);
-                this.bots.forEach(b => b.update(dt));
-                this.onis.forEach(o => o.update(dt));
-
-                // プレイヤーの攻撃(裏逃モード)
-                if (this.mode === 'betrayal' && Input.isActionJustPressed()) {
-                    // 近接キル
-                    for (let b of this.bots) {
-                        if (b.alive && Utils.distance(this.player.x, this.player.y, b.x, b.y) < 1.5) {
-                            b.alive = false;
-                            this.survivors--;
-                            UI.showMessage("キル成功！", "red");
-                            // 画面フラッシュ
-                            let flash = document.getElementById('flash-overlay');
-                            flash.style.opacity = 0.5;
-                            setTimeout(()=>flash.style.opacity = 0, 100);
-                            break;
-                        }
-                    }
-                }
-
-                // ゲーム終了判定
-                if (this.mode === 'survival' || this.mode === 'tower') {
-                    if (this.timeRemain <= 0 && this.player.alive) {
-                        if(this.mode === 'tower') {
-                            this.floor++;
-                            this.initGame(); // 次の階へ
-                        } else {
-                            this.gameClear(); // サバイバル時間切れ生存
-                        }
-                    } else if (this.survivors <= 1 && this.player.alive) {
-                        this.gameClear(); // 1位
-                    }
-                } else if (this.mode === 'betrayal') {
-                    if (this.survivors <= 1 && this.player.alive) {
-                        this.gameClear(); // 全滅成功
-                    } else if (this.timeRemain <= 0) {
-                        this.gameOver("時間切れ (生存者が逃げ切りました)");
-                    }
-                }
-            },
-
-            gameOver(reason = "捕まりました") {
-                this.isPlaying = false;
-                console.log("Game Over:", reason);
-                // 順位計算 (適当なロジック)
-                let rank = this.survivors;
-                let reward = Math.floor((this.totalPlayers - rank) * 10);
-                
-                setTimeout(() => UI.showResult(rank, reward), 1000); // 死亡後少し待ってリザルト
-            },
-
-            gameClear() {
-                this.isPlaying = false;
-                let reward = this.mode === 'betrayal' ? 1000 : 500;
-                setTimeout(() => UI.showResult(1, reward), 1000);
+        if(!this.player.isDead) {
+            let dx=0, dy=0;
+            if(this.joy.active) { dx=this.joy.x; dy=this.joy.y; }
+            else {
+                if(this.keys['ArrowUp']||this.keys['KeyW']) dy-=1; if(this.keys['ArrowDown']||this.keys['KeyS']) dy+=1;
+                if(this.keys['ArrowLeft']||this.keys['KeyA']) dx-=1; if(this.keys['ArrowRight']||this.keys['KeyD']) dx+=1;
             }
-        };
+            this.player.move(dx, dy, this.grid, this.cols, this.rows);
+            this.player.update(this.deltaTime, this);
 
-        window.onload = () => {
-            Input.init();
-            Renderer.init();
-            UI.init();
-        };
+            if(this.actionBtn) { this.handleInteract(); this.actionBtn = false; }
+        }
 
-    </script>
+        this.camera.x += ((this.player.x + this.player.w/2 - this.canvas.width/2) - this.camera.x) * 0.1;
+        this.camera.y += ((this.player.y + this.player.h/2 - this.canvas.height/2) - this.camera.y) * 0.1;
+        
+        if(this.mode !== 'URA' && this.mode !== 'SHIN_URA') {
+            this.camera.x = Math.max(0, Math.min(this.camera.x, this.cols*CONFIG.TILE_SIZE - this.canvas.width));
+            this.camera.y = Math.max(0, Math.min(this.camera.y, this.rows*CONFIG.TILE_SIZE - this.canvas.height));
+        }
+
+        if(this.mode === 'SURVIVAL') this.updateSurvival();
+        else if(this.mode === 'TOWER') this.updateTower();
+        else if(this.mode === 'ONIMODE') this.updateOniMode();
+        else if(this.mode === 'URA' || this.mode === 'SHIN_URA') this.updateUra();
+    }
+
+    handleInteract() {
+        if(this.mode === 'ONIMODE') return;
+        
+        let pc = this.player.getCenter();
+        
+        if(this.uraGoalGenerated && this.mode === 'URA' && this.uraDoor) {
+            if(Utils.distance(pc.x, pc.y, this.uraDoor.x+24, this.uraDoor.y+24) < 50) {
+                this.startMode('SHIN_URA'); 
+                return;
+            }
+        }
+
+        for(let l of this.lockers) {
+            if(Utils.distance(pc.x, pc.y, l.x+20, l.y+24) < 50) {
+                if(!this.player.isHidden && !l.occupant) { this.player.isHidden = true; l.occupant = this.player; uiManager.showMessage("ロッカーに隠れた"); return; }
+                else if(this.player.isHidden && l.occupant===this.player) { this.player.isHidden = false; l.occupant = null; this.player.y+=20; return; }
+            }
+        }
+        if(!this.player.isHidden) {
+            for(let c of this.chests) {
+                if(!c.isOpen && Utils.distance(pc.x, pc.y, c.x+20, c.y+20) < 50) {
+                    c.isOpen = true;
+                    if(this.mode === 'URA' && this.uraGoalGenerated) { 
+                        uiManager.showMessage("招き猫ゲット！"); 
+                        saveData.unlockedChars.push('c99');
+                        saveData.save();
+                        setTimeout(() => this.endGame(true, "裏ステージクリア！"), 2000);
+                    }
+                    else if(this.mode === 'SHIN_URA' && this.uraGoalGenerated) { 
+                        uiManager.showMessage("たぬきゲット！"); 
+                        if(!saveData.unlockedChars.includes('c98')) saveData.unlockedChars.push('c98'); 
+                        saveData.save();
+                        setTimeout(() => this.endGame(true, "真・裏ステージクリア！"), 2000);
+                    }
+                    else {
+                        let r = Math.random();
+                        if(r<0.05) { saveData.addOrb(1); uiManager.showMessage("🔵青玉GET!"); }
+                        else if(r<0.3) { this.player.buffs.SKATE = 10; uiManager.showMessage("ローラースケートGET!"); }
+                        else if(r<0.6) { this.player.buffs.MASK = 10 * (this.player.petData.buff==='MASK'?this.player.petData.val:1); uiManager.showMessage("ガスマスクGET!"); }
+                        else { saveData.addCoin(50); uiManager.showMessage("50青銭GET!"); }
+                    }
+                    uiManager.updateStatusIcon();
+                    return;
+                }
+            }
+        }
+    }
+
+    updateSurvival() {
+        this.zoneRadius -= 10 * this.deltaTime;
+        let mapCx = (this.cols*CONFIG.TILE_SIZE)/2, mapCy = (this.rows*CONFIG.TILE_SIZE)/2;
+        if(!this.player.isHidden && this.player.buffs.MASK<=0) {
+            if(Utils.distance(this.player.getCenter().x, this.player.getCenter().y, mapCx, mapCy) > Math.max(50, this.zoneRadius)) this.killCharacter(this.player, "青霧に飲まれた");
+        }
+        for(let npc of this.npcs) {
+            if(npc.isDead) continue;
+            npc.update(this.deltaTime, this);
+            if(Utils.distance(npc.getCenter().x, npc.getCenter().y, mapCx, mapCy) > this.zoneRadius) this.killCharacter(npc, "青霧に飲まれた");
+        }
+        for(let oni of this.onis) oni.update(this.deltaTime, this);
+
+        this.aliveCount = this.npcs.filter(n=>!n.isDead).length + (this.player.isDead?0:1);
+        document.getElementById('alive-count').textContent = this.aliveCount;
+
+        if(this.aliveCount === 1 && !this.player.isDead) {
+            audioCtrl.stopAll();
+            saveData.hasPendingUra = true; 
+            saveData.save();
+            this.endGame(true, "見事青逃げ達成！！");
+        } else if(this.player.isDead) {
+            audioCtrl.stopAll();
+            this.endGame(false, `あなたは ${this.aliveCount+1}位 で死亡した`);
+        }
+    }
+
+    updateTower() {
+        for(let oni of this.onis) oni.update(this.deltaTime, this);
+        let pxGrid = Math.floor(this.player.getCenter().x / CONFIG.TILE_SIZE);
+        let pyGrid = Math.floor(this.player.getCenter().y / CONFIG.TILE_SIZE);
+        if(this.grid[pyGrid] && this.grid[pyGrid][pxGrid] === TILE.GOAL) {
+            saveData.highestTowerFloor++; saveData.save();
+            audioCtrl.stopAll();
+            this.endGame(true, `試練の塔 ${saveData.highestTowerFloor-1}階 突破！`);
+        } else if(this.player.isDead) {
+            audioCtrl.stopAll();
+            this.endGame(false, "塔の中で倒れた...");
+        }
+    }
+
+    updateOniMode() {
+        let hitRect = this.player.getRect();
+        for(let npc of this.npcs) {
+            if(npc.isDead) continue;
+            npc.update(this.deltaTime, this);
+            if(Utils.checkCollision(hitRect, npc.getRect())) { this.killCharacter(npc, "青鬼(あなた)に捕食された"); saveData.addCoin(10); }
+        }
+        this.aliveCount = this.npcs.filter(n=>!n.isDead).length;
+        document.getElementById('alive-count').textContent = this.aliveCount;
+
+        if(this.aliveCount === 0) {
+            audioCtrl.stopAll();
+            this.endGame(true, "全員を捕食した！(完全勝利)");
+        }
+    }
+
+    updateUra() {
+        this.boss.update(this.deltaTime, this);
+        if(!this.uraGoalGenerated && this.gameTime > 30) {
+            this.uraGoalGenerated = true;
+            let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+            if(this.mode === 'URA') {
+                this.uraDoor = { x: p.x, y: p.y };
+                uiManager.showMessage("奥へ進む扉が現れた...");
+                let p2 = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+                this.chests.push(new Chest(p2.x, p2.y));
+            } else {
+                this.chests.push(new Chest(p.x, p.y));
+                uiManager.showMessage("報酬の宝箱が現れた！");
+            }
+        }
+        if(this.player.isDead) {
+            audioCtrl.stopAll();
+            this.endGame(false, "裏ステージの主に敗北した...");
+        }
+    }
+
+    killCharacter(char, reason) {
+        if(char.isDead || char.isHidden) return;
+        char.isDead = true;
+        
+        let msg = `${char.name} が死亡`;
+        if(char === this.player) msg = reason;
+        
+        const log = document.getElementById('kill-log');
+        const p = document.createElement('p');
+        p.className = 'log-msg'; p.textContent = msg;
+        log.appendChild(p);
+        if(log.children.length > 5) log.removeChild(log.firstChild);
+    }
+
+    endGame(isClear, msg) {
+        this.state = 'RESULT';
+        document.getElementById('hud').classList.add('hidden');
+        
+        let coin = isClear ? 100 : 10;
+        if(this.mode === 'TOWER') coin = saveData.highestTowerFloor * 10;
+        if(this.mode === 'ONIMODE') coin = (30 - this.aliveCount) * 10;
+        
+        if(this.player.petData && this.player.petData.buff === 'COIN') coin = Math.floor(coin * this.player.petData.val);
+        
+        saveData.addCoin(coin);
+        document.getElementById('result-coin').textContent = coin;
+        
+        const orbText = document.getElementById('result-orb-text');
+        if(this.mode === 'URA' && isClear) {
+            saveData.addOrb(3);
+            document.getElementById('result-orb').textContent = 3;
+            orbText.classList.remove('hidden');
+        } else if (this.mode === 'SHIN_URA' && isClear) {
+            saveData.addOrb(10);
+            document.getElementById('result-orb').textContent = 10;
+            orbText.classList.remove('hidden');
+        } else {
+            orbText.classList.add('hidden');
+        }
+        
+        document.getElementById('result-title').textContent = isClear ? "CLEAR" : "GAME OVER";
+        document.getElementById('result-title').style.color = isClear ? "#2ecc71" : "#e74c3c";
+        document.getElementById('result-desc').textContent = msg;
+        
+        uiManager.showScreen('result-screen');
+    }
+
+    startUraTransition() {
+        uiManager.hideAll();
+        saveData.hasPendingUra = false;
+        saveData.save();
+        this.startMode('URA');
+    }
+    
+    cancelUra() {
+        saveData.hasPendingUra = false;
+        saveData.save();
+        uiManager.showScreen('home-screen');
+    }
+
+    pullGacha(type) {
+        if(type === 'CHAR' || type === 'PET') {
+            if(saveData.coins < CONFIG.GACHA_COST) { uiManager.showMessage("青銭が足りません"); return; }
+            saveData.coins -= CONFIG.GACHA_COST;
+        } else if(type === 'ONI') {
+            if(saveData.orbs < CONFIG.ORB_COST) { uiManager.showMessage("青玉が足りません"); return; }
+            saveData.orbs -= CONFIG.ORB_COST;
+        }
+        saveData.save();
+        uiManager.updateHUD();
+
+        let pool = [], gotItem = null;
+        let r = Math.random();
+        
+        if(type === 'CHAR') {
+            pool = DB.CHARACTERS.filter(c => c.id !== 'c98' && c.id !== 'c99');
+            let rarity = r < 0.05 ? 'SSR' : (r < 0.2 ? 'SR' : (r < 0.5 ? 'R' : 'N'));
+            let cands = pool.filter(c => c.rarity === rarity);
+            if(cands.length === 0) cands = pool.filter(c => c.rarity === 'N');
+            gotItem = cands[Utils.randomInt(0, cands.length)];
+            if(!saveData.unlockedChars.includes(gotItem.id)) saveData.unlockedChars.push(gotItem.id);
+            else { saveData.addCoin(30); uiManager.showMessage("重複したため青銭に変換(+30)"); }
+        } 
+        else if (type === 'PET') {
+            pool = DB.PETS.filter(p => p.id !== 'p0');
+            let rarity = r < 0.05 ? 'SSR' : (r < 0.2 ? 'SR' : (r < 0.5 ? 'R' : 'N'));
+            let cands = pool.filter(p => p.rarity === rarity);
+            if(cands.length === 0) cands = pool.filter(p => p.rarity === 'N');
+            gotItem = cands[Utils.randomInt(0, cands.length)];
+            if(!saveData.unlockedPets.includes(gotItem.id)) saveData.unlockedPets.push(gotItem.id);
+            else { saveData.addCoin(30); uiManager.showMessage("重複したため青銭に変換(+30)"); }
+        }
+        else if (type === 'ONI') {
+            pool = DB.ONI_DATA;
+            let rarity = r < 0.1 ? 'SSR' : (r < 0.4 ? 'SR' : (r < 0.7 ? 'R' : 'N'));
+            let cands = pool.filter(o => o.rarity === rarity);
+            gotItem = cands[Utils.randomInt(0, cands.length)];
+            if(!saveData.unlockedOnis.includes(gotItem.id)) saveData.unlockedOnis.push(gotItem.id);
+            else { saveData.addOrb(1); uiManager.showMessage("重複したため青玉が返却されました"); }
+        }
+
+        saveData.save();
+        
+        document.getElementById('gacha-result-title').textContent = `${type === 'CHAR' ? 'キャラクター' : (type === 'PET' ? 'ペット' : '青鬼')} 獲得！`;
+        
+        let canvas = document.createElement('canvas');
+        canvas.width = 150; canvas.height = 150;
+        let rCtx = canvas.getContext('2d');
+        if(type === 'ONI') {
+            EnemyOni.drawCustomOni(rCtx, 75, 100, 32, 32, gotItem.type, 0, 0, false);
+        } else {
+            rCtx.font = "80px Arial"; rCtx.textAlign="center"; rCtx.textBaseline="middle";
+            rCtx.fillText(gotItem.icon, 75, 75);
+        }
+        
+        const imgContainer = document.getElementById('gacha-result-img');
+        imgContainer.innerHTML = '';
+        imgContainer.appendChild(canvas);
+        
+        document.getElementById('gacha-result-name').textContent = `[${gotItem.rarity}] ${gotItem.name}`;
+        document.getElementById('gacha-result-name').style.color = gotItem.rarity === 'SSR' ? '#f1c40f' : (gotItem.rarity === 'SR' ? '#9b59b6' : '#fff');
+        
+        uiManager.showScreen('gacha-result-screen');
+    }
+
+    draw() {
+        this.ctx.fillStyle = "#111";
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        this.ctx.save();
+        this.ctx.translate(-this.camera.x, -this.camera.y);
+
+        this.drawMap();
+
+        if (this.mode === 'URA' && this.uraGoalGenerated && this.uraDoor) {
+            this.ctx.fillStyle = "#8e44ad";
+            this.ctx.fillRect(this.uraDoor.x, this.uraDoor.y, 48, 48);
+            this.ctx.fillStyle = "#fff"; this.ctx.font = "20px Arial";
+            this.ctx.fillText("🚪", this.uraDoor.x+10, this.uraDoor.y+30);
+        }
+
+        for(let l of this.lockers) l.draw(this.ctx);
+        for(let c of this.chests) c.draw(this.ctx);
+        
+        let entities = [...this.npcs, ...this.onis];
+        if(!this.player.isHidden) entities.push(this.player);
+        entities.sort((a,b) => a.y - b.y);
+        for(let e of entities) e.draw(this.ctx);
+
+        if(this.mode === 'URA' || this.mode === 'SHIN_URA') {
+            if(this.boss) this.boss.draw(this.ctx, this);
+        }
+        
+        if (this.mode === 'SURVIVAL') {
+            let mapCx = (this.cols*CONFIG.TILE_SIZE)/2, mapCy = (this.rows*CONFIG.TILE_SIZE)/2;
+            this.ctx.fillStyle = "rgba(52, 152, 219, 0.2)";
+            this.ctx.beginPath(); this.ctx.arc(mapCx, mapCy, 9999, 0, Math.PI*2); this.ctx.arc(mapCx, mapCy, Math.max(0, this.zoneRadius), 0, Math.PI*2, true); this.ctx.fill();
+        }
+
+        this.ctx.restore();
+    }
+
+    drawMap() {
+        let sx = Math.floor(this.camera.x / CONFIG.TILE_SIZE), sy = Math.floor(this.camera.y / CONFIG.TILE_SIZE);
+        let ex = sx + Math.ceil(this.canvas.width / CONFIG.TILE_SIZE) + 1, ey = sy + Math.ceil(this.canvas.height / CONFIG.TILE_SIZE) + 1;
+        sx = Math.max(0, sx); sy = Math.max(0, sy);
+        ex = Math.min(this.cols, ex); ey = Math.min(this.rows, ey);
+
+        for (let y = sy; y < ey; y++) {
+            for (let x = sx; x < ex; x++) {
+                let px = x * CONFIG.TILE_SIZE, py = y * CONFIG.TILE_SIZE;
+                if (this.grid[y][x] === TILE.WALL) {
+                    this.ctx.fillStyle = (this.mode === 'URA' || this.mode === 'SHIN_URA') ? "#330000" : "#2c3e50";
+                    this.ctx.fillRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                    this.ctx.fillStyle = "rgba(0,0,0,0.3)";
+                    this.ctx.fillRect(px, py+CONFIG.TILE_SIZE-5, CONFIG.TILE_SIZE, 5);
+                } else if (this.grid[y][x] === TILE.FLOOR) {
+                    this.ctx.fillStyle = (this.mode === 'URA' || this.mode === 'SHIN_URA') ? "#550000" : "#95a5a6";
+                    this.ctx.fillRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                } else if (this.grid[y][x] === TILE.GOAL) {
+                    this.ctx.fillStyle = "#f1c40f"; this.ctx.fillRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                }
+            }
+        }
+    }
+}
+
+class UIManager {
+    constructor() {
+        this.screens = ['title-screen', 'home-screen', 'gacha-screen', 'party-screen', 'zukan-screen', 'save-load-screen', 'result-screen', 'gacha-result-screen', 'name-edit-screen', 'audio-settings-screen', 'new-ura-prompt-screen'];
+    }
+    
+    hideAll() { this.screens.forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); }); }
+    
+    showScreen(id) {
+        this.hideAll();
+        if(id === 'home-screen') {
+            this.updateHUD();
+            if(saveData.hasPendingUra) {
+                document.getElementById('new-ura-prompt-screen').classList.remove('hidden');
+            } else {
+                document.getElementById(id).classList.remove('hidden');
+            }
+        } else {
+            document.getElementById(id).classList.remove('hidden');
+        }
+    }
+
+    updateHUD() {
+        document.getElementById('ui-coin').textContent = saveData.coins;
+        document.getElementById('ui-orb').textContent = saveData.orbs;
+        document.getElementById('gacha-coin').textContent = saveData.coins;
+        document.getElementById('gacha-orb').textContent = saveData.orbs;
+        document.getElementById('ui-player-name').textContent = saveData.playerName;
+        
+        const char = saveData.getCharData();
+        const pet = saveData.getPetData();
+        
+        document.getElementById('home-avatar-icon').textContent = char.icon;
+        document.getElementById('home-pet-icon').textContent = pet.id !== 'p0' ? pet.icon : '';
+        
+        this.updateStatusIcon();
+    }
+
+    updateStatusIcon() {
+        if(!game || !game.player) return;
+        const sIcon = document.getElementById('icon-speed');
+        const mIcon = document.getElementById('icon-mask');
+        if(game.player.buffs.SKATE > 0 || game.player.petData.buff === 'SPEED') sIcon.classList.add('active'); else sIcon.classList.remove('active');
+        if(game.player.buffs.MASK > 0 || game.player.petData.buff === 'MASK') mIcon.classList.add('active'); else mIcon.classList.remove('active');
+    }
+
+    showMessage(text) {
+        const msg = document.getElementById('center-message');
+        msg.textContent = text;
+        msg.style.opacity = 1;
+        setTimeout(() => msg.style.opacity = 0, 2000);
+    }
+
+    renderPartyList(type) {
+        const list = document.getElementById('party-list');
+        list.innerHTML = '';
+        let pool = type === 'CHAR' ? DB.CHARACTERS : (type === 'PET' ? DB.PETS : DB.ONI_DATA);
+        let unlocked = type === 'CHAR' ? saveData.unlockedChars : (type === 'PET' ? saveData.unlockedPets : saveData.unlockedOnis);
+        let equipped = type === 'CHAR' ? saveData.equipCharId : (type === 'PET' ? saveData.equipPetId : saveData.equipOniId);
+
+        pool.forEach(item => {
+            const card = document.createElement('div');
+            card.className = `char-card ${item.rarity} ${unlocked.includes(item.id) ? '' : 'locked'} ${equipped === item.id ? 'selected' : ''}`;
+            
+            if(type === 'ONI') {
+                let canvas = document.createElement('canvas'); canvas.width=64; canvas.height=64; canvas.className = 'canvas-icon';
+                if(unlocked.includes(item.id)) EnemyOni.drawCustomOni(canvas.getContext('2d'), 32, 40, 32, 32, item.type, 0, 0, false);
+                else { let ctx=canvas.getContext('2d'); ctx.fillStyle="#000"; ctx.fillRect(16,24,32,32); ctx.fillStyle="#fff"; ctx.font="20px Arial"; ctx.fillText("?", 25, 48); }
+                card.appendChild(canvas);
+            } else {
+                const icon = document.createElement('div');
+                icon.style.fontSize = "2.5rem"; icon.textContent = unlocked.includes(item.id) ? item.icon : '❓';
+                card.appendChild(icon);
+            }
+            
+            const rarity = document.createElement('div'); rarity.className = 'rarity'; rarity.textContent = item.rarity || '-';
+            const name = document.createElement('div'); name.style.fontSize = "0.8rem"; name.textContent = unlocked.includes(item.id) ? item.name : '未解放';
+            
+            card.appendChild(rarity); card.appendChild(name);
+
+            if(unlocked.includes(item.id)) {
+                card.onclick = () => {
+                    if(type === 'CHAR') saveData.equipCharId = item.id;
+                    else if (type === 'PET') saveData.equipPetId = item.id;
+                    else if (type === 'ONI') saveData.equipOniId = item.id;
+                    saveData.save();
+                    this.renderPartyList(type);
+                };
+            }
+            list.appendChild(card);
+        });
+    }
+
+    renderZukan() {
+        const list = document.getElementById('zukan-list');
+        list.innerHTML = '';
+        DB.ONI_DATA.forEach(oni => {
+            const card = document.createElement('div');
+            let isEnc = saveData.encounteredOnis.includes(oni.type);
+            card.className = `char-card ${oni.rarity} ${isEnc ? '' : 'locked'}`;
+            
+            let canvas = document.createElement('canvas'); canvas.width=64; canvas.height=64; canvas.className = 'canvas-icon';
+            if(isEnc) EnemyOni.drawCustomOni(canvas.getContext('2d'), 32, 40, 32, 32, oni.type, 0, 0, false);
+            else { let ctx=canvas.getContext('2d'); ctx.fillStyle="#000"; ctx.fillRect(16,24,32,32); ctx.fillStyle="#fff"; ctx.font="20px Arial"; ctx.fillText("?", 25, 48); }
+            
+            card.appendChild(canvas);
+            const rarity = document.createElement('div'); rarity.className = 'rarity'; rarity.textContent = oni.rarity;
+            const name = document.createElement('div'); name.style.fontSize = "0.7rem"; name.textContent = isEnc ? oni.name : '未遭遇';
+            card.appendChild(rarity); card.appendChild(name);
+            list.appendChild(card);
+        });
+        this.showScreen('zukan-screen');
+    }
+
+    changeName() {
+        const input = document.getElementById('name-input').value.trim();
+        if(input.length > 0) { saveData.playerName = input; saveData.save(); this.showScreen('home-screen'); }
+    }
+    
+    exportSave() {
+        const code = btoa(encodeURIComponent(JSON.stringify(saveData)));
+        const ta = document.getElementById('save-data-text');
+        ta.value = code;
+        ta.select();
+        try { document.execCommand('copy'); alert('セーブコードをコピーしました'); } catch(e) {}
+    }
+
+    importSave() {
+        const code = document.getElementById('save-data-text').value.trim();
+        try {
+            const json = decodeURIComponent(atob(code));
+            const data = JSON.parse(json);
+            if(data && data.coins !== undefined) {
+                Object.assign(saveData, data);
+                saveData.save();
+                alert('データをロードしました');
+                this.showScreen('home-screen');
+            } else alert('無効なコードです');
+        } catch(e) { alert('無効なコードです'); }
+    }
+}
+
+window.onload = function() {
+    window.uiManager = new UIManager();
+    window.game = new GameEngine();
+    
+    const zukanBtn = document.querySelector('.left-menu .side-btn:first-child');
+    if(zukanBtn) zukanBtn.onclick = () => uiManager.renderZukan();
+};
+
+</script>
 </body>
 </html>

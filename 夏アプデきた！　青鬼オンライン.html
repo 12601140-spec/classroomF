@@ -1,6 +1,3 @@
-
-
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -524,9 +521,9 @@ const DB = {
 
 const CONFIG = {
  FPS: 60, TILE_SIZE: 48, GACHA_COST: 100, ORB_COST: 1,
- SURVIVAL: { COLS: 80, ROWS: 80, PLAYERS: 100, ONIS: 5, CHESTS: 100, LOCKERS: 40 },
- TOWER: { COLS: 30, ROWS: 30, PLAYERS: 1, ONIS: 3, CHESTS: 5, LOCKERS: 0 },
- ONIMODE: { COLS: 40, ROWS: 40, PLAYERS: 30, ONIS: 0 },
+ SURVIVAL: { COLS: 80, ROWS: 80, PLAYERS: 100, ONIS: 7, CHESTS: 100, LOCKERS: 40 },
+ TOWER: { COLS: 30, ROWS: 30, PLAYERS: 1, ONIS: 5, CHESTS: 5, LOCKERS: 0 },
+ ONIMODE: { COLS: 40, ROWS: 40, PLAYERS: 50, ONIS: 0 },
  URA: { COLS: 15, ROWS: 150 } 
 };
 
@@ -1893,41 +1890,40 @@ window.onload = function() {
  const zukanBtn = document.querySelector('.left-menu .side-btn:first-child');
  if(zukanBtn) zukanBtn.onclick = () => uiManager.renderZukan();
 };
-// 画面4隅のタップコマンド判定
+/* ==========================================
+   ホーム画面 設定
+ボタン追加処理
+   ========================================== */
 (function() {
-  const secretSequence = ['TL', 'TR', 'BR', 'BL', 'TL', 'TR', 'BR', 'BL'];
-  let inputSequence = [];
+    const leftMenu = document.querySelector('#home-screen .left-menu');
+    if (!leftMenu) return;
 
-  window.addEventListener('click', (e) => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    const x = e.clientX;
-    const y = e.clientY;
+    // 1. ホーム画面の左サイドメニューに合わせ「設定ボタン」を作成
+    const secretBtn = document.createElement('article');
+    secretBtn.className = 'side-btn';
+    secretBtn.innerHTML = '<p class="side-btn-icon">⚙</p><span>設定</span>';
 
-    // タップ位置を画面4分割で判定
-    let tappedCorner = '';
-    if (x < width / 2 && y < height / 2) tappedCorner = 'TL';      // 左上
-    else if (x >= width / 2 && y < height / 2) tappedCorner = 'TR'; // 右上
-    else if (x >= width / 2 && y >= height / 2) tappedCorner = 'BR';// 右下
-    else if (x < width / 2 && y >= height / 2) tappedCorner = 'BL'; // 左下
+    // 2. クリック時の処理
+    secretBtn.addEventListener('click', (e) => {
+        // クリックイベントの伝播防止
+        e.stopPropagation();
 
-    // 正しい
-    if (tappedCorner === secretSequence[inputSequence.length]) {
-      inputSequence.push(tappedCorner);
+        // 入力ダイアログの表示
+        const password = prompt('パスワードを入力してください:');
 
-      // 8ステップすべて成功した場合
-      if (inputSequence.length === secretSequence.length) {
-        const uraScreen = document.getElementById('new-ura-prompt-screen');
-        if (uraScreen) {
-          uraScreen.classList.remove('hidden');
+        if (password === 'pasuwa-do') {
+            // 既存の裏ステージ挑戦画面（#new-ura-prompt-screen）を表示
+            const uraModal = document.getElementById('new-ura-prompt-screen');
+            if (uraModal) {
+                uraModal.classList.remove('hidden');
+            }
+        } else if (password !== null) {
+            alert('パスワードが違います');
         }
-        inputSequence = [];
-      }
-    } else {
-      // 
-      inputSequence = (tappedCorner === 'TL') ? ['TL'] : [];
-    }
-  });
+    });
+
+    // 3. 左サイドメニューの末尾（「音声」ボタンの下）に追加
+    leftMenu.appendChild(secretBtn);
 })();
 </script>
 </body>

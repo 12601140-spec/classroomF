@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -8,192 +9,192 @@
  <title>青鬼サバイバル - 超大型アップデート版</title>
  <script src="https://cdn.tailwindcss.com"></script>
  <style>
-  /* =========================================
-   CSSスタイル定義 - リッチなUIとレスポンシブ対応
-   ========================================= */
-  :root {
-  --primary-color: #2c3e50;
-  --accent-color: #e74c3c;
-  --text-color: #ecf0f1;
-  --ui-bg: rgba(0, 0, 0, 0.85);
-  --btn-bg: linear-gradient(to bottom, #3498db, #2980b9);
-  }
-  
-  * { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
+ /* =========================================
+ CSSスタイル定義 - リッチなUIとレスポンシブ対応
+ ========================================= */
+ :root {
+ --primary-color: #2c3e50;
+ --accent-color: #e74c3c;
+ --text-color: #ecf0f1;
+ --ui-bg: rgba(0, 0, 0, 0.85);
+ --btn-bg: linear-gradient(to bottom, #3498db, #2980b9);
+ }
+ 
+ * { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
 
-  body, html {
-  width: 100%; height: 100%;
-  background-color: #000; overflow: hidden;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
-  color: var(--text-color);
-  }
+ body, html {
+ width: 100%; height: 100%;
+ background-color: #000; overflow: hidden;
+ font-family: 'Helvetica Neue', Arial, sans-serif;
+ color: var(--text-color);
+ }
 
-  #game-container {
-  position: relative; width: 100%; height: 100%;
-  display: flex; justify-content: center; align-items: center; background-color: #111;
-  }
+ #game-container {
+ position: relative; width: 100%; height: 100%;
+ display: flex; justify-content: center; align-items: center; background-color: #111;
+ }
 
-  #game-canvas { display: block; image-rendering: pixelated; z-index: 10; position: absolute; top:0; left:0; }
-  
-  /* タイトル背景用キャンバス */
-  #title-bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.5; }
+ #game-canvas { display: block; image-rendering: pixelated; z-index: 10; position: absolute; top:0; left:0; }
+ 
+ /* タイトル背景用キャンバス */
+ #title-bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.5; }
 
-  /* UIオーバーレイ共通 */
-  .overlay {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  display: flex; flex-direction: column; justify-content: center; align-items: center;
-  background: var(--ui-bg); z-index: 100; transition: opacity 0.3s ease;
-  }
+ /* UIオーバーレイ共通 */
+ .overlay {
+ position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+ display: flex; flex-direction: column; justify-content: center; align-items: center;
+ background: var(--ui-bg); z-index: 100; transition: opacity 0.3s ease;
+ }
 
-  .hidden { display: none !important; }
+ .hidden { display: none !important; }
 
-  h1, h2 { text-shadow: 0 0 10px rgba(255,255,255,0.5); text-align: center; margin: 10px; }
-  h1 { font-size: 3rem; color: #3498db; }
-  h2 { font-size: 2rem; color: #f1c40f; }
+ h1, h2 { text-shadow: 0 0 10px rgba(255,255,255,0.5); text-align: center; margin: 10px; }
+ h1 { font-size: 3rem; color: #3498db; }
+ h2 { font-size: 2rem; color: #f1c40f; }
 
-  .btn {
-  padding: 12px 30px; font-size: 1.2rem; font-weight: bold; color: white;
-  background: var(--btn-bg); border: 2px solid #fff; border-radius: 25px;
-  cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin: 10px;
-  transition: transform 0.1s;
-  }
-  .btn:active { transform: scale(0.95); }
-  .btn.red { background: linear-gradient(to bottom, #e74c3c, #c0392b); }
-  .btn.green { background: linear-gradient(to bottom, #2ecc71, #27ae60); }
-  .btn.purple { background: linear-gradient(to bottom, #9b59b6, #8e44ad); }
+ .btn {
+ padding: 12px 30px; font-size: 1.2rem; font-weight: bold; color: white;
+ background: var(--btn-bg); border: 2px solid #fff; border-radius: 25px;
+ cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin: 10px;
+ transition: transform 0.1s;
+ }
+ .btn:active { transform: scale(0.95); }
+ .btn.red { background: linear-gradient(to bottom, #e74c3c, #c0392b); }
+ .btn.green { background: linear-gradient(to bottom, #2ecc71, #27ae60); }
+ .btn.purple { background: linear-gradient(to bottom, #9b59b6, #8e44ad); }
 
-  /* =========================================
-   青鬼オンライン風 ホーム画面大改修
-   ========================================= */
-  #home-screen {
-  background-color: #0b192c;
-  background-image: 
-   linear-gradient(0deg, transparent 24%, rgba(52, 152, 219, 0.15) 25%, rgba(52, 152, 219, 0.15) 26%, transparent 27%, transparent 74%, rgba(52, 152, 219, 0.15) 75%, rgba(52, 152, 219, 0.15) 76%, transparent 77%, transparent),
-   linear-gradient(90deg, transparent 24%, rgba(52, 152, 219, 0.15) 25%, rgba(52, 152, 219, 0.15) 26%, transparent 27%, transparent 74%, rgba(52, 152, 219, 0.15) 75%, rgba(52, 152, 219, 0.15) 76%, transparent 77%, transparent);
-  background-size: 50px 50px;
-  display: flex; flex-direction: column; justify-content: space-between;
-  }
-  
-  #home-header {
-  width: 100%; padding: 15px; display: flex; justify-content: space-between; align-items: flex-start;
-  background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
-  position: absolute; top: 0; left: 0; z-index: 20;
-  }
-  .player-info { display: flex; align-items: center; background: rgba(11, 30, 54, 0.8); border: 2px solid #2980b9; border-radius: 30px; padding: 5px 15px; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.5); cursor: pointer;}
-  .player-rank { background: #f39c12; color: #000; font-weight: 900; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem;}
-  .player-name { font-weight: bold; color: #fff;}
-  
-  .currency-container { display: flex; flex-direction: column; gap: 5px; }
-  .currency-box { background: rgba(0,0,0,0.7); border: 2px solid #f1c40f; border-radius: 20px; padding: 5px 15px; color: #f1c40f; font-weight: bold; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.5);}
-  .currency-box.orb { border-color: #3498db; color: #3498db; }
+ /* =========================================
+ 青鬼オンライン風 ホーム画面大改修
+ ========================================= */
+ #home-screen {
+ background-color: #0b192c;
+ background-image: 
+ linear-gradient(0deg, transparent 24%, rgba(52, 152, 219, 0.15) 25%, rgba(52, 152, 219, 0.15) 26%, transparent 27%, transparent 74%, rgba(52, 152, 219, 0.15) 75%, rgba(52, 152, 219, 0.15) 76%, transparent 77%, transparent),
+ linear-gradient(90deg, transparent 24%, rgba(52, 152, 219, 0.15) 25%, rgba(52, 152, 219, 0.15) 26%, transparent 27%, transparent 74%, rgba(52, 152, 219, 0.15) 75%, rgba(52, 152, 219, 0.15) 76%, transparent 77%, transparent);
+ background-size: 50px 50px;
+ display: flex; flex-direction: column; justify-content: space-between;
+ }
+ 
+ #home-header {
+ width: 100%; padding: 15px; display: flex; justify-content: space-between; align-items: flex-start;
+ background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+ position: absolute; top: 0; left: 0; z-index: 20;
+ }
+ .player-info { display: flex; align-items: center; background: rgba(11, 30, 54, 0.8); border: 2px solid #2980b9; border-radius: 30px; padding: 5px 15px; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.5); cursor: pointer;}
+ .player-rank { background: #f39c12; color: #000; font-weight: 900; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem;}
+ .player-name { font-weight: bold; color: #fff;}
+ 
+ .currency-container { display: flex; flex-direction: column; gap: 5px; }
+ .currency-box { background: rgba(0,0,0,0.7); border: 2px solid #f1c40f; border-radius: 20px; padding: 5px 15px; color: #f1c40f; font-weight: bold; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.5);}
+ .currency-box.orb { border-color: #3498db; color: #3498db; }
 
-  /* 左サイドメニュー */
-  .left-menu { position: absolute; left: 15px; top: 80px; display: flex; flex-direction: column; gap: 15px; z-index: 20;}
-  /* 右サイドメニュー */
-  .side-menu { position: absolute; right: 15px; top: 80px; display: flex; flex-direction: column; gap: 15px; z-index: 20;}
-  .side-btn { 
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 65px; height: 65px; background: linear-gradient(135deg, #2c3e50, #1a252f);
-  border: 2px solid #7f8c8d; border-radius: 15px; cursor: pointer; color: #fff;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.5); transition: transform 0.1s;
-  }
-  .side-btn:active { transform: scale(0.9); border-color: #3498db; }
-  .side-btn-icon { font-size: 1.8rem; margin-bottom: 2px;}
-  .side-btn span { font-size: 0.7rem; font-weight: bold; }
+ /* 左サイドメニュー */
+ .left-menu { position: absolute; left: 15px; top: 80px; display: flex; flex-direction: column; gap: 15px; z-index: 20;}
+ /* 右サイドメニュー */
+ .side-menu { position: absolute; right: 15px; top: 80px; display: flex; flex-direction: column; gap: 15px; z-index: 20;}
+ .side-btn { 
+ display: flex; flex-direction: column; align-items: center; justify-content: center;
+ width: 65px; height: 65px; background: linear-gradient(135deg, #2c3e50, #1a252f);
+ border: 2px solid #7f8c8d; border-radius: 15px; cursor: pointer; color: #fff;
+ box-shadow: 0 4px 6px rgba(0,0,0,0.5); transition: transform 0.1s;
+ }
+ .side-btn:active { transform: scale(0.9); border-color: #3498db; }
+ .side-btn-icon { font-size: 1.8rem; margin-bottom: 2px;}
+ .side-btn span { font-size: 0.7rem; font-weight: bold; }
 
-  /* 中央アバター表示 */
-  #home-avatar-showcase {
-  flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
-  position: relative; margin-top: 40px; z-index: 10;
-  }
-  .showcase-platform {
-  width: 220px; height: 60px; background: radial-gradient(ellipse at center, rgba(52, 152, 219, 0.6) 0%, transparent 70%);
-  border-radius: 50%; position: absolute; bottom: 30%; left: 50%; transform: translateX(-50%); z-index: 1;
-  }
-  #home-avatar-icon { font-size: 10rem; z-index: 2; animation: float 3s ease-in-out infinite; filter: drop-shadow(0 10px 5px rgba(0,0,0,0.5));}
-  #home-pet-icon { font-size: 4rem; position: absolute; top: 30%; right: 30%; z-index: 3; animation: float 2.5s ease-in-out infinite alternate; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));}
+ /* 中央アバター表示 */
+ #home-avatar-showcase {
+ flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
+ position: relative; margin-top: 40px; z-index: 10;
+ }
+ .showcase-platform {
+ width: 220px; height: 60px; background: radial-gradient(ellipse at center, rgba(52, 152, 219, 0.6) 0%, transparent 70%);
+ border-radius: 50%; position: absolute; bottom: 30%; left: 50%; transform: translateX(-50%); z-index: 1;
+ }
+ #home-avatar-icon { font-size: 10rem; z-index: 2; animation: float 3s ease-in-out infinite; filter: drop-shadow(0 10px 5px rgba(0,0,0,0.5));}
+ #home-pet-icon { font-size: 4rem; position: absolute; top: 30%; right: 30%; z-index: 3; animation: float 2.5s ease-in-out infinite alternate; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));}
 
-  @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
+ @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
 
-  /* 下部バナーメニュー */
-  #home-bottom-menu {
-  width: 100%; padding: 20px; display: flex; flex-direction: column; gap: 12px; align-items: center;
-  background: linear-gradient(0deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 80%, transparent 100%);
-  z-index: 10; padding-bottom: 30px;
-  }
-  .banner-btn {
-  width: 95%; max-width: 450px; border: none; border-radius: 15px; padding: 15px 20px; text-align: left;
-  cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-  transition: transform 0.1s; display: flex; flex-direction: column; justify-content: center;
-  }
-  .banner-btn:active { transform: scale(0.96); }
-  .banner-btn::after {
-  content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-  background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
-  transform: skewX(-20deg); animation: shine 3s infinite;
-  }
-  @keyframes shine { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
+ /* 下部バナーメニュー */
+ #home-bottom-menu {
+ width: 100%; padding: 20px; display: flex; flex-direction: column; gap: 12px; align-items: center;
+ background: linear-gradient(0deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 80%, transparent 100%);
+ z-index: 10; padding-bottom: 30px;
+ }
+ .banner-btn {
+ width: 95%; max-width: 450px; border: none; border-radius: 15px; padding: 15px 20px; text-align: left;
+ cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+ transition: transform 0.1s; display: flex; flex-direction: column; justify-content: center;
+ }
+ .banner-btn:active { transform: scale(0.96); }
+ .banner-btn::after {
+ content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+ background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+ transform: skewX(-20deg); animation: shine 3s infinite;
+ }
+ @keyframes shine { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
 
-  .main-survival { background: linear-gradient(135deg, #1abc9c, #16a085); border: 3px solid #2ecc71; height: 100px; }
-  .banner-title { display: block; font-size: 1.8rem; font-weight: 900; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); font-style: italic;}
-  .banner-sub { display: block; font-size: 1rem; color: #fff; font-weight: bold; opacity: 0.9;}
+ .main-survival { background: linear-gradient(135deg, #1abc9c, #16a085); border: 3px solid #2ecc71; height: 100px; }
+ .banner-title { display: block; font-size: 1.8rem; font-weight: 900; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); font-style: italic;}
+ .banner-sub { display: block; font-size: 1rem; color: #fff; font-weight: bold; opacity: 0.9;}
 
-  .sub-banners { display: flex; width: 95%; max-width: 450px; gap: 12px; }
-  .mode-tower { background: linear-gradient(135deg, #f39c12, #d35400); border: 2px solid #f1c40f; flex: 1; height: 80px;}
-  .mode-oni { background: linear-gradient(135deg, #9b59b6, #8e44ad); border: 2px solid #d2b4de; flex: 1; height: 80px;}
+ .sub-banners { display: flex; width: 95%; max-width: 450px; gap: 12px; }
+ .mode-tower { background: linear-gradient(135deg, #f39c12, #d35400); border: 2px solid #f1c40f; flex: 1; height: 80px;}
+ .mode-oni { background: linear-gradient(135deg, #9b59b6, #8e44ad); border: 2px solid #d2b4de; flex: 1; height: 80px;}
 
-  /* ガチャ・編成・図鑑リスト共通 */
-  .item-list {
-  display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
-  max-height: 50vh; overflow-y: auto; width: 90%; max-width: 600px;
-  background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;
-  }
-  .char-card {
-  width: 100px; height: 120px; background: #34495e; border: 2px solid #7f8c8d;
-  border-radius: 8px; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; cursor: pointer; padding: 5px; text-align: center; position: relative;
-  }
-  .char-card.selected { border-color: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
-  .char-card.locked { filter: grayscale(100%) brightness(0.5); cursor: not-allowed; }
-  .char-card .rarity { font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; }
-  .char-card.SSR .rarity { color: #f1c40f; text-shadow: 0 0 5px #f1c40f; }
+ /* ガチャ・編成・図鑑リスト共通 */
+ .item-list {
+ display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+ max-height: 50vh; overflow-y: auto; width: 90%; max-width: 600px;
+ background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;
+ }
+ .char-card {
+ width: 100px; height: 120px; background: #34495e; border: 2px solid #7f8c8d;
+ border-radius: 8px; display: flex; flex-direction: column; align-items: center;
+ justify-content: center; cursor: pointer; padding: 5px; text-align: center; position: relative;
+ }
+ .char-card.selected { border-color: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+ .char-card.locked { filter: grayscale(100%) brightness(0.5); cursor: not-allowed; }
+ .char-card .rarity { font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; }
+ .char-card.SSR .rarity { color: #f1c40f; text-shadow: 0 0 5px #f1c40f; }
 
-  /* HUD関連 */
-  #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
-  .hud-panel { position: absolute; background: rgba(0,0,0,0.6); border: 2px solid #555; border-radius: 10px; padding: 10px; font-weight: bold; }
-  #alive-count-panel { top: 10px; left: 10px; font-size: 1.2rem; }
-  #tower-info-panel { top: 10px; left: 50%; transform: translateX(-50%); font-size: 1.5rem; color: #f1c40f; }
-  #status-panel { position: absolute; bottom: 10px; left: 10px; display: flex; gap: 10px; }
-  .status-icon { width: 35px; height: 35px; border-radius: 5px; background: #333; display: flex; justify-content: center; align-items: center; border: 2px solid #777; opacity: 0.3; }
-  .status-icon.active { border-color: #2ecc71; opacity: 1; }
-  #center-message { position: absolute; top: 20%; left: 50%; transform: translateX(-50%); font-size: 2.5rem; font-weight: bold; color: #f1c40f; text-shadow: 2px 2px 4px #000; opacity: 0; transition: opacity 0.2s; text-align: center; z-index: 100;}
-  
-  /* キルログ */
-  #kill-log { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; pointer-events: none; z-index: 60;}
-  .log-msg { background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; font-size: 0.9rem; color: #fff; animation: slideIn 0.3s, fadeOut 0.5s 3s forwards; border-left: 4px solid #e74c3c; font-weight: bold;}
-  @keyframes slideIn { from{transform: translateX(100%); opacity:0;} to{transform: translateX(0); opacity:1;} }
-  @keyframes fadeOut { to{opacity:0;} }
+ /* HUD関連 */
+ #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+ .hud-panel { position: absolute; background: rgba(0,0,0,0.6); border: 2px solid #555; border-radius: 10px; padding: 10px; font-weight: bold; }
+ #alive-count-panel { top: 10px; left: 10px; font-size: 1.2rem; }
+ #tower-info-panel { top: 10px; left: 50%; transform: translateX(-50%); font-size: 1.5rem; color: #f1c40f; }
+ #status-panel { position: absolute; bottom: 10px; left: 10px; display: flex; gap: 10px; }
+ .status-icon { width: 35px; height: 35px; border-radius: 5px; background: #333; display: flex; justify-content: center; align-items: center; border: 2px solid #777; opacity: 0.3; }
+ .status-icon.active { border-color: #2ecc71; opacity: 1; }
+ #center-message { position: absolute; top: 20%; left: 50%; transform: translateX(-50%); font-size: 2.5rem; font-weight: bold; color: #f1c40f; text-shadow: 2px 2px 4px #000; opacity: 0; transition: opacity 0.2s; text-align: center; z-index: 100;}
+ 
+ /* キルログ */
+ #kill-log { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; pointer-events: none; z-index: 60;}
+ .log-msg { background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; font-size: 0.9rem; color: #fff; animation: slideIn 0.3s, fadeOut 0.5s 3s forwards; border-left: 4px solid #e74c3c; font-weight: bold;}
+ @keyframes slideIn { from{transform: translateX(100%); opacity:0;} to{transform: translateX(0); opacity:1;} }
+ @keyframes fadeOut { to{opacity:0;} }
 
-  /* コントローラー */
-  #joystick-zone { position: absolute; bottom: 10px; left: 10px; width: 130px; height: 130px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); pointer-events: auto; touch-action: none; }
-  #joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-  #action-btn { position: absolute; bottom: 20px; right: 20px; width: 70px; height: 70px; background: rgba(52,152,219,0.5); border: 3px solid rgba(255,255,255,0.5); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; pointer-events: auto; touch-action: none; }
-  
-  /* ガチャ演出用 */
-  #gacha-result-img { width: 150px; height: 150px; background-color: #eee; margin: 20px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 4rem; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 20px #fff;}
-  @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+ /* コントローラー */
+ #joystick-zone { position: absolute; bottom: 10px; left: 10px; width: 130px; height: 130px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); pointer-events: auto; touch-action: none; }
+ #joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+ #action-btn { position: absolute; bottom: 20px; right: 20px; width: 70px; height: 70px; background: rgba(52,152,219,0.5); border: 3px solid rgba(255,255,255,0.5); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; pointer-events: auto; touch-action: none; }
+ 
+ /* ガチャ演出用 */
+ #gacha-result-img { width: 150px; height: 150px; background-color: #eee; margin: 20px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 4rem; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 20px #fff;}
+ @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
 
-  /* 各種モーダル */
-  .modal-box { background: rgba(0, 0, 0, 0.9); border: 2px solid #3498db; padding: 30px; border-radius: 15px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.8);}
-  #ura-modal { background: rgba(100, 0, 0, 0.95); border-color: #e74c3c; }
+ /* 各種モーダル */
+ .modal-box { background: rgba(0, 0, 0, 0.9); border: 2px solid #3498db; padding: 30px; border-radius: 15px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.8);}
+ #ura-modal { background: rgba(100, 0, 0, 0.95); border-color: #e74c3c; }
 
-  input[type="text"], input[type="file"], textarea {
-  width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #7f8c8d; background: #2c3e50; color: #fff;
-  }
-  textarea { height: 100px; resize: none; font-family: monospace; }
-  
-  /* 描画用キャンバスアイコン */
-  .canvas-icon { width: 64px; height: 64px; }
+ input[type="text"], input[type="file"], textarea {
+ width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #7f8c8d; background: #2c3e50; color: #fff;
+ }
+ textarea { height: 100px; resize: none; font-family: monospace; }
+ 
+ /* 描画用キャンバスアイコン */
+ .canvas-icon { width: 64px; height: 64px; }
  </style>
 </head>
 <body>
@@ -202,183 +203,183 @@
 
  <!-- HUD -->
  <aside id="hud" class="hidden">
-  <section id="alive-count-panel" class="hud-panel">生存者: <span id="alive-count">100</span>人</section>
-  <section id="tower-info-panel" class="hud-panel hidden">試練の塔: <span id="tower-floor">1</span>階</section>
-  <section id="kill-log"></section>
-  <section id="status-panel">
-  <article id="icon-speed" class="status-icon">🛼</article>
-  <article id="icon-mask" class="status-icon">😷</article>
-  </section>
-  <section id="center-message"></section>
-  <section id="joystick-zone"><figure id="joystick-knob"></figure></section>
-  <section id="action-btn">🚪/🗡️</section>
+ <section id="alive-count-panel" class="hud-panel">生存者: <span id="alive-count">100</span>人</section>
+ <section id="tower-info-panel" class="hud-panel hidden">試練の塔: <span id="tower-floor">1</span>階</section>
+ <section id="kill-log"></section>
+ <section id="status-panel">
+ <article id="icon-speed" class="status-icon">🛼</article>
+ <article id="icon-mask" class="status-icon">😷</article>
+ </section>
+ <section id="center-message"></section>
+ <section id="joystick-zone"><figure id="joystick-knob"></figure></section>
+ <section id="action-btn">🚪/🗡️</section>
  </aside>
 
  <!-- タイトル画面 -->
  <section id="title-screen" class="overlay">
-  <canvas id="title-bg-canvas"></canvas>
-  <h1 style="font-size: 4rem; letter-spacing: 5px;">青鬼サバイバル<br><span style="color:#e74c3c; font-size:2rem;">超大型アップデート版</span></h1>
-  <p style="font-size: 1.5rem; margin-top: 30px; animation: blink 1.5s infinite;">画面をタップしてスタート</p>
-  <style>@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }</style>
+ <canvas id="title-bg-canvas"></canvas>
+ <h1 style="font-size: 4rem; letter-spacing: 5px;">青鬼サバイバル<br><span style="color:#e74c3c; font-size:2rem;">超大型アップデート版</span></h1>
+ <p style="font-size: 1.5rem; margin-top: 30px; animation: blink 1.5s infinite;">画面をタップしてスタート</p>
+ <style>@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }</style>
  </section>
 
  <!-- ホーム画面 -->
  <section id="home-screen" class="overlay hidden">
-  <header id="home-header">
-  <section class="player-info" onclick="uiManager.showScreen('name-edit-screen')">
-   <p class="player-rank">Lv.MAX</p>
-   <p class="player-name" id="ui-player-name">ゲスト</p>
-  </section>
-  <section class="currency-container">
-   <article class="currency-box">
-    <span>🪙</span><span id="ui-coin">0</span>
-   </article>
-   <article class="currency-box orb">
-    <span>🔵</span><span id="ui-orb">0</span>
-   </article>
-  </section>
-  </header>
+ <header id="home-header">
+ <section class="player-info" onclick="uiManager.showScreen('name-edit-screen')">
+ <p class="player-rank">Lv.MAX</p>
+ <p class="player-name" id="ui-player-name">ゲスト</p>
+ </section>
+ <section class="currency-container">
+ <article class="currency-box">
+ <span>🪙</span><span id="ui-coin">0</span>
+ </article>
+ <article class="currency-box orb">
+ <span>🔵</span><span id="ui-orb">0</span>
+ </article>
+ </section>
+ </header>
 
-  <nav class="left-menu">
-  <article class="side-btn" onclick="uiManager.showScreen('zukan-screen')"><p class="side-btn-icon">📖</p><span>図鑑</span></article>
-  <article class="side-btn" onclick="uiManager.showScreen('save-load-screen')"><p class="side-btn-icon">💾</p><span>データ</span></article>
-  <article class="side-btn" onclick="uiManager.showScreen('audio-settings-screen')"><p class="side-btn-icon">🎵</p><span>音声</span></article>
-  </nav>
-  
-  <nav class="side-menu">
-  <article class="side-btn" onclick="uiManager.showScreen('gacha-screen')"><p class="side-btn-icon">🎁</p><span>ガチャ</span></article>
-  <article class="side-btn" onclick="uiManager.showScreen('party-screen')"><p class="side-btn-icon">👕</p><span>スキン</span></article>
-  <article class="side-btn" onclick="uiManager.showScreen('party-screen')"><p class="side-btn-icon">🐾</p><span>ペット</span></article>
-  </nav>
+ <nav class="left-menu">
+ <article class="side-btn" onclick="uiManager.showScreen('zukan-screen')"><p class="side-btn-icon">📖</p><span>図鑑</span></article>
+ <article class="side-btn" onclick="uiManager.showScreen('save-load-screen')"><p class="side-btn-icon">💾</p><span>データ</span></article>
+ <article class="side-btn" onclick="uiManager.showScreen('audio-settings-screen')"><p class="side-btn-icon">🎵</p><span>音声</span></article>
+ </nav>
+ 
+ <nav class="side-menu">
+ <article class="side-btn" onclick="uiManager.showScreen('gacha-screen')"><p class="side-btn-icon">🎁</p><span>ガチャ</span></article>
+ <article class="side-btn" onclick="uiManager.showScreen('party-screen')"><p class="side-btn-icon">👕</p><span>スキン</span></article>
+ <article class="side-btn" onclick="uiManager.showScreen('party-screen')"><p class="side-btn-icon">🐾</p><span>ペット</span></article>
+ </nav>
 
-  <section id="home-avatar-showcase">
-  <p id="home-avatar-icon">👦</p>
-  <p id="home-pet-icon">❌</p>
-  <figure class="showcase-platform"></figure>
-  </section>
+ <section id="home-avatar-showcase">
+ <p id="home-avatar-icon">👦</p>
+ <p id="home-pet-icon">❌</p>
+ <figure class="showcase-platform"></figure>
+ </section>
 
-  <nav id="home-bottom-menu">
-  <button class="banner-btn main-survival" onclick="game.startMode('SURVIVAL')">
-   <span class="banner-title">100人サバイバル</span>
-   <span class="banner-sub">最後の一人まで生き残れ！</span>
-  </button>
-  <section class="sub-banners">
-   <button class="banner-btn mode-tower" onclick="game.startMode('TOWER')">
-    <span class="banner-title" style="font-size: 1.3rem;">試練の塔</span>
-    <span class="banner-sub" style="font-size: 0.8rem;">限界に挑め</span>
-   </button>
-   <button class="banner-btn mode-oni" onclick="game.startMode('ONIMODE')">
-    <span class="banner-title" style="font-size: 1.3rem;">青鬼モード</span>
-    <span class="banner-sub" style="font-size: 0.8rem;">人間を捕食せよ</span>
-   </button>
-  </section>
-  </nav>
+ <nav id="home-bottom-menu">
+ <button class="banner-btn main-survival" onclick="game.startMode('SURVIVAL')">
+ <span class="banner-title">100人サバイバル</span>
+ <span class="banner-sub">最後の一人まで生き残れ！</span>
+ </button>
+ <section class="sub-banners">
+ <button class="banner-btn mode-tower" onclick="game.startMode('TOWER')">
+ <span class="banner-title" style="font-size: 1.3rem;">試練の塔</span>
+ <span class="banner-sub" style="font-size: 0.8rem;">限界に挑め</span>
+ </button>
+ <button class="banner-btn mode-oni" onclick="game.startMode('ONIMODE')">
+ <span class="banner-title" style="font-size: 1.3rem;">青鬼モード</span>
+ <span class="banner-sub" style="font-size: 0.8rem;">人間を捕食せよ</span>
+ </button>
+ </section>
+ </nav>
  </section>
 
  <!-- 各種画面定義 -->
  <section id="gacha-screen" class="overlay hidden">
-  <h2>ガチャセンター</h2>
-  <p style="font-size: 1.2rem; margin-bottom: 20px; font-weight:bold;">
-  <span style="color:#f1c40f;">🪙青銭: <span id="gacha-coin"></span></span> | 
-  <span style="color:#3498db;">🔵青玉: <span id="gacha-orb"></span></span>
-  </p>
-  <section style="display: flex; flex-direction: column; gap: 15px; width: 80%; max-width: 300px;">
-  <button class="btn" onclick="game.pullGacha('CHAR')">キャラガチャ (100🪙)</button>
-  <button class="btn" onclick="game.pullGacha('PET')">ペットガチャ (100🪙)</button>
-  <button class="btn purple" onclick="game.pullGacha('ONI')">青鬼ガチャ (1🔵)</button>
-  </section>
-  <button class="btn red" style="margin-top: 30px;" onclick="uiManager.showScreen('home-screen')">戻る</button>
+ <h2>ガチャセンター</h2>
+ <p style="font-size: 1.2rem; margin-bottom: 20px; font-weight:bold;">
+ <span style="color:#f1c40f;">🪙青銭: <span id="gacha-coin"></span></span> | 
+ <span style="color:#3498db;">🔵青玉: <span id="gacha-orb"></span></span>
+ </p>
+ <section style="display: flex; flex-direction: column; gap: 15px; width: 80%; max-width: 300px;">
+ <button class="btn" onclick="game.pullGacha('CHAR')">キャラガチャ (100🪙)</button>
+ <button class="btn" onclick="game.pullGacha('PET')">ペットガチャ (100🪙)</button>
+ <button class="btn purple" onclick="game.pullGacha('ONI')">青鬼ガチャ (1🔵)</button>
+ </section>
+ <button class="btn red" style="margin-top: 30px;" onclick="uiManager.showScreen('home-screen')">戻る</button>
  </section>
 
  <section id="gacha-result-screen" class="overlay hidden" style="background: rgba(0,0,0,0.95); z-index: 200;">
-  <h2 id="gacha-result-title"></h2>
-  <figure id="gacha-result-img"></figure>
-  <h3 id="gacha-result-name" style="font-size: 2rem;"></h3>
-  <button class="btn" onclick="uiManager.showScreen('gacha-screen')">続けて引く</button>
-  <button class="btn red" onclick="uiManager.showScreen('home-screen')">ホームへ</button>
+ <h2 id="gacha-result-title"></h2>
+ <figure id="gacha-result-img"></figure>
+ <h3 id="gacha-result-name" style="font-size: 2rem;"></h3>
+ <button class="btn" onclick="uiManager.showScreen('gacha-screen')">続けて引く</button>
+ <button class="btn red" onclick="uiManager.showScreen('home-screen')">ホームへ</button>
  </section>
 
  <section id="party-screen" class="overlay hidden">
-  <h2>スキン・ペット編成</h2>
-  <nav style="display:flex; gap:10px; margin-bottom:10px;">
-  <button class="btn" onclick="uiManager.renderPartyList('CHAR')">キャラ</button>
-  <button class="btn" onclick="uiManager.renderPartyList('PET')">ペット</button>
-  <button class="btn purple" onclick="uiManager.renderPartyList('ONI')">青鬼</button>
-  </nav>
-  <section id="party-list" class="item-list"></section>
-  <button class="btn red" style="margin-top: 20px;" onclick="uiManager.showScreen('home-screen')">決定</button>
+ <h2>スキン・ペット編成</h2>
+ <nav style="display:flex; gap:10px; margin-bottom:10px;">
+ <button class="btn" onclick="uiManager.renderPartyList('CHAR')">キャラ</button>
+ <button class="btn" onclick="uiManager.renderPartyList('PET')">ペット</button>
+ <button class="btn purple" onclick="uiManager.renderPartyList('ONI')">青鬼</button>
+ </nav>
+ <section id="party-list" class="item-list"></section>
+ <button class="btn red" style="margin-top: 20px;" onclick="uiManager.showScreen('home-screen')">決定</button>
  </section>
 
  <section id="zukan-screen" class="overlay hidden">
-  <h2>青鬼図鑑 (全18種)</h2>
-  <section id="zukan-list" class="item-list" style="max-height: 60vh;"></section>
-  <button class="btn red" style="margin-top: 20px;" onclick="uiManager.showScreen('home-screen')">戻る</button>
+ <h2>青鬼図鑑 (全18種)</h2>
+ <section id="zukan-list" class="item-list" style="max-height: 60vh;"></section>
+ <button class="btn red" style="margin-top: 20px;" onclick="uiManager.showScreen('home-screen')">戻る</button>
  </section>
 
  <section id="save-load-screen" class="overlay hidden">
-  <article class="modal-box">
-  <h2>データ引継ぎ</h2>
-  <p style="font-size: 0.9rem; margin-bottom:10px;">コードをコピーしてバックアップしてください。</p>
-  <textarea id="save-data-text" placeholder="ここにセーブコードが表示されます"></textarea>
-  <button class="btn" onclick="uiManager.exportSave()">コード発行/コピー</button>
-  <button class="btn green" onclick="uiManager.importSave()">コードからロード</button>
-  <br>
-  <button class="btn red" style="margin-top: 20px;" onclick="uiManager.showScreen('home-screen')">閉じる</button>
-  </article>
+ <article class="modal-box">
+ <h2>データ引継ぎ</h2>
+ <p style="font-size: 0.9rem; margin-bottom:10px;">コードをコピーしてバックアップしてください。</p>
+ <textarea id="save-data-text" placeholder="ここにセーブコードが表示されます"></textarea>
+ <button class="btn" onclick="uiManager.exportSave()">コード発行/コピー</button>
+ <button class="btn green" onclick="uiManager.importSave()">コードからロード</button>
+ <br>
+ <button class="btn red" style="margin-top: 20px;" onclick="uiManager.showScreen('home-screen')">閉じる</button>
+ </article>
  </section>
 
  <section id="name-edit-screen" class="overlay hidden">
-  <article class="modal-box">
-  <h2>名前変更</h2>
-  <input type="text" id="name-input" maxlength="10" placeholder="新しい名前を入力">
-  <button class="btn green" onclick="uiManager.changeName()">決定</button>
-  <button class="btn red" onclick="uiManager.showScreen('home-screen')">キャンセル</button>
-  </article>
+ <article class="modal-box">
+ <h2>名前変更</h2>
+ <input type="text" id="name-input" maxlength="10" placeholder="新しい名前を入力">
+ <button class="btn green" onclick="uiManager.changeName()">決定</button>
+ <button class="btn red" onclick="uiManager.showScreen('home-screen')">キャンセル</button>
+ </article>
  </section>
 
  <section id="audio-settings-screen" class="overlay hidden">
-  <article class="modal-box">
-  <h2>カスタム音声設定</h2>
-  <p style="font-size: 0.8rem; margin-bottom: 10px; color: #ccc;">お好みの音声ファイルを選択してください。</p>
-  <div style="text-align: left; margin-bottom: 15px;">
-   <label style="font-weight: bold; color: #3498db;">1. 青鬼に追われた時</label>
-   <input type="file" id="audio-chase" accept="audio/*">
-  </div>
-  <div style="text-align: left; margin-bottom: 15px;">
-   <label style="font-weight: bold; color: #e74c3c;">2. 裏/裏裏ステージ</label>
-   <input type="file" id="audio-ura" accept="audio/*">
-  </div>
-  <button class="btn red" onclick="uiManager.showScreen('home-screen')">完了</button>
-  </article>
+ <article class="modal-box">
+ <h2>カスタム音声設定</h2>
+ <p style="font-size: 0.8rem; margin-bottom: 10px; color: #ccc;">お好みの音声ファイルを選択してください。</p>
+ <div style="text-align: left; margin-bottom: 15px;">
+ <label style="font-weight: bold; color: #3498db;">1. 青鬼に追われた時</label>
+ <input type="file" id="audio-chase" accept="audio/*">
+ </div>
+ <div style="text-align: left; margin-bottom: 15px;">
+ <label style="font-weight: bold; color: #e74c3c;">2. 裏/裏裏ステージ</label>
+ <input type="file" id="audio-ura" accept="audio/*">
+ </div>
+ <button class="btn red" onclick="uiManager.showScreen('home-screen')">完了</button>
+ </article>
  </section>
 
  <section id="result-screen" class="overlay hidden">
-  <h2 id="result-title" style="font-size: 4rem; margin-bottom: 0;"></h2>
-  <p id="result-desc" style="font-size: 1.5rem; margin: 20px; text-align: center; font-weight:bold;"></p>
-  <p style="font-size: 2rem; margin-bottom: 10px; color:#f1c40f; font-weight:bold;">獲得青銭: +<span id="result-coin">0</span></p>
-  <p id="result-orb-text" class="hidden" style="font-size: 1.5rem; margin-bottom: 30px; color:#3498db; font-weight:bold;">獲得青玉: +<span id="result-orb">0</span></p>
-  <button class="btn" onclick="uiManager.showScreen('home-screen')">ホームへ戻る</button>
+ <h2 id="result-title" style="font-size: 4rem; margin-bottom: 0;"></h2>
+ <p id="result-desc" style="font-size: 1.5rem; margin: 20px; text-align: center; font-weight:bold;"></p>
+ <p style="font-size: 2rem; margin-bottom: 10px; color:#f1c40f; font-weight:bold;">獲得青銭: +<span id="result-coin">0</span></p>
+ <p id="result-orb-text" class="hidden" style="font-size: 1.5rem; margin-bottom: 30px; color:#3498db; font-weight:bold;">獲得青玉: +<span id="result-orb">0</span></p>
+ <button class="btn" onclick="uiManager.showScreen('home-screen')">ホームへ戻る</button>
  </section>
 
  <!-- 裏ステージ挑戦モーダル -->
  <aside id="new-ura-prompt-screen" class="overlay hidden" style="z-index: 250; background: rgba(0,0,0,0.9);">
-  <article id="ura-modal">
-  <h2 style="color: #e74c3c; font-size: 2.5rem; text-shadow: 0 0 10px #ff0000;">⚠️ 裏ステージ</h2>
-  <div id="ura-boss-preview" style="width: 150px; height: 150px; margin: 10px auto; background: #000; border: 2px solid #555;">
-   <svg viewBox="0 0 100 100" width="100%" height="100%">
-    <circle cx="50" cy="50" r="40" fill="#8e44ad" />
-    <rect x="30" y="30" width="10" height="10" fill="white" />
-    <rect x="60" y="30" width="10" height="10" fill="white" />
-    <rect x="35" y="35" width="5" height="5" fill="black" />
-    <rect x="65" y="35" width="5" height="5" fill="black" />
-    <path d="M 40 70 Q 50 80 60 70" stroke="black" stroke-width="3" fill="none" />
-   </svg>
-  </div>
-  <p style="font-size: 1.2rem; font-weight:bold; margin-top:10px;">挑戦しますか？<br><span style="color:#ccc; font-size: 0.9rem;">（失敗すると報酬を失います）</span></p>
-  <button class="btn red" style="font-size: 1.5rem; width: 80%;" onclick="game.startUraTransition()">挑戦！</button>
-  <br>
-  <button class="btn" style="background: #555; margin-top:10px;" onclick="game.cancelUra()">キャンセル</button>
-  </article>
+ <article id="ura-modal">
+ <h2 style="color: #e74c3c; font-size: 2.5rem; text-shadow: 0 0 10px #ff0000;">⚠️ 裏ステージ</h2>
+ <div id="ura-boss-preview" style="width: 150px; height: 150px; margin: 10px auto; background: #000; border: 2px solid #555;">
+ <svg viewBox="0 0 100 100" width="100%" height="100%">
+ <circle cx="50" cy="50" r="40" fill="#8e44ad" />
+ <rect x="30" y="30" width="10" height="10" fill="white" />
+ <rect x="60" y="30" width="10" height="10" fill="white" />
+ <rect x="35" y="35" width="5" height="5" fill="black" />
+ <rect x="65" y="35" width="5" height="5" fill="black" />
+ <path d="M 40 70 Q 50 80 60 70" stroke="black" stroke-width="3" fill="none" />
+ </svg>
+ </div>
+ <p style="font-size: 1.2rem; font-weight:bold; margin-top:10px;">挑戦しますか？<br><span style="color:#ccc; font-size: 0.9rem;">（失敗すると報酬を失います）</span></p>
+ <button class="btn red" style="font-size: 1.5rem; width: 80%;" onclick="game.startUraTransition()">挑戦！</button>
+ <br>
+ <button class="btn" style="background: #555; margin-top:10px;" onclick="game.cancelUra()">キャンセル</button>
+ </article>
  </aside>
 
 </main>
@@ -392,129 +393,129 @@
 
 const DB = {
  CHARACTERS: [
-  { id: 'c1', name: 'ひろし風', color: '#3498db', speedBase: 180, rarity: 'N', icon: '👦' },
-  { id: 'c12', name: 'HIKAKIN', color: '#3498db', speedBase: 180, rarity: 'N', icon: '😎' },
-  { id: 'c2', name: 'タケル風', color: '#e74c3c', speedBase: 185, rarity: 'N', icon: '👱' },
-  { id: 'c3', name: 'ミカ風', color: '#f39c12', speedBase: 185, rarity: 'N', icon: '👧' },
-  { id: 'c4', name: 'タクヤ風', color: '#2ecc71', speedBase: 175, rarity: 'N', icon: '👦🏻' },
-  { id: 'c5', name: 'ニワトリ', color: '#ecf0f1', speedBase: 210, rarity: 'R', icon: '🐔' },
-  { id: 'c6', name: '鎧の騎士', color: '#95a5a6', speedBase: 165, rarity: 'SR', icon: '🛡️' },
-  { id: 'c7', name: '忍者', color: '#2c3e50', speedBase: 230, rarity: 'SR', icon: '🥷' },
-  { id: 'c8', name: '宇宙飛行士', color: '#bdc3c7', speedBase: 190, rarity: 'SR', icon: '👨‍🚀' },
-  { id: 'c9', name: '魔法使い', color: '#9b59b6', speedBase: 200, rarity: 'R', icon: '🧙' },
-  { id: 'c10', name: '芋ボーイ', color: '#8d6e63', speedBase: 240, rarity: 'SR', icon: '🥔' },
-  { id: 'c11', name: 'メカハンド', color: '#546de5', speedBase: 200, rarity: 'SR', icon: '🪬' },
-  { id: 'c13', name: 'スプラマニューバー(コラボ)', color: '#ff4757', speedBase: 220, rarity: 'SR', icon: '🔫' },
-  { id: 'c14', name: 'ゲームマスター赤鬼', color: '#e74c3c', speedBase: 210, rarity: 'SR', icon: '👹' },
-  { id: 'c15', name: 'ゴッドこうたん', color: '#f1c40f', speedBase: 230, rarity: 'SR', icon: '🤪' },
-  { id: 'c16', name: '大仏', color: '#b7950b', speedBase: 165, rarity: 'SR', icon: '🌚' },
-  { id: 'c17', name: 'ダイヤモンド', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '💎' },
-  { id: 'c18', name: 'ゆ〜れい', color: '#70a1ff', speedBase: 130, rarity: 'SR', icon: '👻' },
-  { id: 'c19', name: 'ガラマ', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '🧂🍯' },
-  { id: 'c20', name: 'バーガーアンドフライヤロ', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '🍔🍟' },
-  { id: 'c21', name: 'タコス！', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '🌮' },
-  { id: 'c22', name: 'クッキーアンドミルク', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '🍪🥛' },
-  { id: 'c23', name: '100点', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '💯' },
-  { id: 'c24', name: 'エラー404', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '😵' },
+ { id: 'c1', name: 'ひろし風', color: '#3498db', speedBase: 180, rarity: 'N', icon: '👦' },
+ { id: 'c12', name: 'HIKAKIN', color: '#3498db', speedBase: 180, rarity: 'N', icon: '😎' },
+ { id: 'c2', name: 'タケル風', color: '#e74c3c', speedBase: 185, rarity: 'N', icon: '👱' },
+ { id: 'c3', name: 'ミカ風', color: '#f39c12', speedBase: 185, rarity: 'N', icon: '👧' },
+ { id: 'c4', name: 'タクヤ風', color: '#2ecc71', speedBase: 175, rarity: 'N', icon: '👦🏻' },
+ { id: 'c5', name: 'ニワトリ', color: '#ecf0f1', speedBase: 210, rarity: 'R', icon: '🐔' },
+ { id: 'c6', name: '鎧の騎士', color: '#95a5a6', speedBase: 165, rarity: 'SR', icon: '🛡️' },
+ { id: 'c7', name: '忍者', color: '#2c3e50', speedBase: 230, rarity: 'SR', icon: '🥷' },
+ { id: 'c8', name: '宇宙飛行士', color: '#bdc3c7', speedBase: 190, rarity: 'SR', icon: '👨‍🚀' },
+ { id: 'c9', name: '魔法使い', color: '#9b59b6', speedBase: 200, rarity: 'R', icon: '🧙' },
+ { id: 'c10', name: '芋ボーイ', color: '#8d6e63', speedBase: 240, rarity: 'SR', icon: '🥔' },
+ { id: 'c11', name: 'メカハンド', color: '#546de5', speedBase: 200, rarity: 'SR', icon: '🪬' },
+ { id: 'c13', name: 'スプラマニューバー(コラボ)', color: '#ff4757', speedBase: 220, rarity: 'SR', icon: '🔫' },
+ { id: 'c14', name: 'ゲームマスター赤鬼', color: '#e74c3c', speedBase: 210, rarity: 'SR', icon: '👹' },
+ { id: 'c15', name: 'ゴッドこうたん', color: '#f1c40f', speedBase: 230, rarity: 'SR', icon: '🤪' },
+ { id: 'c16', name: '大仏', color: '#b7950b', speedBase: 165, rarity: 'SR', icon: '🌚' },
+ { id: 'c17', name: 'ダイヤモンド', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '💎' },
+ { id: 'c18', name: 'ゆ〜れい', color: '#70a1ff', speedBase: 130, rarity: 'SR', icon: '👻' },
+ { id: 'c19', name: 'ガラマ', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '🧂🍯' },
+ { id: 'c20', name: 'バーガーアンドフライヤロ', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '🍔🍟' },
+ { id: 'c21', name: 'タコス！', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '🌮' },
+ { id: 'c22', name: 'クッキーアンドミルク', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '🍪🥛' },
+ { id: 'c23', name: '100点', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '💯' },
+ { id: 'c24', name: 'エラー404', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '😵' },
 
-  { id: 'c25', name: 'ブロック青(コラボ)', color: '#b7950b', speedBase: 165, rarity: 'N', icon: '🟦' },
-  { id: 'c26', name: 'ブロック黄(コラボ)', color: '#70a1ff', speedBase: 200, rarity: 'N', icon: '🟨' },
-  { id: 'c27', name: 'ブロック赤(コラボ)', color: '#70a1ff', speedBase: 130, rarity: 'N', icon: '🟥' },
-  { id: 'c28', name: 'ブロック緑(コラボ)', color: '#70a1ff', speedBase: 200, rarity: 'N', icon: '🟩' },
-  { id: 'c29', name: 'ブロック赤＋青(コラボ)', color: '#70a1ff', speedBase: 200, rarity: 'R', icon: '🟥🟦' },
-  { id: 'c30', name: 'アンダーテール', color: '#70a1ff', speedBase: 200, rarity: 'R', icon: '❤' },
-  { id: 'c31', name: 'ダイナソー', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '🦖' },
-  { id: 'c32', name: 'サソリ', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '🦂' },
-  { id: 'c33', name: '鹿', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '🦌' },
+ { id: 'c25', name: 'ブロック青(コラボ)', color: '#b7950b', speedBase: 165, rarity: 'N', icon: '🟦' },
+ { id: 'c26', name: 'ブロック黄(コラボ)', color: '#70a1ff', speedBase: 200, rarity: 'N', icon: '🟨' },
+ { id: 'c27', name: 'ブロック赤(コラボ)', color: '#70a1ff', speedBase: 130, rarity: 'N', icon: '🟥' },
+ { id: 'c28', name: 'ブロック緑(コラボ)', color: '#70a1ff', speedBase: 200, rarity: 'N', icon: '🟩' },
+ { id: 'c29', name: 'ブロック赤＋青(コラボ)', color: '#70a1ff', speedBase: 200, rarity: 'R', icon: '🟥🟦' },
+ { id: 'c30', name: 'アンダーテール', color: '#70a1ff', speedBase: 200, rarity: 'R', icon: '❤' },
+ { id: 'c31', name: 'ダイナソー', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '🦖' },
+ { id: 'c32', name: 'サソリ', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '🦂' },
+ { id: 'c33', name: '鹿', color: '#70a1ff', speedBase: 200, rarity: 'SR', icon: '🦌' },
 
  { id: 'c34', name: 'エイリアン', color: '#b7950b', speedBase: 165, rarity: 'N', icon: '👽' },
-  { id: 'c35', name: 'カウボーイ', color: '#70a1ff', speedBase: 200, rarity: 'N', icon: '🤠' },
-  { id: 'c36', name: 'キンキン', color: '#70a1ff', speedBase: 130, rarity: 'N', icon: '🥶' },
-  { id: 'c37', name: 'アメーバ', color: '#70a1ff', speedBase: 200, rarity: 'N', icon: '🦠' },
-  { id: 'c38', name: '見てないよ〜↝', color: '#70a1ff', speedBase: 200, rarity: 'R', icon: '👁💤' },
-  { id: 'c39', name: '・・・', color: '#70a1ff', speedBase: 200, rarity: 'R', icon: '😱' },
-  { id: 'c40', name: 'ムーン', color: '#70a1ff', speedBase: 260, rarity: 'SR', icon: '🌝' },
-  { id: 'c41', name: '火山', color: '#70a1ff', speedBase: 210, rarity: 'SR', icon: '🌋' },
-  { id: 'c42', name: 'ウェーブ', color: '#70a1ff', speedBase: 250, rarity: 'SR', icon: '🌊' },
+ { id: 'c35', name: 'カウボーイ', color: '#70a1ff', speedBase: 200, rarity: 'N', icon: '🤠' },
+ { id: 'c36', name: 'キンキン', color: '#70a1ff', speedBase: 130, rarity: 'N', icon: '🥶' },
+ { id: 'c37', name: 'アメーバ', color: '#70a1ff', speedBase: 200, rarity: 'N', icon: '🦠' },
+ { id: 'c38', name: '見てないよ〜↝', color: '#70a1ff', speedBase: 200, rarity: 'R', icon: '👁💤' },
+ { id: 'c39', name: '・・・', color: '#70a1ff', speedBase: 200, rarity: 'R', icon: '😱' },
+ { id: 'c40', name: 'ムーン', color: '#70a1ff', speedBase: 260, rarity: 'SR', icon: '🌝' },
+ { id: 'c41', name: '火山', color: '#70a1ff', speedBase: 210, rarity: 'SR', icon: '🌋' },
+ { id: 'c42', name: 'ウェーブ', color: '#70a1ff', speedBase: 250, rarity: 'SR', icon: '🌊' },
 
-  { id: 'c98', name: 'たぬき(真・裏限定)', color: '#a0522d', speedBase: 300, rarity: 'SSR', icon: '🦝' },
-  { id: 'c99', name: '招き猫(裏限定)', color: '#f1c40f', speedBase: 250, rarity: 'SSR', icon: '🐱' }
+ { id: 'c98', name: 'たぬき(真・裏限定)', color: '#a0522d', speedBase: 300, rarity: 'SSR', icon: '🦝' },
+ { id: 'c99', name: '招き猫(裏限定)', color: '#f1c40f', speedBase: 250, rarity: 'SSR', icon: '🐱' }
  ],
  PETS: [
-  { id: 'p0', name: 'なし', buff: 'NONE', icon: '❌' },
-  { id: 'p1', name: 'ポチ(犬)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🐶' },
-  { id: 'p2', name: 'ウイルス', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '👾' },
-  { id: 'p3', name: '足', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🦵' },
-  { id: 'p4', name: '植物(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🌱' },
-  { id: 'p5', name: 'にんじん(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🥕' },
+ { id: 'p0', name: 'なし', buff: 'NONE', icon: '❌' },
+ { id: 'p1', name: 'ポチ(犬)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🐶' },
+ { id: 'p2', name: 'ウイルス', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '👾' },
+ { id: 'p3', name: '足', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🦵' },
+ { id: 'p4', name: '植物(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🌱' },
+ { id: 'p5', name: 'にんじん(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🥕' },
 
-  { id: 'p27', name: '顔1', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '(・∀・)' },
-  { id: 'p28', name: '顔2', buff: 'SPEED', val: 1.1, rarity: 'SR', icon: '(ﾉ◕ヮ◕)ﾉ*.✧' },
-  { id: 'p29', name: '顔3', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '(◕દ◕)' },
-  { id: 'p30', name: 'トマト(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🍅' },
-  { id: 'p31', name: 'ピーナッツ(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'R', icon: '🥜' },
+ { id: 'p27', name: '顔1', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '(・∀・)' },
+ { id: 'p28', name: '顔2', buff: 'SPEED', val: 1.1, rarity: 'SR', icon: '(ﾉ◕ヮ◕)ﾉ*.✧' },
+ { id: 'p29', name: '顔3', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '(◕દ◕)' },
+ { id: 'p30', name: 'トマト(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🍅' },
+ { id: 'p31', name: 'ピーナッツ(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'R', icon: '🥜' },
 
-  { id: 'p32', name: '惑星', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🪐' },
-  { id: 'p32', name: 'ROT', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🧠' },
-  { id: 'p34', name: 'パンプキン', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🎃' },
-  { id: 'p35', name: '雪だるま', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '⛄' },
-  { id: 'p36', name: 'ピーマン(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🫑' },
+ { id: 'p32', name: '惑星', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🪐' },
+ { id: 'p32', name: 'ROT', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🧠' },
+ { id: 'p34', name: 'パンプキン', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🎃' },
+ { id: 'p35', name: '雪だるま', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '⛄' },
+ { id: 'p36', name: 'ピーマン(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🫑' },
 
-  { id: 'p37', name: 'キャベツ(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🥬' },
-  { id: 'p38', name: 'エダマメ(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'R', icon: '🫛' },
-  { id: 'p39', name: 'ブルーベリー(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'SR', icon: '🫐' },
-  { id: 'p40', name: 'ブルベリー赤鬼(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'SSR', icon: '🫐👹' },
-  { id: 'p41', name: 'タマネギ(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🧅' },
-  { id: 'p42', name: 'きゅうり(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'R', icon: '🥒' },
-  { id: 'p43', name: 'イチゴ(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🍓' },
-  { id: 'p44', name: 'ニンニク(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'R', icon: '🧄' },
-  { id: 'p45', name: '虹巨大なほしのみ(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'SSR', icon: '⭐🌈🌟' },
+ { id: 'p37', name: 'キャベツ(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🥬' },
+ { id: 'p38', name: 'エダマメ(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'R', icon: '🫛' },
+ { id: 'p39', name: 'ブルーベリー(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'SR', icon: '🫐' },
+ { id: 'p40', name: 'ブルベリー赤鬼(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'SSR', icon: '🫐👹' },
+ { id: 'p41', name: 'タマネギ(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🧅' },
+ { id: 'p42', name: 'きゅうり(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'R', icon: '🥒' },
+ { id: 'p43', name: 'イチゴ(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'N', icon: '🍓' },
+ { id: 'p44', name: 'ニンニク(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'R', icon: '🧄' },
+ { id: 'p45', name: '虹巨大なほしのみ(コラボ)', buff: 'SPEED', val: 1.1, rarity: 'SSR', icon: '⭐🌈🌟' },
 
-  { id: 'p6', name: 'ミケ(猫)', buff: 'COIN', val: 1.5, rarity: 'R', icon: '🐈' },
-  { id: 'p7', name: 'ウサギ', buff: 'SPEED', val: 1.2, rarity: 'R', icon: '🐰' },
-  { id: 'p8', name: 'カメ', buff: 'MASK', val: 1.5, rarity: 'N', icon: '🐢' },
-  { id: 'p9', name: 'ミニドラゴン', buff: 'MASK', val: 2.0, rarity: 'SR', icon: '🐉' },
-  { id: 'p10', name: '不死鳥', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🦚' },
-  { id: 'p11', name: '足', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🦵' },
-  { id: 'p12', name: 'ひき肉です', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🤗' },
-  { id: 'p13', name: 'Hole(コラボ)', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🕳' },
-  { id: 'p14', name: '千手観音青鬼の子ども', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🤚' },
-  { id: 'p15', name: '伝説 マンゴー(コラボ)', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🥭' },
-  { id: 'p16', name: '伝説 ほしのみ(コラボ)', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '⭐' },
-  { id: 'p17', name: 'あらら', buff: 'SPEED', val: 1.2, rarity: 'R', icon: '💩' },
-  { id: 'p18', name: 'スーパーキノコ', buff: 'MASK', val: 1.5, rarity: 'N', icon: '🍄' },
-  { id: 'p19', name: 'ピエロ青鬼', buff: 'MASK', val: 2.0, rarity: 'SR', icon: '🤡' },
-  { id: 'p20', name: 'マイケル', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🧌' },
-  { id: 'p21', name: 'ガイコツ', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '💀' },
-  { id: 'p22', name: 'みてるよ〜↝', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '👁' },
-  { id: 'p23', name: 'あくま', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '👿' },
-  { id: 'p24', name: '太陽', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🌞' },
-  { id: 'p25', name: 'トーマス号', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🚂' },
-  { id: 'p26', name: 'ガーガー', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🪿' }
+ { id: 'p6', name: 'ミケ(猫)', buff: 'COIN', val: 1.5, rarity: 'R', icon: '🐈' },
+ { id: 'p7', name: 'ウサギ', buff: 'SPEED', val: 1.2, rarity: 'R', icon: '🐰' },
+ { id: 'p8', name: 'カメ', buff: 'MASK', val: 1.5, rarity: 'N', icon: '🐢' },
+ { id: 'p9', name: 'ミニドラゴン', buff: 'MASK', val: 2.0, rarity: 'SR', icon: '🐉' },
+ { id: 'p10', name: '不死鳥', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🦚' },
+ { id: 'p11', name: '足', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🦵' },
+ { id: 'p12', name: 'ひき肉です', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🤗' },
+ { id: 'p13', name: 'Hole(コラボ)', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🕳' },
+ { id: 'p14', name: '千手観音青鬼の子ども', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🤚' },
+ { id: 'p15', name: '伝説 マンゴー(コラボ)', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🥭' },
+ { id: 'p16', name: '伝説 ほしのみ(コラボ)', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '⭐' },
+ { id: 'p17', name: 'あらら', buff: 'SPEED', val: 1.2, rarity: 'R', icon: '💩' },
+ { id: 'p18', name: 'スーパーキノコ', buff: 'MASK', val: 1.5, rarity: 'N', icon: '🍄' },
+ { id: 'p19', name: 'ピエロ青鬼', buff: 'MASK', val: 2.0, rarity: 'SR', icon: '🤡' },
+ { id: 'p20', name: 'マイケル', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🧌' },
+ { id: 'p21', name: 'ガイコツ', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '💀' },
+ { id: 'p22', name: 'みてるよ〜↝', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '👁' },
+ { id: 'p23', name: 'あくま', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '👿' },
+ { id: 'p24', name: '太陽', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🌞' },
+ { id: 'p25', name: 'トーマス号', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🚂' },
+ { id: 'p26', name: 'ガーガー', buff: 'SPEED', val: 1.3, rarity: 'SSR', icon: '🪿' }
  ],
  ONI_TYPES: {
-  NORMAL: 0, FUWATTY: 1, SQUAT: 2, 
-  JELLY: 3, DEMON: 4, ICE: 5, FIRE: 6, SLIME: 7, SPIDER: 8, MUMMY: 9, NINJA: 10, GIANT: 11, GHOST: 12, BOMB: 13, SNIPER: 14, POISON: 15, ZOMBIE: 16, METAL: 17
+ NORMAL: 0, FUWATTY: 1, SQUAT: 2, 
+ JELLY: 3, DEMON: 4, ICE: 5, FIRE: 6, SLIME: 7, SPIDER: 8, MUMMY: 9, NINJA: 10, GIANT: 11, GHOST: 12, BOMB: 13, SNIPER: 14, POISON: 15, ZOMBIE: 16, METAL: 17
  },
  ONI_DATA: [
-  { id: 'o0', type: 0, name: '青鬼', rarity: 'N' },
-  { id: 'o1', type: 1, name: 'フワッティー', rarity: 'R' },
-  { id: 'o2', type: 2, name: 'スクワット鬼', rarity: 'R' },
-  { id: 'o3', type: 3, name: 'クラゲ鬼', rarity: 'SR' },
-  { id: 'o4', type: 4, name: '魔王鬼', rarity: 'SSR' },
-  { id: 'o5', type: 5, name: '氷鬼', rarity: 'SR' },
-  { id: 'o6', type: 6, name: '炎鬼', rarity: 'SR' },
-  { id: 'o7', type: 7, name: 'スライム鬼', rarity: 'R' },
-  { id: 'o8', type: 8, name: 'クモ鬼', rarity: 'SR' },
-  { id: 'o9', type: 9, name: 'ミイラ鬼', rarity: 'R' },
-  { id: 'o10', type: 10, name: '忍者鬼', rarity: 'SR' },
-  { id: 'o11', type: 11, name: '巨人鬼', rarity: 'SR' },
-  { id: 'o12', type: 12, name: '亡霊鬼', rarity: 'R' },
-  { id: 'o13', type: 13, name: '爆弾鬼', rarity: 'SR' },
-  { id: 'o14', type: 14, name: 'スナイパー鬼', rarity: 'SSR' },
-  { id: 'o15', type: 15, name: '毒鬼', rarity: 'SR' },
-  { id: 'o16', type: 16, name: 'ゾンビ鬼', rarity: 'R' },
-  { id: 'o17', type: 17, name: 'メタル鬼', rarity: 'SSR' }
+ { id: 'o0', type: 0, name: '青鬼', rarity: 'N' },
+ { id: 'o1', type: 1, name: 'フワッティー', rarity: 'R' },
+ { id: 'o2', type: 2, name: 'スクワット鬼', rarity: 'R' },
+ { id: 'o3', type: 3, name: 'クラゲ鬼', rarity: 'SR' },
+ { id: 'o4', type: 4, name: '魔王鬼', rarity: 'SSR' },
+ { id: 'o5', type: 5, name: '氷鬼', rarity: 'SR' },
+ { id: 'o6', type: 6, name: '炎鬼', rarity: 'SR' },
+ { id: 'o7', type: 7, name: 'スライム鬼', rarity: 'R' },
+ { id: 'o8', type: 8, name: 'クモ鬼', rarity: 'SR' },
+ { id: 'o9', type: 9, name: 'ミイラ鬼', rarity: 'R' },
+ { id: 'o10', type: 10, name: '忍者鬼', rarity: 'SR' },
+ { id: 'o11', type: 11, name: '巨人鬼', rarity: 'SR' },
+ { id: 'o12', type: 12, name: '亡霊鬼', rarity: 'R' },
+ { id: 'o13', type: 13, name: '爆弾鬼', rarity: 'SR' },
+ { id: 'o14', type: 14, name: 'スナイパー鬼', rarity: 'SSR' },
+ { id: 'o15', type: 15, name: '毒鬼', rarity: 'SR' },
+ { id: 'o16', type: 16, name: 'ゾンビ鬼', rarity: 'R' },
+ { id: 'o17', type: 17, name: 'メタル鬼', rarity: 'SSR' }
  ],
  NPC_NAMES: [
 "ゲスト", "初心者", "プロゲーマー", "逃走中", "青鬼ハンター", "名無し", "Bot", "ゲスト666", "ブレロ楽しい", "激突！トーマス号の悲劇", "千手観音青鬼です", "赤鬼です", "名無し", "Bot", "ゆうた", "伝説の男", "ひろし", "タケル", "ミカ", "タクヤ", "卍最強卍", "逃げ切りたい", "あ", "いいい", "草", "神回避", "課金勢", "ゲスト1", "ゲスト2", "ゲスト3", "ゲスト100", "ゲスト777", "名無しさん", "ななし", "bot_1", "bot_2", "たけし", "先生", "無課金勢", "微課金", "超課金勢", "放置中", "フレンド募集", "フレ申よろ", "フレ申×", "リア友", "サブ垢", "本垢", "初心者です", "初心者殺し", "プロ", "初心者詐欺", "宝箱頂戴", "宝箱回収中", "追わないで", "鬼来ないで", "たすけて", "やめてー", "無理ゲー", "神引き", "ガチャ爆死", "ラグい", "回線落ち", "通信エラー", "親フラ", "風呂行ってくる", "ごはんできた", "寝落ちしそう", "電池1%", "指すべった", "スマホ熱い", "音無し", "あお鬼", "フワッティー", "美香鬼", "千手観音", "真・千手観音", "ゼウス鬼", "モアイ鬼", "大仏鬼", "招き猫", "たぬき", "こうた", "そうた", "りく", "れん", "はると", "けんと", "しょうた", "たくみ", "りゅうせい", "そうすけ", "ひろと", "かなと", "ゆうま", "たいち", "あおと", "まひろ", "いつき", "かいと", "そら", "あおい", "ひなた", "ゆい", "あかり", "りお", "めい", "さくら", "あやか", "ひな", "みゆ", "りん", "ヒロシ", "タケシ", "カズキ", "ダイキ", "ユウキ", "シュン", "リョウ", "ケンタ", "ソウタ", "ハルト", "卍神卍", "卍龍卍", "卍影卍", "卍黒卍", "卍鬼卍", "卍炎卍", "卍零卍", "卍暗黒卍", "卍無王卍", "卍無敵卍", "【最強】", "【神】", "【プロ】", "【初心者】", "【公式】", "【本物】", "【偽物】", "【検証】", "【青逃】", "【青鬼】", "★神★", "★最強★", "★青鬼★", "★影★", "★龍★", "†闇の王†", "†漆黒†", "†堕天使†", "†死神†", "†神威†", "ポテト", "ハンバーガー", "ラーメン", "餃子", "焼肉", "寿司", "カレー", "オムライス", "たこ焼き", "おにぎり", "唐揚げ", "アイス", "プリン", "チョコレート", "いちご", "みかん", "りんご", "ぶどう", "バナナ", "メロン", "パイナップル", "ひき肉", "ハンバーグ", "コロッケ", "焼き芋", "マンゴー", "ほしのみ", "ニワトリ", "ウサギ", "カメ", "ドラゴン", "不死鳥", "宿題終わらない", "明日テスト", "勉強嫌い", "学校だるい", "塾帰り", "早朝プレイ", "深夜テンション", "オール中", "眠い", "おなかへった", "暇人", "小学生", "中学生", "高校生", "大学生", "ゲーム好き", "あお鬼好き", "ゲーム下手", "ゲスト10", "ゲスト50", "ゲスト99", "ゲスト123", "ゲスト555", "ゲスト888", "ゲスト999", "ゲスト007", "ゲスト000", "名無し鬼", "青鬼信者", "青鬼マスター", "青鬼プロ", "青逃名人", "青逃神", "青逃達成者", "100連勝中", "50連勝", "連勝ストッパー", "青玉集め中", "ガチャ引きたい", "スキンコンプ", "限定スキン", "コラボスキン", "伝説スキン", "初期スキン", "足速い", "速度マシマシ", "マスク使用中", "コイン稼ぎ", "モアイ", "ゴリラ", "ゴリ押し", "1位とる", "1位目指す", "ラスト1人", "勝つのは俺だ", "負けたくない", "青鬼キラー", "赤鬼キラー", "鬼退治", "鬼退治のプロ", "館の主", "牢屋の主", "青逃初心者", "裏ステージクリア", "真裏ステージクリア", "青鬼討伐隊長", "青鬼討伐隊員", "仲間募集", "よろしくね", "対戦よろしく", "手加減して", "手加減なし", "容赦しない", "俺が本物", "本物はこちら", "偽物に注意", "偽物です", "公式じゃない", "HIKAKIN", "ヒカキン", "セイキン", "キヨ", "はじめしゃちょー", "フィッシャーズ", "カラフルピーチ", "からぴち", "ドズル社", "日常組", "ワイテルズ", "らっだぁ", "赤髪のとも", "ポッキー", "ふうはや", "まじかる☆", "神プレイヤー", "天才プレイヤー", "無敗の男", "常勝無敗", "百戦錬磨", "一騎当千", "天下無敵", "唯我独尊", "完全勝利", "青逃達成", "青逃V2", "青逃V3", "青逃10回目", "青逃100回目", "青鬼に勝つ", "青鬼に負けた", "青鬼怖い", "鬼ごっこ好き", "鬼から逃走", "スピード狂", "爆速", "光速の逃走者", "疾風迅雷", "影の立役者", "暗躍者", "隠れんぼ名人", "隠れ鬼", "気配消す", "存在感ゼロ", "空気", "影薄い", "忍者", "鎧の騎士", "魔法使い", "芋ボーイ", "メカハンド", "ゲームマスター", "ゴッドこうたん", "大仏", "ダイヤモンド", "ポチ", "ウイルス", "足", "植物", "にんじん", "ミケ", "ウサギちゃん", "カメさん", "ミニドラゴン", "ひき肉です", "Hole", "青鬼の子ども", "伝説マンゴー", "伝説ほしのみ", "ああああ", "いいいい", "うううう", "ええええ", "おおおお", "かかかか", "ささささ", "たたたた", "なななな", "はははは", "ｗｗｗｗ", "ｗｗｗｗｗｗ", "笑笑", "笑笑笑", "草草草", "大草原", "草生える", "草不可避", "神", "神様", "神様仏様", "魔王", "勇者", "賢者", "武闘家", "黒魔道士", "白魔道士", "パラディン", "バーサーカー", "アサシン", "サムライ", "将軍", "殿様", "お姫様", "王子様", "皇帝", "女王", "キング", "クイーン", "ジョーカー", "エース", "ジャック", "アルファ", "オメガ", "ゼウス", "オーディン", "ポセイドン", "ハデス", "アポロン", "アテナ", "トール", "ロキ", "バハムート", "リヴァイアサン", "フェニックス", "ケルベロス", "ベヒーモス", "グリフォン", "チート", "チーター疑惑", "チート使ってません", "実力派", "努力家", "天才肌", "エンジョイ勢", "ガチ勢", "ガチ勢（嘘）", "エンジョイ勢（嘘）", "超初心者", "永遠の初心者", "永遠のライバル", "宿敵", "相棒", "相棒募集中", "相棒と一緒", "ペア勝利", "絆", "友情", "努力", "勝利", "敗北を知りたい", "無敗の伝説", "連勝記録更新中", "連勝ストップ", "悔しい", "次こそ勝つ", "リベンジ", "リベンジャー", "挑戦者", "チャレンジャー", "チャレンジャー1号", "チャレンジャー2号", "青鬼マスター1号", "青鬼マスター2号", "青鬼ファン", "青鬼マニア", "青鬼オタク", "青鬼オタクです", "青鬼ラブ", "青鬼LOVE", "青逃LOVE", "青逃が生きがい", "ゲーム大好きっ子", "ゲーマー男子", "ゲーマー女子", "ゲームキッズ", "キッズ", "最強キッズ", "神キッズ", "天才キッズ", "青鬼キッズ", "ブレロキッズ", "トーマスキッズ", "ガチャキッズ", "無課金キッズ", "課金キッズ", "神回避キッズ", "逃走キッズ", "ハンターキッズ", "青鬼ハンターキッズ", "あお", "あか", "きいろ", "みどり", "くろ", "しろ", "むらさき", "ピンク", "オレンジ", "ゴールド", "シルバー", "ブロンズ", "プラチナ", "ダイヤ", "ルビー", "サファイア", "エメラルド", "トパーズ", "アメジスト", "パール", "ゲスト111", "ゲスト222", "ゲスト333", "ゲスト444", "ゲスト8888", "ゲスト9999", "名無し1", "名無し2", "名無し3", "Bot_3", "Bot_4", "Bot_5", "Bot_X", "Bot_Z", "NPC", "NPC_1", "NPC_2", "プレイヤー1", "プレイヤー2", "プレイヤー3", "プレイヤーX", "プレイヤーZ", "名無しの権兵衛", "名無しのゲーマー", "名無しの逃走者", "名無しの青逃", "青逃達成率100%", "青逃率99%", "青鬼から逃げる者", "最後の生存者"
@@ -535,34 +536,34 @@ function safeSet(k,v){ try{localStorage.setItem(k,v);}catch(e){memStorage[k]=v;}
 
 class SaveData {
  constructor() {
-  this.playerName = "ゲスト";
-  this.coins = 500;
-  this.orbs = 0; 
-  this.unlockedChars = ['c1'];
-  this.unlockedPets = ['p0'];
-  this.unlockedOnis = ['o0'];
-  this.equipCharId = 'c1';
-  this.equipPetId = 'p0';
-  this.equipOniId = 'o0';
-  this.highestTowerFloor = 1;
-  this.encounteredOnis = [];
-  this.hasPendingUra = false;
-  this.load();
+ this.playerName = "ゲスト";
+ this.coins = 500;
+ this.orbs = 0; 
+ this.unlockedChars = ['c1'];
+ this.unlockedPets = ['p0'];
+ this.unlockedOnis = ['o0'];
+ this.equipCharId = 'c1';
+ this.equipPetId = 'p0';
+ this.equipOniId = 'o0';
+ this.highestTowerFloor = 1;
+ this.encounteredOnis = [];
+ this.hasPendingUra = false;
+ this.load();
  }
  save() { safeSet('aooni_save_v3', JSON.stringify(this)); }
  load() {
-  const data = safeGet('aooni_save_v3') || safeGet('aooni_save_v2'); 
-  if (data) {
-  try {
-   const parsed = JSON.parse(data);
-   Object.assign(this, parsed);
-   if(!this.unlockedChars.includes(this.equipCharId)) this.equipCharId = 'c1';
-   if(!this.unlockedOnis) this.unlockedOnis = ['o0'];
-   if(!this.encounteredOnis) this.encounteredOnis = [];
-   if(!this.playerName) this.playerName = "ゲスト";
-   if(this.orbs === undefined) this.orbs = 0;
-  } catch(e) {}
-  }
+ const data = safeGet('aooni_save_v3') || safeGet('aooni_save_v2'); 
+ if (data) {
+ try {
+ const parsed = JSON.parse(data);
+ Object.assign(this, parsed);
+ if(!this.unlockedChars.includes(this.equipCharId)) this.equipCharId = 'c1';
+ if(!this.unlockedOnis) this.unlockedOnis = ['o0'];
+ if(!this.encounteredOnis) this.encounteredOnis = [];
+ if(!this.playerName) this.playerName = "ゲスト";
+ if(this.orbs === undefined) this.orbs = 0;
+ } catch(e) {}
+ }
  }
  addCoin(amount) { this.coins += Math.floor(amount); this.save(); }
  addOrb(amount) { this.orbs += Math.floor(amount); this.save(); }
@@ -575,36 +576,36 @@ const saveData = new SaveData();
 
 class AudioController {
  constructor() {
-  this.chaseAudio = new Audio();
-  this.chaseAudio.loop = true;
-  this.uraAudio = new Audio();
-  this.uraAudio.loop = true;
-  this.currentBGM = null;
+ this.chaseAudio = new Audio();
+ this.chaseAudio.loop = true;
+ this.uraAudio = new Audio();
+ this.uraAudio.loop = true;
+ this.currentBGM = null;
  }
  setupFiles() {
-  const chaseInput = document.getElementById('audio-chase');
-  const uraInput = document.getElementById('audio-ura');
-  chaseInput.addEventListener('change', (e) => {
-  if(e.target.files[0]) this.chaseAudio.src = URL.createObjectURL(e.target.files[0]);
-  });
-  uraInput.addEventListener('change', (e) => {
-  if(e.target.files[0]) this.uraAudio.src = URL.createObjectURL(e.target.files[0]);
-  });
+ const chaseInput = document.getElementById('audio-chase');
+ const uraInput = document.getElementById('audio-ura');
+ chaseInput.addEventListener('change', (e) => {
+ if(e.target.files[0]) this.chaseAudio.src = URL.createObjectURL(e.target.files[0]);
+ });
+ uraInput.addEventListener('change', (e) => {
+ if(e.target.files[0]) this.uraAudio.src = URL.createObjectURL(e.target.files[0]);
+ });
  }
  playChase() {
-  if(this.currentBGM === this.chaseAudio || !this.chaseAudio.src) return;
-  this.stopAll();
-  this.currentBGM = this.chaseAudio;
-  this.currentBGM.play().catch(e=>console.log("Audio play prevented"));
+ if(this.currentBGM === this.chaseAudio || !this.chaseAudio.src) return;
+ this.stopAll();
+ this.currentBGM = this.chaseAudio;
+ this.currentBGM.play().catch(e=>console.log("Audio play prevented"));
  }
  playUra() {
-  if(this.currentBGM === this.uraAudio || !this.uraAudio.src) return;
-  this.stopAll();
-  this.currentBGM = this.uraAudio;
-  this.currentBGM.play().catch(e=>console.log("Audio play prevented"));
+ if(this.currentBGM === this.uraAudio || !this.uraAudio.src) return;
+ this.stopAll();
+ this.currentBGM = this.uraAudio;
+ this.currentBGM.play().catch(e=>console.log("Audio play prevented"));
  }
  stopAll() {
-  if(this.currentBGM) { this.currentBGM.pause(); this.currentBGM.currentTime = 0; this.currentBGM = null; }
+ if(this.currentBGM) { this.currentBGM.pause(); this.currentBGM.currentTime = 0; this.currentBGM = null; }
  }
 }
 const audioCtrl = new AudioController();
@@ -621,94 +622,94 @@ const TILE = { EMPTY: 0, WALL: 1, FLOOR: 2, GOAL: 3 };
 
 class MapGenerator {
  static generateBSP(cols, rows) {
-  let grid = Array.from({ length: rows }, () => Array(cols).fill(TILE.WALL));
-  let rooms = [];
-  let leaves = [{ x: 1, y: 1, w: cols - 2, h: rows - 2 }];
-  
-  for (let i = 0; i < 4; i++) {
-  let newLeaves = [];
-  for (let leaf of leaves) {
-   let splitH = Math.random() > 0.5;
-   let max = (splitH ? leaf.h : leaf.w) - 8;
-   if (max <= 5) { newLeaves.push(leaf); continue; }
-   let split = Utils.randomInt(5, max);
-   if (splitH) {
-    newLeaves.push({ x: leaf.x, y: leaf.y, w: leaf.w, h: split });
-    newLeaves.push({ x: leaf.x, y: leaf.y + split, w: leaf.w, h: leaf.h - split });
-   } else {
-    newLeaves.push({ x: leaf.x, y: leaf.y, w: split, h: leaf.h });
-    newLeaves.push({ x: leaf.x + split, y: leaf.y, w: leaf.w - split, h: leaf.h });
-   }
-  }
-  leaves = newLeaves;
-  }
+ let grid = Array.from({ length: rows }, () => Array(cols).fill(TILE.WALL));
+ let rooms = [];
+ let leaves = [{ x: 1, y: 1, w: cols - 2, h: rows - 2 }];
+ 
+ for (let i = 0; i < 4; i++) {
+ let newLeaves = [];
+ for (let leaf of leaves) {
+ let splitH = Math.random() > 0.5;
+ let max = (splitH ? leaf.h : leaf.w) - 8;
+ if (max <= 5) { newLeaves.push(leaf); continue; }
+ let split = Utils.randomInt(5, max);
+ if (splitH) {
+ newLeaves.push({ x: leaf.x, y: leaf.y, w: leaf.w, h: split });
+ newLeaves.push({ x: leaf.x, y: leaf.y + split, w: leaf.w, h: leaf.h - split });
+ } else {
+ newLeaves.push({ x: leaf.x, y: leaf.y, w: split, h: leaf.h });
+ newLeaves.push({ x: leaf.x + split, y: leaf.y, w: leaf.w - split, h: leaf.h });
+ }
+ }
+ leaves = newLeaves;
+ }
 
-  for (let leaf of leaves) {
-  let rw = Utils.randomInt(4, leaf.w - 1);
-  let rh = Utils.randomInt(4, leaf.h - 1);
-  let rx = leaf.x + Utils.randomInt(1, leaf.w - rw);
-  let ry = leaf.y + Utils.randomInt(1, leaf.h - rh);
-  rooms.push({ x: rx, y: ry, w: rw, h: rh });
-  for (let y = ry; y < ry + rh; y++) {
-   for (let x = rx; x < rx + rw; x++) grid[y][x] = TILE.FLOOR;
-  }
-  }
+ for (let leaf of leaves) {
+ let rw = Utils.randomInt(4, leaf.w - 1);
+ let rh = Utils.randomInt(4, leaf.h - 1);
+ let rx = leaf.x + Utils.randomInt(1, leaf.w - rw);
+ let ry = leaf.y + Utils.randomInt(1, leaf.h - rh);
+ rooms.push({ x: rx, y: ry, w: rw, h: rh });
+ for (let y = ry; y < ry + rh; y++) {
+ for (let x = rx; x < rx + rw; x++) grid[y][x] = TILE.FLOOR;
+ }
+ }
 
-  for (let i = 0; i < rooms.length - 1; i++) {
-  let rA = rooms[i], rB = rooms[i + 1];
-  let cxA = Math.floor(rA.x + rA.w/2), cyA = Math.floor(rA.y + rA.h/2);
-  let cxB = Math.floor(rB.x + rB.w/2), cyB = Math.floor(rB.y + rB.h/2);
-  for(let x = Math.min(cxA, cxB); x <= Math.max(cxA, cxB); x++) { grid[cyA][x] = TILE.FLOOR; grid[cyA+1][x] = TILE.FLOOR; }
-  for(let y = Math.min(cyA, cyB); y <= Math.max(cyA, cyB); y++) { grid[y][cxB] = TILE.FLOOR; grid[y][cxB+1] = TILE.FLOOR; }
-  }
-  return { grid, rooms };
+ for (let i = 0; i < rooms.length - 1; i++) {
+ let rA = rooms[i], rB = rooms[i + 1];
+ let cxA = Math.floor(rA.x + rA.w/2), cyA = Math.floor(rA.y + rA.h/2);
+ let cxB = Math.floor(rB.x + rB.w/2), cyB = Math.floor(rB.y + rB.h/2);
+ for(let x = Math.min(cxA, cxB); x <= Math.max(cxA, cxB); x++) { grid[cyA][x] = TILE.FLOOR; grid[cyA+1][x] = TILE.FLOOR; }
+ for(let y = Math.min(cyA, cyB); y <= Math.max(cyA, cyB); y++) { grid[y][cxB] = TILE.FLOOR; grid[y][cxB+1] = TILE.FLOOR; }
+ }
+ return { grid, rooms };
  }
 
  static generateUraMap(cols, rows) {
-  let grid = Array.from({ length: rows }, () => Array(cols).fill(TILE.WALL));
-  for(let y=1; y<rows-1; y++){
-  for(let x=2; x<cols-2; x++) grid[y][x] = TILE.FLOOR;
-  }
-  return { grid, rooms:[{x:2, y:2, w:cols-4, h:4}] }; 
+ let grid = Array.from({ length: rows }, () => Array(cols).fill(TILE.WALL));
+ for(let y=1; y<rows-1; y++){
+ for(let x=2; x<cols-2; x++) grid[y][x] = TILE.FLOOR;
+ }
+ return { grid, rooms:[{x:2, y:2, w:cols-4, h:4}] }; 
  }
 
  static getRandomFloor(grid, cols, rows) {
-  let maxAttempts = 1000;
-  while (maxAttempts-- > 0) {
-  let x = Utils.randomInt(1, cols - 1);
-  let y = Utils.randomInt(1, rows - 1);
-  if (grid[y][x] === TILE.FLOOR) return { x: x * CONFIG.TILE_SIZE, y: y * CONFIG.TILE_SIZE };
-  }
-  return { x: 2 * CONFIG.TILE_SIZE, y: 2 * CONFIG.TILE_SIZE };
+ let maxAttempts = 1000;
+ while (maxAttempts-- > 0) {
+ let x = Utils.randomInt(1, cols - 1);
+ let y = Utils.randomInt(1, rows - 1);
+ if (grid[y][x] === TILE.FLOOR) return { x: x * CONFIG.TILE_SIZE, y: y * CONFIG.TILE_SIZE };
+ }
+ return { x: 2 * CONFIG.TILE_SIZE, y: 2 * CONFIG.TILE_SIZE };
  }
 }
 
 class Pathfinder {
  static findPath(grid, startX, startY, goalX, goalY) {
-  const rows = grid.length, cols = grid[0].length;
-  const queue = [{x: startX, y: startY, path: []}];
-  const visited = new Set();
-  visited.add(`${startX},${startY}`);
-  const dirs = [{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}];
-  let steps = 0;
+ const rows = grid.length, cols = grid[0].length;
+ const queue = [{x: startX, y: startY, path: []}];
+ const visited = new Set();
+ visited.add(`${startX},${startY}`);
+ const dirs = [{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}];
+ let steps = 0;
 
-  while(queue.length > 0 && steps < 100) { 
-  let curr = queue.shift();
-  steps++;
-  if(curr.x === goalX && curr.y === goalY) return curr.path;
+ while(queue.length > 0 && steps < 100) { 
+ let curr = queue.shift();
+ steps++;
+ if(curr.x === goalX && curr.y === goalY) return curr.path;
 
-  for(let d of dirs) {
-   let nx = curr.x + d.x, ny = curr.y + d.y;
-   if(nx>=0 && nx<cols && ny>=0 && ny<rows && grid[ny][nx] !== TILE.WALL) {
-    let key = `${nx},${ny}`;
-    if(!visited.has(key)) {
-    visited.add(key);
-    queue.push({x: nx, y: ny, path: [...curr.path, {x:nx, y:ny}]});
-    }
-   }
-  }
-  }
-  return [];
+ for(let d of dirs) {
+ let nx = curr.x + d.x, ny = curr.y + d.y;
+ if(nx>=0 && nx<cols && ny>=0 && ny<rows && grid[ny][nx] !== TILE.WALL) {
+ let key = `${nx},${ny}`;
+ if(!visited.has(key)) {
+ visited.add(key);
+ queue.push({x: nx, y: ny, path: [...curr.path, {x:nx, y:ny}]});
+ }
+ }
+ }
+ }
+ return [];
  }
 }
 
@@ -720,1168 +721,1168 @@ class Entity {
 
 class Character extends Entity {
  constructor(x, y, color, speed) {
-  super(x, y, 24, 24);
-  this.color = color;
-  this.baseSpeed = speed;
-  this.speed = speed;
-  this.dir = 0;
-  this.isMoving = false;
-  this.anim = 0;
-  this.buffs = { MASK: 0, SKATE: 0, SLOW: 0, POISON: 0 }; 
-  this.isHidden = false;
+ super(x, y, 24, 24);
+ this.color = color;
+ this.baseSpeed = speed;
+ this.speed = speed;
+ this.dir = 0;
+ this.isMoving = false;
+ this.anim = 0;
+ this.buffs = { MASK: 0, SKATE: 0, SLOW: 0, POISON: 0 }; 
+ this.isHidden = false;
  }
  
  update(dt, game) {
-  if(this.isDead || this.isHidden) return;
-  for(let key in this.buffs) {
-  if(this.buffs[key] > 0) this.buffs[key] = Math.max(0, this.buffs[key] - dt);
-  }
-  if(this.isMoving) this.anim += dt * 10;
-  else this.anim = 0;
+ if(this.isDead || this.isHidden) return;
+ for(let key in this.buffs) {
+ if(this.buffs[key] > 0) this.buffs[key] = Math.max(0, this.buffs[key] - dt);
+ }
+ if(this.isMoving) this.anim += dt * 10;
+ else this.anim = 0;
  }
 
  move(dx, dy, grid, cols, rows) {
-  if(this.isDead || this.isHidden) return;
-  if (dx === 0 && dy === 0) { this.isMoving = false; return; }
+ if(this.isDead || this.isHidden) return;
+ if (dx === 0 && dy === 0) { this.isMoving = false; return; }
 
-  this.isMoving = true;
-  if(Math.abs(dx) > Math.abs(dy)) this.dir = dx > 0 ? 2 : 1;
-  else this.dir = dy > 0 ? 0 : 3;
+ this.isMoving = true;
+ if(Math.abs(dx) > Math.abs(dy)) this.dir = dx > 0 ? 2 : 1;
+ else this.dir = dy > 0 ? 0 : 3;
 
-  let len = Math.sqrt(dx*dx + dy*dy);
-  if(len === 0) return;
+ let len = Math.sqrt(dx*dx + dy*dy);
+ if(len === 0) return;
 
-  let actualSpeed = this.speed;
-  if(this.buffs.SKATE > 0) actualSpeed *= 1.5;
-  if(this.buffs.SLOW > 0 || this.buffs.POISON > 0) actualSpeed *= 0.5;
+ let actualSpeed = this.speed;
+ if(this.buffs.SKATE > 0) actualSpeed *= 1.5;
+ if(this.buffs.SLOW > 0 || this.buffs.POISON > 0) actualSpeed *= 0.5;
 
-  let vx = (dx/len) * actualSpeed * game.deltaTime;
-  let vy = (dy/len) * actualSpeed * game.deltaTime;
+ let vx = (dx/len) * actualSpeed * game.deltaTime;
+ let vy = (dy/len) * actualSpeed * game.deltaTime;
 
-  this.x += vx;
-  if(this.checkWall(grid, cols, rows)) this.x -= vx;
-  this.y += vy;
-  if(this.checkWall(grid, cols, rows)) this.y -= vy;
+ this.x += vx;
+ if(this.checkWall(grid, cols, rows)) this.x -= vx;
+ this.y += vy;
+ if(this.checkWall(grid, cols, rows)) this.y -= vy;
  }
 
  checkWall(grid, cols, rows) {
-  let left = Math.floor(this.x / CONFIG.TILE_SIZE), right = Math.floor((this.x + this.w) / CONFIG.TILE_SIZE);
-  let top = Math.floor(this.y / CONFIG.TILE_SIZE), bottom = Math.floor((this.y + this.h) / CONFIG.TILE_SIZE);
-  if(left<0 || right>=cols || top<0 || bottom>=rows) return true;
-  return grid[top][left]===TILE.WALL || grid[top][right]===TILE.WALL || grid[bottom][left]===TILE.WALL || grid[bottom][right]===TILE.WALL;
+ let left = Math.floor(this.x / CONFIG.TILE_SIZE), right = Math.floor((this.x + this.w) / CONFIG.TILE_SIZE);
+ let top = Math.floor(this.y / CONFIG.TILE_SIZE), bottom = Math.floor((this.y + this.h) / CONFIG.TILE_SIZE);
+ if(left<0 || right>=cols || top<0 || bottom>=rows) return true;
+ return grid[top][left]===TILE.WALL || grid[top][right]===TILE.WALL || grid[bottom][left]===TILE.WALL || grid[bottom][right]===TILE.WALL;
  }
 
  draw(ctx) {
-  if(this.isDead || this.isHidden) return;
-  let bob = this.isMoving ? Math.sin(this.anim)*3 : 0;
-  let cx = this.x - 8, cy = this.y - 24;
+ if(this.isDead || this.isHidden) return;
+ let bob = this.isMoving ? Math.sin(this.anim)*3 : 0;
+ let cx = this.x - 8, cy = this.y - 24;
 
-  ctx.fillStyle = "rgba(0,0,0,0.3)";
-  ctx.beginPath(); ctx.ellipse(this.x+this.w/2, this.y+this.h, 12, 4, 0, 0, Math.PI*2); ctx.fill();
+ ctx.fillStyle = "rgba(0,0,0,0.3)";
+ ctx.beginPath(); ctx.ellipse(this.x+this.w/2, this.y+this.h, 12, 4, 0, 0, Math.PI*2); ctx.fill();
 
-  if(this.buffs.SKATE > 0) {
-  ctx.fillStyle = "rgba(241, 196, 15, 0.5)";
-  ctx.fillRect(cx+6, cy+bob, 28, 40);
-  }
+ if(this.buffs.SKATE > 0) {
+ ctx.fillStyle = "rgba(241, 196, 15, 0.5)";
+ ctx.fillRect(cx+6, cy+bob, 28, 40);
+ }
 
-  ctx.fillStyle = (this.buffs.POISON > 0) ? "#8e44ad" : this.color; 
-  ctx.fillRect(cx+8, cy+16+bob, 24, 24);
-  ctx.fillStyle = "#FFDCB6";
-  ctx.fillRect(cx+6, cy+bob, 28, 20);
-  
-  ctx.fillStyle = "#000";
-  if(this.dir===0 || this.dir===2) ctx.fillRect(cx+18, cy+8+bob, 4, 4);
-  if(this.dir===0 || this.dir===1) ctx.fillRect(cx+10, cy+8+bob, 4, 4);
-  
-  if(this.buffs.MASK > 0) {
-  ctx.fillStyle = "#555";
-  ctx.fillRect(cx+10, cy+12+bob, 12, 8);
-  }
+ ctx.fillStyle = (this.buffs.POISON > 0) ? "#8e44ad" : this.color; 
+ ctx.fillRect(cx+8, cy+16+bob, 24, 24);
+ ctx.fillStyle = "#FFDCB6";
+ ctx.fillRect(cx+6, cy+bob, 28, 20);
+ 
+ ctx.fillStyle = "#000";
+ if(this.dir===0 || this.dir===2) ctx.fillRect(cx+18, cy+8+bob, 4, 4);
+ if(this.dir===0 || this.dir===1) ctx.fillRect(cx+10, cy+8+bob, 4, 4);
+ 
+ if(this.buffs.MASK > 0) {
+ ctx.fillStyle = "#555";
+ ctx.fillRect(cx+10, cy+12+bob, 12, 8);
+ }
  }
 }
 
 class NPC extends Character {
  constructor(x, y) {
-  let skin = DB.CHARACTERS[Utils.randomInt(0, 9)]; 
-  super(x, y, skin.color, skin.speedBase + Utils.random(-15, 15));
-  this.icon = skin.icon;
-  this.name = DB.NPC_NAMES[Utils.randomInt(0, DB.NPC_NAMES.length)];
-  this.state = 'IDLE';
-  this.stateTimer = 0;
-  this.targetX = x; this.targetY = y;
+ let skin = DB.CHARACTERS[Utils.randomInt(0, 9)]; 
+ super(x, y, skin.color, skin.speedBase + Utils.random(-15, 15));
+ this.icon = skin.icon;
+ this.name = DB.NPC_NAMES[Utils.randomInt(0, DB.NPC_NAMES.length)];
+ this.state = 'IDLE';
+ this.stateTimer = 0;
+ this.targetX = x; this.targetY = y;
  }
 
  update(dt, game) {
-  super.update(dt, game);
-  if(this.isDead || this.isHidden) return;
-  this.stateTimer -= dt;
-  let mapCx = (game.cols*CONFIG.TILE_SIZE)/2, mapCy = (game.rows*CONFIG.TILE_SIZE)/2;
-  let distFromCenter = Utils.distance(this.x, this.y, mapCx, mapCy);
+ super.update(dt, game);
+ if(this.isDead || this.isHidden) return;
+ this.stateTimer -= dt;
+ let mapCx = (game.cols*CONFIG.TILE_SIZE)/2, mapCy = (game.rows*CONFIG.TILE_SIZE)/2;
+ let distFromCenter = Utils.distance(this.x, this.y, mapCx, mapCy);
 
-  let nearestOni = null, minDist = 350;
-  if(game.mode === 'ONIMODE') {
-  let d = Utils.distance(this.x, this.y, game.player.x, game.player.y);
-  if(d < minDist) { minDist = d; nearestOni = game.player; }
-  } else {
-  for(let oni of game.onis) {
-   let d = Utils.distance(this.x, this.y, oni.x, oni.y);
-   if(d < minDist) { minDist = d; nearestOni = oni; }
-  }
-  }
+ let nearestOni = null, minDist = 350;
+ if(game.mode === 'ONIMODE') {
+ let d = Utils.distance(this.x, this.y, game.player.x, game.player.y);
+ if(d < minDist) { minDist = d; nearestOni = game.player; }
+ } else {
+ for(let oni of game.onis) {
+ let d = Utils.distance(this.x, this.y, oni.x, oni.y);
+ if(d < minDist) { minDist = d; nearestOni = oni; }
+ }
+ }
 
-  if(nearestOni) {
-  this.state = 'FLEE';
-  let dx = this.x - nearestOni.x, dy = this.y - nearestOni.y;
-  dx += Utils.random(-50, 50); dy += Utils.random(-50, 50);
-  this.move(dx, dy, game.grid, game.cols, game.rows);
-  } else if (game.mode === 'SURVIVAL' && distFromCenter > game.zoneRadius - 100) {
-  this.state = 'SAFE_ZONE';
-  let dx = mapCx - this.x, dy = mapCy - this.y;
-  this.move(dx, dy, game.grid, game.cols, game.rows);
-  } else {
-  if(this.stateTimer <= 0) {
-   this.state = 'WANDER'; this.stateTimer = Utils.random(1, 3);
-   this.targetX = this.x + Utils.random(-300, 300); this.targetY = this.y + Utils.random(-300, 300);
-  }
-  let dx = this.targetX - this.x, dy = this.targetY - this.y;
-  if(Math.abs(dx) > 10 || Math.abs(dy) > 10) this.move(dx, dy, game.grid, game.cols, game.rows);
-  else this.isMoving = false;
-  }
+ if(nearestOni) {
+ this.state = 'FLEE';
+ let dx = this.x - nearestOni.x, dy = this.y - nearestOni.y;
+ dx += Utils.random(-50, 50); dy += Utils.random(-50, 50);
+ this.move(dx, dy, game.grid, game.cols, game.rows);
+ } else if (game.mode === 'SURVIVAL' && distFromCenter > game.zoneRadius - 100) {
+ this.state = 'SAFE_ZONE';
+ let dx = mapCx - this.x, dy = mapCy - this.y;
+ this.move(dx, dy, game.grid, game.cols, game.rows);
+ } else {
+ if(this.stateTimer <= 0) {
+ this.state = 'WANDER'; this.stateTimer = Utils.random(1, 3);
+ this.targetX = this.x + Utils.random(-300, 300); this.targetY = this.y + Utils.random(-300, 300);
+ }
+ let dx = this.targetX - this.x, dy = this.targetY - this.y;
+ if(Math.abs(dx) > 10 || Math.abs(dy) > 10) this.move(dx, dy, game.grid, game.cols, game.rows);
+ else this.isMoving = false;
+ }
  }
 
  draw(ctx) {
-  super.draw(ctx);
-  if(this.isDead || this.isHidden) return;
-  ctx.font = "20px Arial";
-  ctx.fillText(this.icon, this.x - 6, this.y - 30 + (this.isMoving ? Math.sin(this.anim)*3 : 0));
-  ctx.fillStyle = "#fff"; ctx.font = "10px sans-serif";
-  ctx.fillText(this.name, this.x - 10, this.y - 50);
+ super.draw(ctx);
+ if(this.isDead || this.isHidden) return;
+ ctx.font = "20px Arial";
+ ctx.fillText(this.icon, this.x - 6, this.y - 30 + (this.isMoving ? Math.sin(this.anim)*3 : 0));
+ ctx.fillStyle = "#fff"; ctx.font = "10px sans-serif";
+ ctx.fillText(this.name, this.x - 10, this.y - 50);
  }
 }
 
 class Player extends Character {
  constructor(x, y, charData, petData) {
-  super(x, y, charData.color, charData.speedBase);
-  this.charData = charData;
-  this.petData = petData;
-  if(petData.buff === 'SPEED') this.speed *= petData.val;
+ super(x, y, charData.color, charData.speedBase);
+ this.charData = charData;
+ this.petData = petData;
+ if(petData.buff === 'SPEED') this.speed *= petData.val;
  }
 
  draw(ctx) {
-  if(this.isDead || this.isHidden) return;
-  if(game.mode === 'ONIMODE') {
-  EnemyOni.drawCustomOni(ctx, this.x, this.y, this.w, this.h, saveData.getOniData().type, this.anim, this.dir, true);
-  ctx.fillStyle = "#fff"; ctx.font = "14px sans-serif";
-  ctx.fillText("YOU (鬼)", this.x - 5, this.y - 60);
-  return;
-  }
+ if(this.isDead || this.isHidden) return;
+ if(game.mode === 'ONIMODE') {
+ EnemyOni.drawCustomOni(ctx, this.x, this.y, this.w, this.h, saveData.getOniData().type, this.anim, this.dir, true);
+ ctx.fillStyle = "#fff"; ctx.font = "14px sans-serif";
+ ctx.fillText("YOU (鬼)", this.x - 5, this.y - 60);
+ return;
+ }
 
-  super.draw(ctx);
-  
-  if(this.petData.id !== 'p0') {
-  let px = this.x - 20, py = this.y + (this.isMoving ? Math.cos(this.anim)*5 : 0);
-  ctx.font = "20px Arial"; ctx.fillText(this.petData.icon, px, py);
-  }
-  ctx.font = "20px Arial";
-  ctx.fillText(this.charData.icon, this.x - 6, this.y - 35 + (this.isMoving ? Math.sin(this.anim)*3 : 0));
+ super.draw(ctx);
+ 
+ if(this.petData.id !== 'p0') {
+ let px = this.x - 20, py = this.y + (this.isMoving ? Math.cos(this.anim)*5 : 0);
+ ctx.font = "20px Arial"; ctx.fillText(this.petData.icon, px, py);
+ }
+ ctx.font = "20px Arial";
+ ctx.fillText(this.charData.icon, this.x - 6, this.y - 35 + (this.isMoving ? Math.sin(this.anim)*3 : 0));
 
-  ctx.fillStyle = "#fff"; ctx.font = "12px sans-serif";
-  ctx.fillText(saveData.playerName, this.x - 10, this.y - 55);
+ ctx.fillStyle = "#fff"; ctx.font = "12px sans-serif";
+ ctx.fillText(saveData.playerName, this.x - 10, this.y - 55);
  }
 }
 
 class EnemyOni extends Entity {
  constructor(x, y, type = DB.ONI_TYPES.NORMAL) {
-  super(x, y, 32, 32);
-  this.type = type;
-  this.speed = 190;
-  this.dir = 0;
-  this.anim = 0;
-  this.path = [];
-  this.target = null;
-  this.stateTimer = 0;
-  this.initType(type);
+ super(x, y, 32, 32);
+ this.type = type;
+ this.speed = 190;
+ this.dir = 0;
+ this.anim = 0;
+ this.path = [];
+ this.target = null;
+ this.stateTimer = 0;
+ this.initType(type);
  }
 
  initType(type) {
-  switch(type) {
-  case DB.ONI_TYPES.FUWATTY: this.speed = 300; break;
-  case DB.ONI_TYPES.SQUAT: this.speed = 150; break;
-  case DB.ONI_TYPES.DEMON: this.speed = 220; break;
-  case DB.ONI_TYPES.NINJA: this.speed = 250; break;
-  case DB.ONI_TYPES.GIANT: this.w=48; this.h=48; this.speed=140; break;
-  case DB.ONI_TYPES.METAL: this.speed = 400; break;
-  default: this.speed = 190; break;
-  }
+ switch(type) {
+ case DB.ONI_TYPES.FUWATTY: this.speed = 300; break;
+ case DB.ONI_TYPES.SQUAT: this.speed = 150; break;
+ case DB.ONI_TYPES.DEMON: this.speed = 220; break;
+ case DB.ONI_TYPES.NINJA: this.speed = 250; break;
+ case DB.ONI_TYPES.GIANT: this.w=48; this.h=48; this.speed=140; break;
+ case DB.ONI_TYPES.METAL: this.speed = 400; break;
+ default: this.speed = 190; break;
+ }
  }
 
  update(dt, game) {
-  this.anim += dt * 8;
-  this.stateTimer -= dt;
+ this.anim += dt * 8;
+ this.stateTimer -= dt;
 
-  let nearest = null;
-  let minDist = 500;
-  const targets = [game.player, ...game.npcs].filter(t => !t.isDead && !t.isHidden);
-  for(let t of targets) {
-  let d = Utils.distance(this.x, this.y, t.x, t.y);
-  if(d < minDist) { minDist = d; nearest = t; }
-  }
-  this.target = nearest;
-  let isChasingPlayer = (nearest === game.player && minDist < 300);
-  
-  if(isChasingPlayer && (game.mode === 'SURVIVAL' || game.mode === 'TOWER')) {
-  saveData.recordOni(this.type);
-  audioCtrl.playChase();
-  }
+ let nearest = null;
+ let minDist = 500;
+ const targets = [game.player, ...game.npcs].filter(t => !t.isDead && !t.isHidden);
+ for(let t of targets) {
+ let d = Utils.distance(this.x, this.y, t.x, t.y);
+ if(d < minDist) { minDist = d; nearest = t; }
+ }
+ this.target = nearest;
+ let isChasingPlayer = (nearest === game.player && minDist < 300);
+ 
+ if(isChasingPlayer && (game.mode === 'SURVIVAL' || game.mode === 'TOWER')) {
+ saveData.recordOni(this.type);
+ audioCtrl.playChase();
+ }
 
-  this.applyAbility(dt, game, targets);
-  this.moveLogic(dt, game);
+ this.applyAbility(dt, game, targets);
+ this.moveLogic(dt, game);
 
-  const hitRect = this.getRect();
-  for(let c of targets) {
-  if(Utils.checkCollision(hitRect, c.getRect())) {
-   game.killCharacter(c, "青鬼に捕食された");
-   if(c === game.player) saveData.recordOni(this.type);
-  }
-  }
+ const hitRect = this.getRect();
+ for(let c of targets) {
+ if(Utils.checkCollision(hitRect, c.getRect())) {
+ game.killCharacter(c, "青鬼に捕食された");
+ if(c === game.player) saveData.recordOni(this.type);
+ }
+ }
  }
  
  applyAbility(dt, game, targets) {
-  let pc = this.getCenter();
-  switch(this.type) {
-  case DB.ONI_TYPES.ICE:
-   if(this.stateTimer <= 0) {
-    this.stateTimer = 1.0;
-    targets.forEach(t => { if(Utils.distance(pc.x, pc.y, t.getCenter().x, t.getCenter().y) < 150) t.buffs.SLOW = 2.0; });
-   }
-   break;
-  case DB.ONI_TYPES.POISON:
-   if(this.stateTimer <= 0) {
-    this.stateTimer = 0.5;
-    targets.forEach(t => { if(Utils.distance(pc.x, pc.y, t.getCenter().x, t.getCenter().y) < 100) t.buffs.POISON = 1.0; });
-   }
-   break;
-  case DB.ONI_TYPES.BOMB:
-   if(this.stateTimer <= -5) { 
-    targets.forEach(t => { if(Utils.distance(pc.x, pc.y, t.getCenter().x, t.getCenter().y) < 120) game.killCharacter(t, "爆弾鬼の爆発に巻き込まれた"); });
-    this.isDead = true; 
-   }
-   break;
-  case DB.ONI_TYPES.SLIME:
-   this.w = 32 + Math.sin(this.anim)*10; this.h = 32 - Math.sin(this.anim)*10;
-   break;
-  }
+ let pc = this.getCenter();
+ switch(this.type) {
+ case DB.ONI_TYPES.ICE:
+ if(this.stateTimer <= 0) {
+ this.stateTimer = 1.0;
+ targets.forEach(t => { if(Utils.distance(pc.x, pc.y, t.getCenter().x, t.getCenter().y) < 150) t.buffs.SLOW = 2.0; });
+ }
+ break;
+ case DB.ONI_TYPES.POISON:
+ if(this.stateTimer <= 0) {
+ this.stateTimer = 0.5;
+ targets.forEach(t => { if(Utils.distance(pc.x, pc.y, t.getCenter().x, t.getCenter().y) < 100) t.buffs.POISON = 1.0; });
+ }
+ break;
+ case DB.ONI_TYPES.BOMB:
+ if(this.stateTimer <= -5) { 
+ targets.forEach(t => { if(Utils.distance(pc.x, pc.y, t.getCenter().x, t.getCenter().y) < 120) game.killCharacter(t, "爆弾鬼の爆発に巻き込まれた"); });
+ this.isDead = true; 
+ }
+ break;
+ case DB.ONI_TYPES.SLIME:
+ this.w = 32 + Math.sin(this.anim)*10; this.h = 32 - Math.sin(this.anim)*10;
+ break;
+ }
  }
 
  moveLogic(dt, game) {
-  if(this.type === DB.ONI_TYPES.FUWATTY || this.type === DB.ONI_TYPES.METAL) {
-  if(this.stateTimer <= 0) {
-   if(this.isDashing) { this.isDashing = false; this.stateTimer = Utils.random(1, 2); }
-   else {
-    this.isDashing = true; this.stateTimer = 1.0;
-    if(this.target) {
-    let dx = this.target.x - this.x, dy = this.target.y - this.y;
-    let len = Math.sqrt(dx*dx+dy*dy);
-    if(len > 0) { this.dashVx = (dx/len) * this.speed; this.dashVy = (dy/len) * this.speed; }
-    } else {
-    this.dashVx = (Math.random()-0.5)*this.speed; this.dashVy = (Math.random()-0.5)*this.speed;
-    }
-   }
-  }
-  if(this.isDashing) {
-   this.x += this.dashVx * dt; if(this.checkWall(game.grid, game.cols, game.rows)) { this.x -= this.dashVx*dt; this.dashVx *= -1; }
-   this.y += this.dashVy * dt; if(this.checkWall(game.grid, game.cols, game.rows)) { this.y -= this.dashVy*dt; this.dashVy *= -1; }
-  }
-  } 
-  else if (this.type === DB.ONI_TYPES.GHOST) {
-  if(this.target) {
-   let dx = this.target.x - this.x, dy = this.target.y - this.y;
-   let len = Math.sqrt(dx*dx+dy*dy);
-   if(len > 0) { this.x += (dx/len) * this.speed * dt; this.y += (dy/len) * this.speed * dt; }
-  }
-  }
-  else {
-  if(this.target && this.stateTimer <= 0) {
-   let sx = Math.floor(this.x/CONFIG.TILE_SIZE), sy = Math.floor(this.y/CONFIG.TILE_SIZE);
-   let gx = Math.floor(this.target.x/CONFIG.TILE_SIZE), gy = Math.floor(this.target.y/CONFIG.TILE_SIZE);
-   this.path = Pathfinder.findPath(game.grid, sx, sy, gx, gy);
-   this.stateTimer = 0.5;
-  }
-  if(this.path && this.path.length > 0) {
-   let next = this.path[0];
-   let tx = next.x * CONFIG.TILE_SIZE, ty = next.y * CONFIG.TILE_SIZE;
-   let dx = tx - this.x, dy = ty - this.y;
-   let dist = Math.sqrt(dx*dx + dy*dy);
-   
-   if(dist < 5) this.path.shift();
-   else {
-    let vx = (dx/dist) * this.speed * dt, vy = (dy/dist) * this.speed * dt;
-    this.x += vx; if(this.checkWall(game.grid, game.cols, game.rows)) this.x -= vx;
-    this.y += vy; if(this.checkWall(game.grid, game.cols, game.rows)) this.y -= vy;
-    if (Math.abs(dx) > Math.abs(dy)) this.dir = dx > 0 ? 2 : 1; else this.dir = dy > 0 ? 0 : 3;
-   }
-  }
-  }
+ if(this.type === DB.ONI_TYPES.FUWATTY || this.type === DB.ONI_TYPES.METAL) {
+ if(this.stateTimer <= 0) {
+ if(this.isDashing) { this.isDashing = false; this.stateTimer = Utils.random(1, 2); }
+ else {
+ this.isDashing = true; this.stateTimer = 1.0;
+ if(this.target) {
+ let dx = this.target.x - this.x, dy = this.target.y - this.y;
+ let len = Math.sqrt(dx*dx+dy*dy);
+ if(len > 0) { this.dashVx = (dx/len) * this.speed; this.dashVy = (dy/len) * this.speed; }
+ } else {
+ this.dashVx = (Math.random()-0.5)*this.speed; this.dashVy = (Math.random()-0.5)*this.speed;
+ }
+ }
+ }
+ if(this.isDashing) {
+ this.x += this.dashVx * dt; if(this.checkWall(game.grid, game.cols, game.rows)) { this.x -= this.dashVx*dt; this.dashVx *= -1; }
+ this.y += this.dashVy * dt; if(this.checkWall(game.grid, game.cols, game.rows)) { this.y -= this.dashVy*dt; this.dashVy *= -1; }
+ }
+ } 
+ else if (this.type === DB.ONI_TYPES.GHOST) {
+ if(this.target) {
+ let dx = this.target.x - this.x, dy = this.target.y - this.y;
+ let len = Math.sqrt(dx*dx+dy*dy);
+ if(len > 0) { this.x += (dx/len) * this.speed * dt; this.y += (dy/len) * this.speed * dt; }
+ }
+ }
+ else {
+ if(this.target && this.stateTimer <= 0) {
+ let sx = Math.floor(this.x/CONFIG.TILE_SIZE), sy = Math.floor(this.y/CONFIG.TILE_SIZE);
+ let gx = Math.floor(this.target.x/CONFIG.TILE_SIZE), gy = Math.floor(this.target.y/CONFIG.TILE_SIZE);
+ this.path = Pathfinder.findPath(game.grid, sx, sy, gx, gy);
+ this.stateTimer = 0.5;
+ }
+ if(this.path && this.path.length > 0) {
+ let next = this.path[0];
+ let tx = next.x * CONFIG.TILE_SIZE, ty = next.y * CONFIG.TILE_SIZE;
+ let dx = tx - this.x, dy = ty - this.y;
+ let dist = Math.sqrt(dx*dx + dy*dy);
+ 
+ if(dist < 5) this.path.shift();
+ else {
+ let vx = (dx/dist) * this.speed * dt, vy = (dy/dist) * this.speed * dt;
+ this.x += vx; if(this.checkWall(game.grid, game.cols, game.rows)) this.x -= vx;
+ this.y += vy; if(this.checkWall(game.grid, game.cols, game.rows)) this.y -= vy;
+ if (Math.abs(dx) > Math.abs(dy)) this.dir = dx > 0 ? 2 : 1; else this.dir = dy > 0 ? 0 : 3;
+ }
+ }
+ }
  }
 
  checkWall(grid, cols, rows) {
-  if(this.type === DB.ONI_TYPES.GHOST) return false;
-  let left = Math.floor(this.x / CONFIG.TILE_SIZE), right = Math.floor((this.x + this.w) / CONFIG.TILE_SIZE);
-  let top = Math.floor(this.y / CONFIG.TILE_SIZE), bottom = Math.floor((this.y + this.h) / CONFIG.TILE_SIZE);
-  if(left<0 || right>=cols || top<0 || bottom>=rows) return true;
-  return grid[top][left]===1 || grid[top][right]===1 || grid[bottom][left]===1 || grid[bottom][right]===1;
+ if(this.type === DB.ONI_TYPES.GHOST) return false;
+ let left = Math.floor(this.x / CONFIG.TILE_SIZE), right = Math.floor((this.x + this.w) / CONFIG.TILE_SIZE);
+ let top = Math.floor(this.y / CONFIG.TILE_SIZE), bottom = Math.floor((this.y + this.h) / CONFIG.TILE_SIZE);
+ if(left<0 || right>=cols || top<0 || bottom>=rows) return true;
+ return grid[top][left]===1 || grid[top][right]===1 || grid[bottom][left]===1 || grid[bottom][right]===1;
  }
 
  draw(ctx) { EnemyOni.drawCustomOni(ctx, this.x, this.y, this.w, this.h, this.type, this.anim, this.dir, false, this.stateTimer); }
 
  static drawCustomOni(ctx, x, y, w, h, type, anim, dir, isPlayer, stateTimer=0) {
-  let cx = x - (w==48?4:12), cy = y - (h==48?60:40);
-  let bob = Math.sin(anim)*5;
-  if(type === DB.ONI_TYPES.SQUAT) bob = stateTimer < 0.4 ? -20 : 0; 
-  
-  ctx.save();
-  ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath(); ctx.ellipse(x+w/2, y+h, w/2, h/4, 0, 0, Math.PI*2); ctx.fill();
+ let cx = x - (w==48?4:12), cy = y - (h==48?60:40);
+ let bob = Math.sin(anim)*5;
+ if(type === DB.ONI_TYPES.SQUAT) bob = stateTimer < 0.4 ? -20 : 0; 
+ 
+ ctx.save();
+ ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath(); ctx.ellipse(x+w/2, y+h, w/2, h/4, 0, 0, Math.PI*2); ctx.fill();
 
-  let baseColor = '#8e44ad', headW = 56, headH = 40, bodyW = 40, bodyH = 42;
-  let scale = (type === DB.ONI_TYPES.GIANT) ? 1.5 : 1;
-  if(type === DB.ONI_TYPES.GIANT) { cx -= 14; cy -= 20; headW*=scale; headH*=scale; bodyW*=scale; bodyH*=scale; }
-  
-  switch(type) {
-  case DB.ONI_TYPES.FUWATTY: baseColor = '#e74c3c'; break;
-  case DB.ONI_TYPES.SQUAT: baseColor = '#27ae60'; break;
-  case DB.ONI_TYPES.JELLY: baseColor = 'rgba(52, 152, 219, 0.7)'; break;
-  case DB.ONI_TYPES.DEMON: baseColor = '#c0392b'; break;
-  case DB.ONI_TYPES.ICE: baseColor = '#00ced1'; break;
-  case DB.ONI_TYPES.FIRE: baseColor = '#ff4500'; break;
-  case DB.ONI_TYPES.SLIME: baseColor = 'rgba(46, 204, 113, 0.8)'; break;
-  case DB.ONI_TYPES.SPIDER: baseColor = '#2c3e50'; break;
-  case DB.ONI_TYPES.MUMMY: baseColor = '#f5f5dc'; break;
-  case DB.ONI_TYPES.NINJA: baseColor = '#1a252f'; break;
-  case DB.ONI_TYPES.GHOST: baseColor = 'rgba(236, 240, 241, 0.6)'; break;
-  case DB.ONI_TYPES.BOMB: baseColor = '#111'; break;
-  case DB.ONI_TYPES.SNIPER: baseColor = '#556b2f'; break;
-  case DB.ONI_TYPES.POISON: baseColor = '#9932cc'; break;
-  case DB.ONI_TYPES.ZOMBIE: baseColor = '#6b8e23'; break;
-  case DB.ONI_TYPES.METAL: 
-   let grad = ctx.createLinearGradient(cx, cy, cx+headW, cy+headH);
-   grad.addColorStop(0, "#ccc"); grad.addColorStop(0.5, "#fff"); grad.addColorStop(1, "#777");
-   baseColor = grad; break;
-  }
+ let baseColor = '#8e44ad', headW = 56, headH = 40, bodyW = 40, bodyH = 42;
+ let scale = (type === DB.ONI_TYPES.GIANT) ? 1.5 : 1;
+ if(type === DB.ONI_TYPES.GIANT) { cx -= 14; cy -= 20; headW*=scale; headH*=scale; bodyW*=scale; bodyH*=scale; }
+ 
+ switch(type) {
+ case DB.ONI_TYPES.FUWATTY: baseColor = '#e74c3c'; break;
+ case DB.ONI_TYPES.SQUAT: baseColor = '#27ae60'; break;
+ case DB.ONI_TYPES.JELLY: baseColor = 'rgba(52, 152, 219, 0.7)'; break;
+ case DB.ONI_TYPES.DEMON: baseColor = '#c0392b'; break;
+ case DB.ONI_TYPES.ICE: baseColor = '#00ced1'; break;
+ case DB.ONI_TYPES.FIRE: baseColor = '#ff4500'; break;
+ case DB.ONI_TYPES.SLIME: baseColor = 'rgba(46, 204, 113, 0.8)'; break;
+ case DB.ONI_TYPES.SPIDER: baseColor = '#2c3e50'; break;
+ case DB.ONI_TYPES.MUMMY: baseColor = '#f5f5dc'; break;
+ case DB.ONI_TYPES.NINJA: baseColor = '#1a252f'; break;
+ case DB.ONI_TYPES.GHOST: baseColor = 'rgba(236, 240, 241, 0.6)'; break;
+ case DB.ONI_TYPES.BOMB: baseColor = '#111'; break;
+ case DB.ONI_TYPES.SNIPER: baseColor = '#556b2f'; break;
+ case DB.ONI_TYPES.POISON: baseColor = '#9932cc'; break;
+ case DB.ONI_TYPES.ZOMBIE: baseColor = '#6b8e23'; break;
+ case DB.ONI_TYPES.METAL: 
+ let grad = ctx.createLinearGradient(cx, cy, cx+headW, cy+headH);
+ grad.addColorStop(0, "#ccc"); grad.addColorStop(0.5, "#fff"); grad.addColorStop(1, "#777");
+ baseColor = grad; break;
+ }
 
-  ctx.fillStyle = baseColor;
-  
-  if(type === DB.ONI_TYPES.SLIME || type === DB.ONI_TYPES.JELLY || type === DB.ONI_TYPES.BOMB) {
-  ctx.beginPath(); ctx.ellipse(cx+headW/2, cy+bob+bodyH/2, headW/2, bodyH/1.5, 0, 0, Math.PI*2); ctx.fill();
-  } else {
-  if(type !== DB.ONI_TYPES.GHOST) ctx.fillRect(cx+(headW-bodyW)/2, cy+30*scale+bob, bodyW, bodyH); 
-  ctx.fillRect(cx, cy+bob, headW, headH); 
-  }
+ ctx.fillStyle = baseColor;
+ 
+ if(type === DB.ONI_TYPES.SLIME || type === DB.ONI_TYPES.JELLY || type === DB.ONI_TYPES.BOMB) {
+ ctx.beginPath(); ctx.ellipse(cx+headW/2, cy+bob+bodyH/2, headW/2, bodyH/1.5, 0, 0, Math.PI*2); ctx.fill();
+ } else {
+ if(type !== DB.ONI_TYPES.GHOST) ctx.fillRect(cx+(headW-bodyW)/2, cy+30*scale+bob, bodyW, bodyH); 
+ ctx.fillRect(cx, cy+bob, headW, headH); 
+ }
 
-  if(type === DB.ONI_TYPES.DEMON) { ctx.fillStyle="#000"; ctx.beginPath(); ctx.moveTo(cx+10, cy+bob); ctx.lineTo(cx+20, cy-20+bob); ctx.lineTo(cx+30, cy+bob); ctx.fill(); ctx.moveTo(cx+headW-10, cy+bob); ctx.lineTo(cx+headW-20, cy-20+bob); ctx.lineTo(cx+headW-30, cy+bob); ctx.fill(); }
-  if(type === DB.ONI_TYPES.ICE) { ctx.fillStyle="#fff"; ctx.beginPath(); ctx.moveTo(cx+headW/2, cy-15+bob); ctx.lineTo(cx+headW/2-10, cy+bob); ctx.lineTo(cx+headW/2+10, cy+bob); ctx.fill(); }
-  if(type === DB.ONI_TYPES.FIRE) { ctx.fillStyle="#ffeb3b"; ctx.beginPath(); ctx.moveTo(cx+headW/2, cy-20+bob); ctx.lineTo(cx+headW/2-15, cy+bob); ctx.lineTo(cx+headW/2+15, cy+bob); ctx.fill(); }
-  if(type === DB.ONI_TYPES.SPIDER) { ctx.strokeStyle="#2c3e50"; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(cx, cy+20+bob); ctx.lineTo(cx-15, cy+10+bob); ctx.moveTo(cx+headW, cy+20+bob); ctx.lineTo(cx+headW+15, cy+10+bob); ctx.stroke(); }
-  if(type === DB.ONI_TYPES.MUMMY) { ctx.strokeStyle="rgba(0,0,0,0.2)"; ctx.lineWidth=2; for(let i=0; i<4; i++){ ctx.beginPath(); ctx.moveTo(cx, cy+i*10+bob); ctx.lineTo(cx+headW, cy+i*10+bob+5); ctx.stroke(); } }
-  if(type === DB.ONI_TYPES.BOMB) { ctx.strokeStyle="#f1c40f"; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(cx+headW/2, cy+bob); ctx.quadraticCurveTo(cx+headW, cy-20+bob, cx+headW/2+10, cy-30+bob); ctx.stroke(); ctx.fillStyle="#e74c3c"; ctx.beginPath(); ctx.arc(cx+headW/2+10, cy-30+bob, 4, 0, Math.PI*2); ctx.fill(); }
+ if(type === DB.ONI_TYPES.DEMON) { ctx.fillStyle="#000"; ctx.beginPath(); ctx.moveTo(cx+10, cy+bob); ctx.lineTo(cx+20, cy-20+bob); ctx.lineTo(cx+30, cy+bob); ctx.fill(); ctx.moveTo(cx+headW-10, cy+bob); ctx.lineTo(cx+headW-20, cy-20+bob); ctx.lineTo(cx+headW-30, cy+bob); ctx.fill(); }
+ if(type === DB.ONI_TYPES.ICE) { ctx.fillStyle="#fff"; ctx.beginPath(); ctx.moveTo(cx+headW/2, cy-15+bob); ctx.lineTo(cx+headW/2-10, cy+bob); ctx.lineTo(cx+headW/2+10, cy+bob); ctx.fill(); }
+ if(type === DB.ONI_TYPES.FIRE) { ctx.fillStyle="#ffeb3b"; ctx.beginPath(); ctx.moveTo(cx+headW/2, cy-20+bob); ctx.lineTo(cx+headW/2-15, cy+bob); ctx.lineTo(cx+headW/2+15, cy+bob); ctx.fill(); }
+ if(type === DB.ONI_TYPES.SPIDER) { ctx.strokeStyle="#2c3e50"; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(cx, cy+20+bob); ctx.lineTo(cx-15, cy+10+bob); ctx.moveTo(cx+headW, cy+20+bob); ctx.lineTo(cx+headW+15, cy+10+bob); ctx.stroke(); }
+ if(type === DB.ONI_TYPES.MUMMY) { ctx.strokeStyle="rgba(0,0,0,0.2)"; ctx.lineWidth=2; for(let i=0; i<4; i++){ ctx.beginPath(); ctx.moveTo(cx, cy+i*10+bob); ctx.lineTo(cx+headW, cy+i*10+bob+5); ctx.stroke(); } }
+ if(type === DB.ONI_TYPES.BOMB) { ctx.strokeStyle="#f1c40f"; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(cx+headW/2, cy+bob); ctx.quadraticCurveTo(cx+headW, cy-20+bob, cx+headW/2+10, cy-30+bob); ctx.stroke(); ctx.fillStyle="#e74c3c"; ctx.beginPath(); ctx.arc(cx+headW/2+10, cy-30+bob, 4, 0, Math.PI*2); ctx.fill(); }
 
-  ctx.fillStyle = (type===DB.ONI_TYPES.METAL || type===DB.ONI_TYPES.DEMON || type===DB.ONI_TYPES.ZOMBIE) ? "#e74c3c" : "#fff";
-  let eSize = 12 * scale;
-  ctx.fillRect(cx+10*scale, cy+15*scale+bob, eSize, eSize); ctx.fillRect(cx+34*scale, cy+15*scale+bob, eSize, eSize);
-  ctx.fillStyle = "#000";
-  let eOff = dir===1 ? -4*scale : (dir===2 ? 4*scale : 0);
-  
-  if(type === DB.ONI_TYPES.SNIPER) { ctx.fillStyle = "#2ecc71"; ctx.fillRect(cx+10*scale, cy+15*scale+bob, eSize, eSize); ctx.fillStyle="#000"; }
-  
-  ctx.fillRect(cx+14*scale+eOff, cy+18*scale+bob, 4*scale, 4*scale); ctx.fillRect(cx+38*scale+eOff, cy+18*scale+bob, 4*scale, 4*scale);
-  
-  if(type !== DB.ONI_TYPES.NINJA) {
-  ctx.fillRect(cx+18*scale, cy+32*scale+bob, 20*scale, 6*scale);
-  if(type === DB.ONI_TYPES.ZOMBIE) { ctx.fillStyle="#fff"; ctx.fillRect(cx+20*scale, cy+32*scale+bob, 4*scale, 6*scale); ctx.fillRect(cx+28*scale, cy+32*scale+bob, 4*scale, 6*scale); }
-  }
-  ctx.restore();
+ ctx.fillStyle = (type===DB.ONI_TYPES.METAL || type===DB.ONI_TYPES.DEMON || type===DB.ONI_TYPES.ZOMBIE) ? "#e74c3c" : "#fff";
+ let eSize = 12 * scale;
+ ctx.fillRect(cx+10*scale, cy+15*scale+bob, eSize, eSize); ctx.fillRect(cx+34*scale, cy+15*scale+bob, eSize, eSize);
+ ctx.fillStyle = "#000";
+ let eOff = dir===1 ? -4*scale : (dir===2 ? 4*scale : 0);
+ 
+ if(type === DB.ONI_TYPES.SNIPER) { ctx.fillStyle = "#2ecc71"; ctx.fillRect(cx+10*scale, cy+15*scale+bob, eSize, eSize); ctx.fillStyle="#000"; }
+ 
+ ctx.fillRect(cx+14*scale+eOff, cy+18*scale+bob, 4*scale, 4*scale); ctx.fillRect(cx+38*scale+eOff, cy+18*scale+bob, 4*scale, 4*scale);
+ 
+ if(type !== DB.ONI_TYPES.NINJA) {
+ ctx.fillRect(cx+18*scale, cy+32*scale+bob, 20*scale, 6*scale);
+ if(type === DB.ONI_TYPES.ZOMBIE) { ctx.fillStyle="#fff"; ctx.fillRect(cx+20*scale, cy+32*scale+bob, 4*scale, 6*scale); ctx.fillRect(cx+28*scale, cy+32*scale+bob, 4*scale, 6*scale); }
+ }
+ ctx.restore();
  }
 }
 
 class AdvancedSenjuBoss {
  constructor(isShin) {
-  this.isShin = isShin;
-  this.y = 0; 
-  this.baseColor = isShin ? '#c0392b' : '#8e44ad';
-  this.hatColor = isShin ? '#e74c3c' : '#f1c40f';
-  this.eyeColor = isShin ? '#e74c3c' : '#000';
-  
-  this.leftArm = { x: 0, y: 0, state: 1, timer: 0, ext: 0 };
-  this.rightArm = { x: 0, y: 0, state: 5, timer: 0, ext: 0 };
-  
-  this.sideArms = []; 
-  this.sideArmTimer = 0;
-  
-  this.speed = isShin ? 130 : 150; 
+ this.isShin = isShin;
+ this.y = 0; 
+ this.baseColor = isShin ? '#c0392b' : '#8e44ad';
+ this.hatColor = isShin ? '#e74c3c' : '#f1c40f';
+ this.eyeColor = isShin ? '#e74c3c' : '#000';
+ 
+ this.leftArm = { x: 0, y: 0, state: 1, timer: 0, ext: 0 };
+ this.rightArm = { x: 0, y: 0, state: 5, timer: 0, ext: 0 };
+ 
+ this.sideArms = []; 
+ this.sideArmTimer = 0;
+ 
+ this.speed = isShin ? 130 : 150; 
  }
 
  update(dt, game) {
-  this.y += this.speed * dt;
-  
-  this.updateArm(dt, this.leftArm, game, true);
-  this.updateArm(dt, this.rightArm, game, false);
+ this.y += this.speed * dt;
+ 
+ this.updateArm(dt, this.leftArm, game, true);
+ this.updateArm(dt, this.rightArm, game, false);
 
-  let bossBodyRect = { x: game.camera.x + game.canvas.width/2 - 60, y: this.y, w: 120, h: 100 };
-  if (game.player.y < this.y + 100) { game.player.y = this.y + 100; }
+ let bossBodyRect = { x: game.camera.x + game.canvas.width/2 - 60, y: this.y, w: 120, h: 100 };
+ if (game.player.y < this.y + 100) { game.player.y = this.y + 100; }
 
-  if(Utils.checkCollision(bossBodyRect, game.player.getRect())) {
-   game.killCharacter(game.player, this.isShin ? "真・千手観音に飲み込まれた" : "千手観音鬼に飲み込まれた");
-  }
+ if(Utils.checkCollision(bossBodyRect, game.player.getRect())) {
+ game.killCharacter(game.player, this.isShin ? "真・千手観音に飲み込まれた" : "千手観音鬼に飲み込まれた");
+ }
 
-  if(this.isShin) {
-  this.sideArmTimer -= dt;
-  if(this.sideArmTimer <= 0) {
-   this.sideArmTimer = 2.0;
-   let isLeft = Math.random() > 0.5;
-   this.sideArms.push({ x: isLeft ? game.camera.x : game.camera.x+game.canvas.width, y: game.player.y + Utils.random(-100, 100), w: 0, h: 40, isLeft: isLeft, life: 3.0 });
-  }
-  for(let i = this.sideArms.length-1; i>=0; i--) {
-   let arm = this.sideArms[i];
-   arm.life -= dt;
-   if(arm.life > 1.5) arm.w += 400 * dt;
-   else arm.w -= 400 * dt;
-   
-   let rect = arm.isLeft ? {x: arm.x, y: arm.y, w: arm.w, h: arm.h} : {x: arm.x - arm.w, y: arm.y, w: arm.w, h: arm.h};
-   if(Utils.checkCollision(rect, game.player.getRect())) game.killCharacter(game.player, "真・千手観音の横槍に貫かれた");
-   if(arm.life <= 0) this.sideArms.splice(i, 1);
-  }
-  }
+ if(this.isShin) {
+ this.sideArmTimer -= dt;
+ if(this.sideArmTimer <= 0) {
+ this.sideArmTimer = 2.0;
+ let isLeft = Math.random() > 0.5;
+ this.sideArms.push({ x: isLeft ? game.camera.x : game.camera.x+game.canvas.width, y: game.player.y + Utils.random(-100, 100), w: 0, h: 40, isLeft: isLeft, life: 3.0 });
+ }
+ for(let i = this.sideArms.length-1; i>=0; i--) {
+ let arm = this.sideArms[i];
+ arm.life -= dt;
+ if(arm.life > 1.5) arm.w += 400 * dt;
+ else arm.w -= 400 * dt;
+ 
+ let rect = arm.isLeft ? {x: arm.x, y: arm.y, w: arm.w, h: arm.h} : {x: arm.x - arm.w, y: arm.y, w: arm.w, h: arm.h};
+ if(Utils.checkCollision(rect, game.player.getRect())) game.killCharacter(game.player, "真・千手観音の横槍に貫かれた");
+ if(arm.life <= 0) this.sideArms.splice(i, 1);
+ }
+ }
  }
 
  updateArm(dt, arm, game, isLeft) {
-  arm.timer -= dt;
-  let baseX = game.camera.x + (isLeft ? game.canvas.width*0.2 : game.canvas.width*0.8);
-  
-  switch(arm.state) {
-  case 1: 
-   if(arm.timer <= 0) { arm.state = 2; arm.timer = Utils.random(0.2, 0.8); }
-   arm.x = baseX + Math.sin(Date.now()/300)*50;
-   break;
-  case 2: // プレイヤーに向かって横移動
-   if(arm.timer <= 0) { arm.state = 3; arm.timer = 1.0; } // 調整: 待機時間を長く
-   arm.x += (game.player.x - arm.x) * 3 * dt;
-   break;
-  case 3: // 奥に腕を伸ばす
-   arm.ext += 400 * dt; // 調整: 速度を半分に
-   if(arm.timer <= 0) { arm.state = 4; arm.timer = 1.0; } // 調整: 伸ばす時間を倍に
-   this.checkHit(arm, game);
-   break;
-  case 4: // 戻す
-   arm.ext -= 400 * dt; // 調整: 速度を半分に
-   if(arm.ext <= 0) { arm.ext = 0; arm.state = 5; arm.timer = Utils.random(0.5, 1.5); }
-   break;
-  case 5: 
-   if(arm.timer <= 0) { arm.state = 6; arm.timer = 1.0; } // 調整: 待機時間を長く
-   arm.x = baseX + Math.sin(Date.now()/200)*100;
-   break;
-  case 6: // 直接腕を伸ばしながら手を奥に伸ばす
-   arm.ext += 500 * dt; // 調整: 速度を半分に
-   arm.x += (game.player.x - arm.x) * 2 * dt;
-   if(arm.timer <= 0) { arm.state = 7; arm.timer = 1.0; } // 調整: 伸ばす時間を倍に
-   this.checkHit(arm, game);
-   break;
-  case 7: // 1へ戻る
-   arm.ext -= 500 * dt; // 調整: 速度を半分に
-   if(arm.ext <= 0) { arm.ext = 0; arm.state = 1; arm.timer = Utils.random(0.5, 1.5); }
-   break;
-  }
-  arm.y = this.y + 100; 
+ arm.timer -= dt;
+ let baseX = game.camera.x + (isLeft ? game.canvas.width*0.2 : game.canvas.width*0.8);
+ 
+ switch(arm.state) {
+ case 1: 
+ if(arm.timer <= 0) { arm.state = 2; arm.timer = Utils.random(0.2, 0.8); }
+ arm.x = baseX + Math.sin(Date.now()/300)*50;
+ break;
+ case 2: // プレイヤーに向かって横移動
+ if(arm.timer <= 0) { arm.state = 3; arm.timer = 1.0; } // 調整: 待機時間を長く
+ arm.x += (game.player.x - arm.x) * 3 * dt;
+ break;
+ case 3: // 奥に腕を伸ばす
+ arm.ext += 400 * dt; // 調整: 速度を半分に
+ if(arm.timer <= 0) { arm.state = 4; arm.timer = 1.0; } // 調整: 伸ばす時間を倍に
+ this.checkHit(arm, game);
+ break;
+ case 4: // 戻す
+ arm.ext -= 400 * dt; // 調整: 速度を半分に
+ if(arm.ext <= 0) { arm.ext = 0; arm.state = 5; arm.timer = Utils.random(0.5, 1.5); }
+ break;
+ case 5: 
+ if(arm.timer <= 0) { arm.state = 6; arm.timer = 1.0; } // 調整: 待機時間を長く
+ arm.x = baseX + Math.sin(Date.now()/200)*100;
+ break;
+ case 6: // 直接腕を伸ばしながら手を奥に伸ばす
+ arm.ext += 500 * dt; // 調整: 速度を半分に
+ arm.x += (game.player.x - arm.x) * 2 * dt;
+ if(arm.timer <= 0) { arm.state = 7; arm.timer = 1.0; } // 調整: 伸ばす時間を倍に
+ this.checkHit(arm, game);
+ break;
+ case 7: // 1へ戻る
+ arm.ext -= 500 * dt; // 調整: 速度を半分に
+ if(arm.ext <= 0) { arm.ext = 0; arm.state = 1; arm.timer = Utils.random(0.5, 1.5); }
+ break;
+ }
+ arm.y = this.y + 100; 
  }
 
  checkHit(arm, game) {
-  let handRect = { x: arm.x - 30, y: arm.y + arm.ext, w: 60, h: 60 };
-  if(Utils.checkCollision(handRect, game.player.getRect())) {
-  game.killCharacter(game.player, this.isShin ? "真・千手観音に叩き潰された" : "千手観音鬼の手に捕まれた");
-  }
+ let handRect = { x: arm.x - 30, y: arm.y + arm.ext, w: 60, h: 60 };
+ if(Utils.checkCollision(handRect, game.player.getRect())) {
+ game.killCharacter(game.player, this.isShin ? "真・千手観音に叩き潰された" : "千手観音鬼の手に捕まれた");
+ }
  }
 
  draw(ctx, game) {
-  let cx = game.camera.x + game.canvas.width/2 - 60;
-  let cy = this.y;
+ let cx = game.camera.x + game.canvas.width/2 - 60;
+ let cy = this.y;
 
-  this.drawMainArm(ctx, this.leftArm);
-  this.drawMainArm(ctx, this.rightArm);
-  
-  if(this.isShin) {
-  ctx.fillStyle = this.baseColor;
-  for(let arm of this.sideArms) {
-   if(arm.isLeft) ctx.fillRect(arm.x, arm.y, arm.w, arm.h);
-   else ctx.fillRect(arm.x - arm.w, arm.y, arm.w, arm.h);
-  }
-  }
+ this.drawMainArm(ctx, this.leftArm);
+ this.drawMainArm(ctx, this.rightArm);
+ 
+ if(this.isShin) {
+ ctx.fillStyle = this.baseColor;
+ for(let arm of this.sideArms) {
+ if(arm.isLeft) ctx.fillRect(arm.x, arm.y, arm.w, arm.h);
+ else ctx.fillRect(arm.x - arm.w, arm.y, arm.w, arm.h);
+ }
+ }
 
-  ctx.fillStyle = this.baseColor;
-  ctx.fillRect(cx, cy, 120, 100); 
-  
-  ctx.fillStyle = this.hatColor;
-  ctx.beginPath(); ctx.moveTo(cx-20, cy); ctx.lineTo(cx+140, cy); ctx.lineTo(cx+60, cy-40); ctx.fill();
-  ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx+60, cy-20, 10, 0, Math.PI*2); ctx.fill();
+ ctx.fillStyle = this.baseColor;
+ ctx.fillRect(cx, cy, 120, 100); 
+ 
+ ctx.fillStyle = this.hatColor;
+ ctx.beginPath(); ctx.moveTo(cx-20, cy); ctx.lineTo(cx+140, cy); ctx.lineTo(cx+60, cy-40); ctx.fill();
+ ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx+60, cy-20, 10, 0, Math.PI*2); ctx.fill();
 
-  ctx.fillStyle = "#fff"; ctx.fillRect(cx+20, cy+30, 24, 24); ctx.fillRect(cx+76, cy+30, 24, 24);
-  ctx.fillStyle = this.eyeColor; ctx.fillRect(cx+28, cy+38, 8, 8); ctx.fillRect(cx+84, cy+38, 8, 8);
-  ctx.fillStyle = "#000"; ctx.fillRect(cx+36, cy+70, 48, 12);
+ ctx.fillStyle = "#fff"; ctx.fillRect(cx+20, cy+30, 24, 24); ctx.fillRect(cx+76, cy+30, 24, 24);
+ ctx.fillStyle = this.eyeColor; ctx.fillRect(cx+28, cy+38, 8, 8); ctx.fillRect(cx+84, cy+38, 8, 8);
+ ctx.fillStyle = "#000"; ctx.fillRect(cx+36, cy+70, 48, 12);
  }
 
  drawMainArm(ctx, arm) {
-  ctx.fillStyle = "#f1c40f"; 
-  ctx.fillRect(arm.x - 10, arm.y, 20, arm.ext);
-  
-  ctx.fillStyle = this.baseColor;
-  let handY = arm.y + arm.ext;
-  ctx.beginPath(); ctx.arc(arm.x, handY+20, 30, 0, Math.PI, false); ctx.fill();
-  ctx.fillRect(arm.x-30, handY, 60, 20); 
-  for(let i=0; i<4; i++) ctx.fillRect(arm.x-25 + i*15, handY-20, 10, 20); 
+ ctx.fillStyle = "#f1c40f"; 
+ ctx.fillRect(arm.x - 10, arm.y, 20, arm.ext);
+ 
+ ctx.fillStyle = this.baseColor;
+ let handY = arm.y + arm.ext;
+ ctx.beginPath(); ctx.arc(arm.x, handY+20, 30, 0, Math.PI, false); ctx.fill();
+ ctx.fillRect(arm.x-30, handY, 60, 20); 
+ for(let i=0; i<4; i++) ctx.fillRect(arm.x-25 + i*15, handY-20, 10, 20); 
  }
 }
 
 class Chest extends Entity {
  constructor(x, y) { super(x, y, 40, 40); this.isOpen = false; }
  draw(ctx) {
-  ctx.fillStyle = this.isOpen ? "#8B4513" : "#D2691E";
-  ctx.fillRect(this.x+4, this.y+8, 32, 32);
-  if(!this.isOpen) { ctx.fillStyle = "#FFD700"; ctx.fillRect(this.x+16, this.y+20, 8, 8); }
+ ctx.fillStyle = this.isOpen ? "#8B4513" : "#D2691E";
+ ctx.fillRect(this.x+4, this.y+8, 32, 32);
+ if(!this.isOpen) { ctx.fillStyle = "#FFD700"; ctx.fillRect(this.x+16, this.y+20, 8, 8); }
  }
 }
 class Locker extends Entity {
  constructor(x, y) { super(x, y, 40, 48); this.occupant = null; }
  draw(ctx) {
-  ctx.fillStyle = "#7f8c8d"; ctx.fillRect(this.x+4, this.y, 32, 48);
-  ctx.strokeStyle = "#2c3e50"; ctx.strokeRect(this.x+4, this.y, 32, 48);
+ ctx.fillStyle = "#7f8c8d"; ctx.fillRect(this.x+4, this.y, 32, 48);
+ ctx.strokeStyle = "#2c3e50"; ctx.strokeRect(this.x+4, this.y, 32, 48);
  }
 }
 
 class GameEngine {
  constructor() {
-  this.canvas = document.getElementById('game-canvas');
-  this.ctx = this.canvas.getContext('2d');
-  this.state = 'TITLE'; 
-  this.mode = '';
-  this.lastTime = 0;
-  this.keys = {};
-  this.joy = {x:0, y:0, active:false};
-  this.actionBtn = false;
-  this.camera = {x:0, y:0};
+ this.canvas = document.getElementById('game-canvas');
+ this.ctx = this.canvas.getContext('2d');
+ this.state = 'TITLE'; 
+ this.mode = '';
+ this.lastTime = 0;
+ this.keys = {};
+ this.joy = {x:0, y:0, active:false};
+ this.actionBtn = false;
+ this.camera = {x:0, y:0};
 
-  this.initEvents();
-  this.resize();
-  window.addEventListener('resize', () => this.resize());
-  requestAnimationFrame((t) => this.loop(t));
+ this.initEvents();
+ this.resize();
+ window.addEventListener('resize', () => this.resize());
+ requestAnimationFrame((t) => this.loop(t));
 
-  document.getElementById('title-screen').addEventListener('click', () => {
-  uiManager.showScreen('home-screen');
-  audioCtrl.setupFiles();
-  this.drawTitleBackground(); 
-  });
-  
-  this.drawTitleBackground();
+ document.getElementById('title-screen').addEventListener('click', () => {
+ uiManager.showScreen('home-screen');
+ audioCtrl.setupFiles();
+ this.drawTitleBackground(); 
+ });
+ 
+ this.drawTitleBackground();
  }
  
  drawTitleBackground() {
-  if(this.state !== 'TITLE') return;
-  const bgc = document.getElementById('title-bg-canvas');
-  if(!bgc) return;
-  const bctx = bgc.getContext('2d');
-  bgc.width = window.innerWidth; bgc.height = window.innerHeight;
-  let t = Date.now() / 1000;
-  
-  bctx.clearRect(0,0,bgc.width,bgc.height);
-  EnemyOni.drawCustomOni(bctx, bgc.width/2, bgc.height/2 + Math.sin(t)*50, 48, 48, 0, t, 0, false);
-  requestAnimationFrame(() => this.drawTitleBackground());
+ if(this.state !== 'TITLE') return;
+ const bgc = document.getElementById('title-bg-canvas');
+ if(!bgc) return;
+ const bctx = bgc.getContext('2d');
+ bgc.width = window.innerWidth; bgc.height = window.innerHeight;
+ let t = Date.now() / 1000;
+ 
+ bctx.clearRect(0,0,bgc.width,bgc.height);
+ EnemyOni.drawCustomOni(bctx, bgc.width/2, bgc.height/2 + Math.sin(t)*50, 48, 48, 0, t, 0, false);
+ requestAnimationFrame(() => this.drawTitleBackground());
  }
 
  initEvents() {
-  window.addEventListener('keydown', e => { this.keys[e.code] = true; if(e.code==='Space') this.actionBtn = true; });
-  window.addEventListener('keyup', e => this.keys[e.code] = false);
+ window.addEventListener('keydown', e => { this.keys[e.code] = true; if(e.code==='Space') this.actionBtn = true; });
+ window.addEventListener('keyup', e => this.keys[e.code] = false);
 
-  const z = document.getElementById('joystick-zone'), k = document.getElementById('joystick-knob');
-  const handleTouch = (e) => {
-  e.preventDefault();
-  if(!e.targetTouches[0]) { this.joy.active=false; k.style.transform=`translate(-50%,-50%)`; return; }
-  let rect = z.getBoundingClientRect(), r = rect.width/2;
-  let dx = e.targetTouches[0].clientX - (rect.left+r), dy = e.targetTouches[0].clientY - (rect.top+r);
-  let dist = Math.sqrt(dx*dx+dy*dy);
-  if(dist>r) { dx=(dx/dist)*r; dy=(dy/dist)*r; }
-  k.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-  this.joy.x = dx/r; this.joy.y = dy/r; this.joy.active = true;
-  }
-  z.addEventListener('touchstart', handleTouch); z.addEventListener('touchmove', handleTouch);
-  z.addEventListener('touchend', () => { this.joy.active=false; this.joy.x=0; this.joy.y=0; k.style.transform=`translate(-50%,-50%)`; });
-  document.getElementById('action-btn').addEventListener('touchstart', e => { e.preventDefault(); this.actionBtn = true; });
+ const z = document.getElementById('joystick-zone'), k = document.getElementById('joystick-knob');
+ const handleTouch = (e) => {
+ e.preventDefault();
+ if(!e.targetTouches[0]) { this.joy.active=false; k.style.transform=`translate(-50%,-50%)`; return; }
+ let rect = z.getBoundingClientRect(), r = rect.width/2;
+ let dx = e.targetTouches[0].clientX - (rect.left+r), dy = e.targetTouches[0].clientY - (rect.top+r);
+ let dist = Math.sqrt(dx*dx+dy*dy);
+ if(dist>r) { dx=(dx/dist)*r; dy=(dy/dist)*r; }
+ k.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+ this.joy.x = dx/r; this.joy.y = dy/r; this.joy.active = true;
+ }
+ z.addEventListener('touchstart', handleTouch); z.addEventListener('touchmove', handleTouch);
+ z.addEventListener('touchend', () => { this.joy.active=false; this.joy.x=0; this.joy.y=0; k.style.transform=`translate(-50%,-50%)`; });
+ document.getElementById('action-btn').addEventListener('touchstart', e => { e.preventDefault(); this.actionBtn = true; });
  }
 
  resize() { this.canvas.width = window.innerWidth; this.canvas.height = window.innerHeight; }
 
  startMode(modeName) {
-  this.mode = modeName;
-  this.state = modeName;
-  uiManager.hideAll();
-  document.getElementById('hud').classList.remove('hidden');
-  document.getElementById('kill-log').innerHTML = ''; 
-  
-  let conf = CONFIG[modeName];
-  if(!conf) conf = CONFIG.SURVIVAL;
-  this.cols = conf.COLS; this.rows = conf.ROWS;
+ this.mode = modeName;
+ this.state = modeName;
+ uiManager.hideAll();
+ document.getElementById('hud').classList.remove('hidden');
+ document.getElementById('kill-log').innerHTML = ''; 
+ 
+ let conf = CONFIG[modeName];
+ if(!conf) conf = CONFIG.SURVIVAL;
+ this.cols = conf.COLS; this.rows = conf.ROWS;
 
-  if(modeName === 'URA' || modeName === 'SHIN_URA') {
-  const map = MapGenerator.generateUraMap(this.cols, this.rows);
-  this.grid = map.grid; this.rooms = map.rooms;
-  } else {
-  const map = MapGenerator.generateBSP(this.cols, this.rows);
-  this.grid = map.grid; this.rooms = map.rooms;
-  }
+ if(modeName === 'URA' || modeName === 'SHIN_URA') {
+ const map = MapGenerator.generateUraMap(this.cols, this.rows);
+ this.grid = map.grid; this.rooms = map.rooms;
+ } else {
+ const map = MapGenerator.generateBSP(this.cols, this.rows);
+ this.grid = map.grid; this.rooms = map.rooms;
+ }
 
-  let pPos = this.rooms[0]; 
-  let px = (pPos.x + 2) * CONFIG.TILE_SIZE, py = (pPos.y + 2) * CONFIG.TILE_SIZE;
-  this.player = new Player(px, py, saveData.getCharData(), saveData.getPetData());
+ let pPos = this.rooms[0]; 
+ let px = (pPos.x + 2) * CONFIG.TILE_SIZE, py = (pPos.y + 2) * CONFIG.TILE_SIZE;
+ this.player = new Player(px, py, saveData.getCharData(), saveData.getPetData());
 
-  this.npcs = []; this.onis = []; this.chests = []; this.lockers = [];
-  this.uraGoalGenerated = false;
-  
-  if(modeName === 'SURVIVAL') {
-  for(let i=0; i<conf.PLAYERS-1; i++) { let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); this.npcs.push(new NPC(p.x, p.y)); }
-  for(let i=0; i<conf.ONIS; i++) { 
-   let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); 
-   let type = Utils.randomInt(0, 18);
-   this.onis.push(new EnemyOni(p.x, p.y, type)); 
-  }
-  for(let i=0; i<conf.CHESTS; i++) { let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); this.chests.push(new Chest(p.x, p.y)); }
-  for(let i=0; i<conf.LOCKERS; i++) { let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); this.lockers.push(new Locker(p.x, p.y)); }
-  this.zoneRadius = (Math.max(this.cols, this.rows) * CONFIG.TILE_SIZE);
-  } 
-  else if (modeName === 'TOWER') {
-  document.getElementById('tower-info-panel').classList.remove('hidden');
-  document.getElementById('tower-floor').textContent = saveData.highestTowerFloor;
-  let enemyCount = Math.min(10, 2 + Math.floor(saveData.highestTowerFloor / 2));
-  for(let i=0; i<enemyCount; i++) { 
-   let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); 
-   this.onis.push(new EnemyOni(p.x, p.y, Utils.randomInt(0, 5))); 
-  }
-  let endRoom = this.rooms[this.rooms.length-1];
-  this.grid[endRoom.y+1][endRoom.x+1] = TILE.GOAL;
-  this.zoneRadius = 99999;
-  }
-  else if (modeName === 'ONIMODE') {
-  this.player.w = 32; this.player.h = 32; this.player.speed = 280;
-  for(let i=0; i<conf.PLAYERS; i++) { let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); this.npcs.push(new NPC(p.x, p.y)); }
-  this.zoneRadius = 99999;
-  }
-  else if (modeName === 'URA' || modeName === 'SHIN_URA') {
-  audioCtrl.playUra();
-  this.boss = new AdvancedSenjuBoss(modeName === 'SHIN_URA');
-  this.boss.y = this.player.y - 400;
-  this.zoneRadius = 99999;
-  this.state = 'COUNTDOWN';
-  this.countdown = 3.9;
-  }
+ this.npcs = []; this.onis = []; this.chests = []; this.lockers = [];
+ this.uraGoalGenerated = false;
+ 
+ if(modeName === 'SURVIVAL') {
+ for(let i=0; i<conf.PLAYERS-1; i++) { let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); this.npcs.push(new NPC(p.x, p.y)); }
+ for(let i=0; i<conf.ONIS; i++) { 
+ let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); 
+ let type = Utils.randomInt(0, 18);
+ this.onis.push(new EnemyOni(p.x, p.y, type)); 
+ }
+ for(let i=0; i<conf.CHESTS; i++) { let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); this.chests.push(new Chest(p.x, p.y)); }
+ for(let i=0; i<conf.LOCKERS; i++) { let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); this.lockers.push(new Locker(p.x, p.y)); }
+ this.zoneRadius = (Math.max(this.cols, this.rows) * CONFIG.TILE_SIZE);
+ } 
+ else if (modeName === 'TOWER') {
+ document.getElementById('tower-info-panel').classList.remove('hidden');
+ document.getElementById('tower-floor').textContent = saveData.highestTowerFloor;
+ let enemyCount = Math.min(10, 2 + Math.floor(saveData.highestTowerFloor / 2));
+ for(let i=0; i<enemyCount; i++) { 
+ let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); 
+ this.onis.push(new EnemyOni(p.x, p.y, Utils.randomInt(0, 5))); 
+ }
+ let endRoom = this.rooms[this.rooms.length-1];
+ this.grid[endRoom.y+1][endRoom.x+1] = TILE.GOAL;
+ this.zoneRadius = 99999;
+ }
+ else if (modeName === 'ONIMODE') {
+ this.player.w = 32; this.player.h = 32; this.player.speed = 280;
+ for(let i=0; i<conf.PLAYERS; i++) { let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows); this.npcs.push(new NPC(p.x, p.y)); }
+ this.zoneRadius = 99999;
+ }
+ else if (modeName === 'URA' || modeName === 'SHIN_URA') {
+ audioCtrl.playUra();
+ this.boss = new AdvancedSenjuBoss(modeName === 'SHIN_URA');
+ this.boss.y = this.player.y - 400;
+ this.zoneRadius = 99999;
+ this.state = 'COUNTDOWN';
+ this.countdown = 3.9;
+ }
 
-  this.aliveCount = this.npcs.length + (modeName==='ONIMODE'?0:1);
-  this.gameTime = 0;
-  uiManager.updateHUD();
+ this.aliveCount = this.npcs.length + (modeName==='ONIMODE'?0:1);
+ this.gameTime = 0;
+ uiManager.updateHUD();
  }
 
  loop(t) {
-  this.deltaTime = Math.min((t - this.lastTime) / 1000, 0.1);
-  this.lastTime = t;
+ this.deltaTime = Math.min((t - this.lastTime) / 1000, 0.1);
+ this.lastTime = t;
 
-  if(this.state === 'COUNTDOWN') {
-  this.countdown -= this.deltaTime;
-  if(this.countdown > 1) uiManager.showMessage(Math.floor(this.countdown));
-  else if(this.countdown > 0) uiManager.showMessage("GO!!");
-  else { this.state = this.mode; uiManager.showMessage(""); }
-  this.draw();
-  }
-  else if(['SURVIVAL','TOWER','ONIMODE','URA','SHIN_URA'].includes(this.state)) {
-  this.update();
-  this.draw();
-  }
-  requestAnimationFrame((t) => this.loop(t));
+ if(this.state === 'COUNTDOWN') {
+ this.countdown -= this.deltaTime;
+ if(this.countdown > 1) uiManager.showMessage(Math.floor(this.countdown));
+ else if(this.countdown > 0) uiManager.showMessage("GO!!");
+ else { this.state = this.mode; uiManager.showMessage(""); }
+ this.draw();
+ }
+ else if(['SURVIVAL','TOWER','ONIMODE','URA','SHIN_URA'].includes(this.state)) {
+ this.update();
+ this.draw();
+ }
+ requestAnimationFrame((t) => this.loop(t));
  }
 
  update() {
-  this.gameTime += this.deltaTime;
+ this.gameTime += this.deltaTime;
 
-  if(!this.player.isDead) {
-  let dx=0, dy=0;
-  if(this.joy.active) { dx=this.joy.x; dy=this.joy.y; }
-  else {
-   if(this.keys['ArrowUp']||this.keys['KeyW']) dy-=1; if(this.keys['ArrowDown']||this.keys['KeyS']) dy+=1;
-   if(this.keys['ArrowLeft']||this.keys['KeyA']) dx-=1; if(this.keys['ArrowRight']||this.keys['KeyD']) dx+=1;
-  }
-  this.player.move(dx, dy, this.grid, this.cols, this.rows);
-  this.player.update(this.deltaTime, this);
+ if(!this.player.isDead) {
+ let dx=0, dy=0;
+ if(this.joy.active) { dx=this.joy.x; dy=this.joy.y; }
+ else {
+ if(this.keys['ArrowUp']||this.keys['KeyW']) dy-=1; if(this.keys['ArrowDown']||this.keys['KeyS']) dy+=1;
+ if(this.keys['ArrowLeft']||this.keys['KeyA']) dx-=1; if(this.keys['ArrowRight']||this.keys['KeyD']) dx+=1;
+ }
+ this.player.move(dx, dy, this.grid, this.cols, this.rows);
+ this.player.update(this.deltaTime, this);
 
-  if(this.actionBtn) { this.handleInteract(); this.actionBtn = false; }
-  }
+ if(this.actionBtn) { this.handleInteract(); this.actionBtn = false; }
+ }
 
-  this.camera.x += ((this.player.x + this.player.w/2 - this.canvas.width/2) - this.camera.x) * 0.1;
-  this.camera.y += ((this.player.y + this.player.h/2 - this.canvas.height/2) - this.camera.y) * 0.1;
-  
-  if(this.mode !== 'URA' && this.mode !== 'SHIN_URA') {
-  this.camera.x = Math.max(0, Math.min(this.camera.x, this.cols*CONFIG.TILE_SIZE - this.canvas.width));
-  this.camera.y = Math.max(0, Math.min(this.camera.y, this.rows*CONFIG.TILE_SIZE - this.canvas.height));
-  }
+ this.camera.x += ((this.player.x + this.player.w/2 - this.canvas.width/2) - this.camera.x) * 0.1;
+ this.camera.y += ((this.player.y + this.player.h/2 - this.canvas.height/2) - this.camera.y) * 0.1;
+ 
+ if(this.mode !== 'URA' && this.mode !== 'SHIN_URA') {
+ this.camera.x = Math.max(0, Math.min(this.camera.x, this.cols*CONFIG.TILE_SIZE - this.canvas.width));
+ this.camera.y = Math.max(0, Math.min(this.camera.y, this.rows*CONFIG.TILE_SIZE - this.canvas.height));
+ }
 
-  if(this.mode === 'SURVIVAL') this.updateSurvival();
-  else if(this.mode === 'TOWER') this.updateTower();
-  else if(this.mode === 'ONIMODE') this.updateOniMode();
-  else if(this.mode === 'URA' || this.mode === 'SHIN_URA') this.updateUra();
+ if(this.mode === 'SURVIVAL') this.updateSurvival();
+ else if(this.mode === 'TOWER') this.updateTower();
+ else if(this.mode === 'ONIMODE') this.updateOniMode();
+ else if(this.mode === 'URA' || this.mode === 'SHIN_URA') this.updateUra();
  }
 
  handleInteract() {
-  if(this.mode === 'ONIMODE') return;
-  
-  let pc = this.player.getCenter();
-  
-  if(this.uraGoalGenerated && this.mode === 'URA' && this.uraDoor) {
-  if(Utils.distance(pc.x, pc.y, this.uraDoor.x+24, this.uraDoor.y+24) < 50) {
-   this.startMode('SHIN_URA'); 
-   return;
-  }
-  }
+ if(this.mode === 'ONIMODE') return;
+ 
+ let pc = this.player.getCenter();
+ 
+ if(this.uraGoalGenerated && this.mode === 'URA' && this.uraDoor) {
+ if(Utils.distance(pc.x, pc.y, this.uraDoor.x+24, this.uraDoor.y+24) < 50) {
+ this.startMode('SHIN_URA'); 
+ return;
+ }
+ }
 
-  for(let l of this.lockers) {
-  if(Utils.distance(pc.x, pc.y, l.x+20, l.y+24) < 50) {
-   if(!this.player.isHidden && !l.occupant) { this.player.isHidden = true; l.occupant = this.player; uiManager.showMessage("ロッカーに隠れた"); return; }
-   else if(this.player.isHidden && l.occupant===this.player) { this.player.isHidden = false; l.occupant = null; this.player.y+=20; return; }
-  }
-  }
-  if(!this.player.isHidden) {
-  for(let c of this.chests) {
-   if(!c.isOpen && Utils.distance(pc.x, pc.y, c.x+20, c.y+20) < 50) {
-    c.isOpen = true;
-    if(this.mode === 'URA' && this.uraGoalGenerated) { 
-    uiManager.showMessage("招き猫ゲット！"); 
-    saveData.unlockedChars.push('c99');
-    saveData.save();
-    setTimeout(() => this.endGame(true, "裏ステージクリア！"), 2000);
-    }
-    else if(this.mode === 'SHIN_URA' && this.uraGoalGenerated) { 
-    uiManager.showMessage("たぬきゲット！"); 
-    if(!saveData.unlockedChars.includes('c98')) saveData.unlockedChars.push('c98'); 
-    saveData.save();
-    setTimeout(() => this.endGame(true, "真・裏ステージクリア！"), 2000);
-    }
-    else {
-    let r = Math.random();
-    if(r<0.05) { saveData.addOrb(1); uiManager.showMessage("🔵青玉GET!"); }
-    else if(r<0.3) { this.player.buffs.SKATE = 10; uiManager.showMessage("ローラースケートGET!"); }
-    else if(r<0.6) { this.player.buffs.MASK = 10 * (this.player.petData.buff==='MASK'?this.player.petData.val:1); uiManager.showMessage("ガスマスクGET!"); }
-    else { saveData.addCoin(50); uiManager.showMessage("50青銭GET!"); }
-    }
-    uiManager.updateStatusIcon();
-    return;
-   }
-  }
-  }
+ for(let l of this.lockers) {
+ if(Utils.distance(pc.x, pc.y, l.x+20, l.y+24) < 50) {
+ if(!this.player.isHidden && !l.occupant) { this.player.isHidden = true; l.occupant = this.player; uiManager.showMessage("ロッカーに隠れた"); return; }
+ else if(this.player.isHidden && l.occupant===this.player) { this.player.isHidden = false; l.occupant = null; this.player.y+=20; return; }
+ }
+ }
+ if(!this.player.isHidden) {
+ for(let c of this.chests) {
+ if(!c.isOpen && Utils.distance(pc.x, pc.y, c.x+20, c.y+20) < 50) {
+ c.isOpen = true;
+ if(this.mode === 'URA' && this.uraGoalGenerated) { 
+ uiManager.showMessage("招き猫ゲット！"); 
+ saveData.unlockedChars.push('c99');
+ saveData.save();
+ setTimeout(() => this.endGame(true, "裏ステージクリア！"), 2000);
+ }
+ else if(this.mode === 'SHIN_URA' && this.uraGoalGenerated) { 
+ uiManager.showMessage("たぬきゲット！"); 
+ if(!saveData.unlockedChars.includes('c98')) saveData.unlockedChars.push('c98'); 
+ saveData.save();
+ setTimeout(() => this.endGame(true, "真・裏ステージクリア！"), 2000);
+ }
+ else {
+ let r = Math.random();
+ if(r<0.05) { saveData.addOrb(1); uiManager.showMessage("🔵青玉GET!"); }
+ else if(r<0.3) { this.player.buffs.SKATE = 10; uiManager.showMessage("ローラースケートGET!"); }
+ else if(r<0.6) { this.player.buffs.MASK = 10 * (this.player.petData.buff==='MASK'?this.player.petData.val:1); uiManager.showMessage("ガスマスクGET!"); }
+ else { saveData.addCoin(50); uiManager.showMessage("50青銭GET!"); }
+ }
+ uiManager.updateStatusIcon();
+ return;
+ }
+ }
+ }
  }
 
  updateSurvival() {
-  this.zoneRadius -= 10 * this.deltaTime;
-  let mapCx = (this.cols*CONFIG.TILE_SIZE)/2, mapCy = (this.rows*CONFIG.TILE_SIZE)/2;
-  if(!this.player.isHidden && this.player.buffs.MASK<=0) {
-  if(Utils.distance(this.player.getCenter().x, this.player.getCenter().y, mapCx, mapCy) > Math.max(50, this.zoneRadius)) this.killCharacter(this.player, "青霧に飲まれた");
-  }
-  for(let npc of this.npcs) {
-  if(npc.isDead) continue;
-  npc.update(this.deltaTime, this);
-  if(Utils.distance(npc.getCenter().x, npc.getCenter().y, mapCx, mapCy) > this.zoneRadius) this.killCharacter(npc, "青霧に飲まれた");
-  }
-  for(let oni of this.onis) oni.update(this.deltaTime, this);
+ this.zoneRadius -= 10 * this.deltaTime;
+ let mapCx = (this.cols*CONFIG.TILE_SIZE)/2, mapCy = (this.rows*CONFIG.TILE_SIZE)/2;
+ if(!this.player.isHidden && this.player.buffs.MASK<=0) {
+ if(Utils.distance(this.player.getCenter().x, this.player.getCenter().y, mapCx, mapCy) > Math.max(50, this.zoneRadius)) this.killCharacter(this.player, "青霧に飲まれた");
+ }
+ for(let npc of this.npcs) {
+ if(npc.isDead) continue;
+ npc.update(this.deltaTime, this);
+ if(Utils.distance(npc.getCenter().x, npc.getCenter().y, mapCx, mapCy) > this.zoneRadius) this.killCharacter(npc, "青霧に飲まれた");
+ }
+ for(let oni of this.onis) oni.update(this.deltaTime, this);
 
-  this.aliveCount = this.npcs.filter(n=>!n.isDead).length + (this.player.isDead?0:1);
-  document.getElementById('alive-count').textContent = this.aliveCount;
+ this.aliveCount = this.npcs.filter(n=>!n.isDead).length + (this.player.isDead?0:1);
+ document.getElementById('alive-count').textContent = this.aliveCount;
 
-  if(this.aliveCount === 1 && !this.player.isDead) {
-  audioCtrl.stopAll();
-  saveData.hasPendingUra = true; 
-  saveData.save();
-  this.endGame(true, "見事青逃げ達成！！");
-  } else if(this.player.isDead) {
-  audioCtrl.stopAll();
-  this.endGame(false, `あなたは ${this.aliveCount+1}位 で死亡した`);
-  }
+ if(this.aliveCount === 1 && !this.player.isDead) {
+ audioCtrl.stopAll();
+ saveData.hasPendingUra = true; 
+ saveData.save();
+ this.endGame(true, "見事青逃げ達成！！");
+ } else if(this.player.isDead) {
+ audioCtrl.stopAll();
+ this.endGame(false, `あなたは ${this.aliveCount+1}位 で死亡した`);
+ }
  }
 
  updateTower() {
-  for(let oni of this.onis) oni.update(this.deltaTime, this);
-  let pxGrid = Math.floor(this.player.getCenter().x / CONFIG.TILE_SIZE);
-  let pyGrid = Math.floor(this.player.getCenter().y / CONFIG.TILE_SIZE);
-  if(this.grid[pyGrid] && this.grid[pyGrid][pxGrid] === TILE.GOAL) {
-  saveData.highestTowerFloor++; saveData.save();
-  audioCtrl.stopAll();
-  this.endGame(true, `試練の塔 ${saveData.highestTowerFloor-1}階 突破！`);
-  } else if(this.player.isDead) {
-  audioCtrl.stopAll();
-  this.endGame(false, "塔の中で倒れた...");
-  }
+ for(let oni of this.onis) oni.update(this.deltaTime, this);
+ let pxGrid = Math.floor(this.player.getCenter().x / CONFIG.TILE_SIZE);
+ let pyGrid = Math.floor(this.player.getCenter().y / CONFIG.TILE_SIZE);
+ if(this.grid[pyGrid] && this.grid[pyGrid][pxGrid] === TILE.GOAL) {
+ saveData.highestTowerFloor++; saveData.save();
+ audioCtrl.stopAll();
+ this.endGame(true, `試練の塔 ${saveData.highestTowerFloor-1}階 突破！`);
+ } else if(this.player.isDead) {
+ audioCtrl.stopAll();
+ this.endGame(false, "塔の中で倒れた...");
+ }
  }
 
  updateOniMode() {
-  let hitRect = this.player.getRect();
-  for(let npc of this.npcs) {
-  if(npc.isDead) continue;
-  npc.update(this.deltaTime, this);
-  if(Utils.checkCollision(hitRect, npc.getRect())) { this.killCharacter(npc, "青鬼(あなた)に捕食された"); saveData.addCoin(10); }
-  }
-  this.aliveCount = this.npcs.filter(n=>!n.isDead).length;
-  document.getElementById('alive-count').textContent = this.aliveCount;
+ let hitRect = this.player.getRect();
+ for(let npc of this.npcs) {
+ if(npc.isDead) continue;
+ npc.update(this.deltaTime, this);
+ if(Utils.checkCollision(hitRect, npc.getRect())) { this.killCharacter(npc, "青鬼(あなた)に捕食された"); saveData.addCoin(10); }
+ }
+ this.aliveCount = this.npcs.filter(n=>!n.isDead).length;
+ document.getElementById('alive-count').textContent = this.aliveCount;
 
-  if(this.aliveCount === 0) {
-  audioCtrl.stopAll();
-  this.endGame(true, "全員を捕食した！(完全勝利)");
-  }
+ if(this.aliveCount === 0) {
+ audioCtrl.stopAll();
+ this.endGame(true, "全員を捕食した！(完全勝利)");
+ }
  }
 
  updateUra() {
-  this.boss.update(this.deltaTime, this);
-  if(!this.uraGoalGenerated && this.gameTime > 20) {
-  this.uraGoalGenerated = true;
-  let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
-  if(this.mode === 'URA') {
-   this.uraDoor = { x: p.x, y: p.y };
-   uiManager.showMessage("奥へ進む扉が現れた...");
-   let p2 = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
-   this.chests.push(new Chest(p2.x, p2.y));
-  } else {
-   this.chests.push(new Chest(p.x, p.y));
-   uiManager.showMessage("報酬の宝箱が現れた！");
-  }
-  }
-  if(this.player.isDead) {
-  audioCtrl.stopAll();
-  this.endGame(false, "裏ステージの主に敗北した...");
-  }
+ this.boss.update(this.deltaTime, this);
+ if(!this.uraGoalGenerated && this.gameTime > 20) {
+ this.uraGoalGenerated = true;
+ let p = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+ if(this.mode === 'URA') {
+ this.uraDoor = { x: p.x, y: p.y };
+ uiManager.showMessage("奥へ進む扉が現れた...");
+ let p2 = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+ this.chests.push(new Chest(p2.x, p2.y));
+ } else {
+ this.chests.push(new Chest(p.x, p.y));
+ uiManager.showMessage("報酬の宝箱が現れた！");
+ }
+ }
+ if(this.player.isDead) {
+ audioCtrl.stopAll();
+ this.endGame(false, "裏ステージの主に敗北した...");
+ }
  }
 
  killCharacter(char, reason) {
-  if(char.isDead || char.isHidden) return;
-  char.isDead = true;
-  
-  let msg = `${char.name} が死亡`;
-  if(char === this.player) msg = reason;
-  
-  const log = document.getElementById('kill-log');
-  const p = document.createElement('p');
-  p.className = 'log-msg'; p.textContent = msg;
-  log.appendChild(p);
-  if(log.children.length > 5) log.removeChild(log.firstChild);
+ if(char.isDead || char.isHidden) return;
+ char.isDead = true;
+ 
+ let msg = `${char.name} が死亡`;
+ if(char === this.player) msg = reason;
+ 
+ const log = document.getElementById('kill-log');
+ const p = document.createElement('p');
+ p.className = 'log-msg'; p.textContent = msg;
+ log.appendChild(p);
+ if(log.children.length > 5) log.removeChild(log.firstChild);
  }
 
  endGame(isClear, msg) {
-  this.state = 'RESULT';
-  document.getElementById('hud').classList.add('hidden');
-  
-  let coin = isClear ? 100 : 10;
-  if(this.mode === 'TOWER') coin = saveData.highestTowerFloor * 10;
-  if(this.mode === 'ONIMODE') coin = (30 - this.aliveCount) * 10;
-  
-  if(this.player.petData && this.player.petData.buff === 'COIN') coin = Math.floor(coin * this.player.petData.val);
-  
-  saveData.addCoin(coin);
-  document.getElementById('result-coin').textContent = coin;
-  
-  const orbText = document.getElementById('result-orb-text');
-  if(this.mode === 'URA' && isClear) {
-  saveData.addOrb(3);
-  document.getElementById('result-orb').textContent = 3;
-  orbText.classList.remove('hidden');
-  } else if (this.mode === 'SHIN_URA' && isClear) {
-  saveData.addOrb(10);
-  document.getElementById('result-orb').textContent = 10;
-  orbText.classList.remove('hidden');
-  } else {
-  orbText.classList.add('hidden');
-  }
-  
-  document.getElementById('result-title').textContent = isClear ? "CLEAR" : "GAME OVER";
-  document.getElementById('result-title').style.color = isClear ? "#2ecc71" : "#e74c3c";
-  document.getElementById('result-desc').textContent = msg;
-  
-  uiManager.showScreen('result-screen');
+ this.state = 'RESULT';
+ document.getElementById('hud').classList.add('hidden');
+ 
+ let coin = isClear ? 100 : 10;
+ if(this.mode === 'TOWER') coin = saveData.highestTowerFloor * 10;
+ if(this.mode === 'ONIMODE') coin = (30 - this.aliveCount) * 10;
+ 
+ if(this.player.petData && this.player.petData.buff === 'COIN') coin = Math.floor(coin * this.player.petData.val);
+ 
+ saveData.addCoin(coin);
+ document.getElementById('result-coin').textContent = coin;
+ 
+ const orbText = document.getElementById('result-orb-text');
+ if(this.mode === 'URA' && isClear) {
+ saveData.addOrb(3);
+ document.getElementById('result-orb').textContent = 3;
+ orbText.classList.remove('hidden');
+ } else if (this.mode === 'SHIN_URA' && isClear) {
+ saveData.addOrb(10);
+ document.getElementById('result-orb').textContent = 10;
+ orbText.classList.remove('hidden');
+ } else {
+ orbText.classList.add('hidden');
+ }
+ 
+ document.getElementById('result-title').textContent = isClear ? "CLEAR" : "GAME OVER";
+ document.getElementById('result-title').style.color = isClear ? "#2ecc71" : "#e74c3c";
+ document.getElementById('result-desc').textContent = msg;
+ 
+ uiManager.showScreen('result-screen');
  }
 
  startUraTransition() {
-  uiManager.hideAll();
-  saveData.hasPendingUra = false;
-  saveData.save();
-  this.startMode('URA');
+ uiManager.hideAll();
+ saveData.hasPendingUra = false;
+ saveData.save();
+ this.startMode('URA');
  }
  
  cancelUra() {
-  saveData.hasPendingUra = false;
-  saveData.save();
-  uiManager.showScreen('home-screen');
+ saveData.hasPendingUra = false;
+ saveData.save();
+ uiManager.showScreen('home-screen');
  }
 
  pullGacha(type) {
-  if(type === 'CHAR' || type === 'PET') {
-  if(saveData.coins < CONFIG.GACHA_COST) { uiManager.showMessage("青銭が足りません"); return; }
-  saveData.coins -= CONFIG.GACHA_COST;
-  } else if(type === 'ONI') {
-  if(saveData.orbs < CONFIG.ORB_COST) { uiManager.showMessage("青玉が足りません"); return; }
-  saveData.orbs -= CONFIG.ORB_COST;
-  }
-  saveData.save();
-  uiManager.updateHUD();
+ if(type === 'CHAR' || type === 'PET') {
+ if(saveData.coins < CONFIG.GACHA_COST) { uiManager.showMessage("青銭が足りません"); return; }
+ saveData.coins -= CONFIG.GACHA_COST;
+ } else if(type === 'ONI') {
+ if(saveData.orbs < CONFIG.ORB_COST) { uiManager.showMessage("青玉が足りません"); return; }
+ saveData.orbs -= CONFIG.ORB_COST;
+ }
+ saveData.save();
+ uiManager.updateHUD();
 
-  let pool = [], gotItem = null;
-  let r = Math.random();
-  
-  if(type === 'CHAR') {
-  pool = DB.CHARACTERS.filter(c => c.id !== 'c98' && c.id !== 'c99');
-  let rarity = r < 0.05 ? 'SSR' : (r < 0.2 ? 'SR' : (r < 0.5 ? 'R' : 'N'));
-  let cands = pool.filter(c => c.rarity === rarity);
-  if(cands.length === 0) cands = pool.filter(c => c.rarity === 'N');
-  gotItem = cands[Utils.randomInt(0, cands.length)];
-  if(!saveData.unlockedChars.includes(gotItem.id)) saveData.unlockedChars.push(gotItem.id);
-  else { saveData.addCoin(30); uiManager.showMessage("重複したため青銭に変換(+30)"); }
-  } 
-  else if (type === 'PET') {
-  pool = DB.PETS.filter(p => p.id !== 'p0');
-  let rarity = r < 0.05 ? 'SSR' : (r < 0.2 ? 'SR' : (r < 0.5 ? 'R' : 'N'));
-  let cands = pool.filter(p => p.rarity === rarity);
-  if(cands.length === 0) cands = pool.filter(p => p.rarity === 'N');
-  gotItem = cands[Utils.randomInt(0, cands.length)];
-  if(!saveData.unlockedPets.includes(gotItem.id)) saveData.unlockedPets.push(gotItem.id);
-  else { saveData.addCoin(30); uiManager.showMessage("重複したため青銭に変換(+30)"); }
-  }
-  else if (type === 'ONI') {
-  pool = DB.ONI_DATA;
-  let rarity = r < 0.1 ? 'SSR' : (r < 0.4 ? 'SR' : (r < 0.7 ? 'R' : 'N'));
-  let cands = pool.filter(o => o.rarity === rarity);
-  gotItem = cands[Utils.randomInt(0, cands.length)];
-  if(!saveData.unlockedOnis.includes(gotItem.id)) saveData.unlockedOnis.push(gotItem.id);
-  else { saveData.addOrb(1); uiManager.showMessage("重複したため青玉が返却されました"); }
-  }
+ let pool = [], gotItem = null;
+ let r = Math.random();
+ 
+ if(type === 'CHAR') {
+ pool = DB.CHARACTERS.filter(c => c.id !== 'c98' && c.id !== 'c99');
+ let rarity = r < 0.05 ? 'SSR' : (r < 0.2 ? 'SR' : (r < 0.5 ? 'R' : 'N'));
+ let cands = pool.filter(c => c.rarity === rarity);
+ if(cands.length === 0) cands = pool.filter(c => c.rarity === 'N');
+ gotItem = cands[Utils.randomInt(0, cands.length)];
+ if(!saveData.unlockedChars.includes(gotItem.id)) saveData.unlockedChars.push(gotItem.id);
+ else { saveData.addCoin(30); uiManager.showMessage("重複したため青銭に変換(+30)"); }
+ } 
+ else if (type === 'PET') {
+ pool = DB.PETS.filter(p => p.id !== 'p0');
+ let rarity = r < 0.05 ? 'SSR' : (r < 0.2 ? 'SR' : (r < 0.5 ? 'R' : 'N'));
+ let cands = pool.filter(p => p.rarity === rarity);
+ if(cands.length === 0) cands = pool.filter(p => p.rarity === 'N');
+ gotItem = cands[Utils.randomInt(0, cands.length)];
+ if(!saveData.unlockedPets.includes(gotItem.id)) saveData.unlockedPets.push(gotItem.id);
+ else { saveData.addCoin(30); uiManager.showMessage("重複したため青銭に変換(+30)"); }
+ }
+ else if (type === 'ONI') {
+ pool = DB.ONI_DATA;
+ let rarity = r < 0.1 ? 'SSR' : (r < 0.4 ? 'SR' : (r < 0.7 ? 'R' : 'N'));
+ let cands = pool.filter(o => o.rarity === rarity);
+ gotItem = cands[Utils.randomInt(0, cands.length)];
+ if(!saveData.unlockedOnis.includes(gotItem.id)) saveData.unlockedOnis.push(gotItem.id);
+ else { saveData.addOrb(1); uiManager.showMessage("重複したため青玉が返却されました"); }
+ }
 
-  saveData.save();
-  
-  document.getElementById('gacha-result-title').textContent = `${type === 'CHAR' ? 'キャラクター' : (type === 'PET' ? 'ペット' : '青鬼')} 獲得！`;
-  
-  let canvas = document.createElement('canvas');
-  canvas.width = 150; canvas.height = 150;
-  let rCtx = canvas.getContext('2d');
-  if(type === 'ONI') {
-  EnemyOni.drawCustomOni(rCtx, 75, 100, 32, 32, gotItem.type, 0, 0, false);
-  } else {
-  rCtx.font = "80px Arial"; rCtx.textAlign="center"; rCtx.textBaseline="middle";
-  rCtx.fillText(gotItem.icon, 75, 75);
-  }
-  
-  const imgContainer = document.getElementById('gacha-result-img');
-  imgContainer.innerHTML = '';
-  imgContainer.appendChild(canvas);
-  
-  document.getElementById('gacha-result-name').textContent = `[${gotItem.rarity}] ${gotItem.name}`;
-  document.getElementById('gacha-result-name').style.color = gotItem.rarity === 'SSR' ? '#f1c40f' : (gotItem.rarity === 'SR' ? '#9b59b6' : '#fff');
-  
-  uiManager.showScreen('gacha-result-screen');
+ saveData.save();
+ 
+ document.getElementById('gacha-result-title').textContent = `${type === 'CHAR' ? 'キャラクター' : (type === 'PET' ? 'ペット' : '青鬼')} 獲得！`;
+ 
+ let canvas = document.createElement('canvas');
+ canvas.width = 150; canvas.height = 150;
+ let rCtx = canvas.getContext('2d');
+ if(type === 'ONI') {
+ EnemyOni.drawCustomOni(rCtx, 75, 100, 32, 32, gotItem.type, 0, 0, false);
+ } else {
+ rCtx.font = "80px Arial"; rCtx.textAlign="center"; rCtx.textBaseline="middle";
+ rCtx.fillText(gotItem.icon, 75, 75);
+ }
+ 
+ const imgContainer = document.getElementById('gacha-result-img');
+ imgContainer.innerHTML = '';
+ imgContainer.appendChild(canvas);
+ 
+ document.getElementById('gacha-result-name').textContent = `[${gotItem.rarity}] ${gotItem.name}`;
+ document.getElementById('gacha-result-name').style.color = gotItem.rarity === 'SSR' ? '#f1c40f' : (gotItem.rarity === 'SR' ? '#9b59b6' : '#fff');
+ 
+ uiManager.showScreen('gacha-result-screen');
  }
 
  draw() {
-  this.ctx.fillStyle = "#111";
-  this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+ this.ctx.fillStyle = "#111";
+ this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-  this.ctx.save();
-  this.ctx.translate(-this.camera.x, -this.camera.y);
+ this.ctx.save();
+ this.ctx.translate(-this.camera.x, -this.camera.y);
 
-  this.drawMap();
+ this.drawMap();
 
-  if (this.mode === 'URA' && this.uraGoalGenerated && this.uraDoor) {
-  this.ctx.fillStyle = "#8e44ad";
-  this.ctx.fillRect(this.uraDoor.x, this.uraDoor.y, 48, 48);
-  this.ctx.fillStyle = "#fff"; this.ctx.font = "20px Arial";
-  this.ctx.fillText("🚪", this.uraDoor.x+10, this.uraDoor.y+30);
-  }
+ if (this.mode === 'URA' && this.uraGoalGenerated && this.uraDoor) {
+ this.ctx.fillStyle = "#8e44ad";
+ this.ctx.fillRect(this.uraDoor.x, this.uraDoor.y, 48, 48);
+ this.ctx.fillStyle = "#fff"; this.ctx.font = "20px Arial";
+ this.ctx.fillText("🚪", this.uraDoor.x+10, this.uraDoor.y+30);
+ }
 
-  for(let l of this.lockers) l.draw(this.ctx);
-  for(let c of this.chests) c.draw(this.ctx);
-  
-  let entities = [...this.npcs, ...this.onis];
-  if(!this.player.isHidden) entities.push(this.player);
-  entities.sort((a,b) => a.y - b.y);
-  for(let e of entities) e.draw(this.ctx);
+ for(let l of this.lockers) l.draw(this.ctx);
+ for(let c of this.chests) c.draw(this.ctx);
+ 
+ let entities = [...this.npcs, ...this.onis];
+ if(!this.player.isHidden) entities.push(this.player);
+ entities.sort((a,b) => a.y - b.y);
+ for(let e of entities) e.draw(this.ctx);
 
-  if(this.mode === 'URA' || this.mode === 'SHIN_URA') {
-  if(this.boss) this.boss.draw(this.ctx, this);
-  }
-  
-  if (this.mode === 'SURVIVAL') {
-  let mapCx = (this.cols*CONFIG.TILE_SIZE)/2, mapCy = (this.rows*CONFIG.TILE_SIZE)/2;
-  this.ctx.fillStyle = "rgba(52, 152, 219, 0.2)";
-  this.ctx.beginPath(); this.ctx.arc(mapCx, mapCy, 9999, 0, Math.PI*2); this.ctx.arc(mapCx, mapCy, Math.max(0, this.zoneRadius), 0, Math.PI*2, true); this.ctx.fill();
-  }
+ if(this.mode === 'URA' || this.mode === 'SHIN_URA') {
+ if(this.boss) this.boss.draw(this.ctx, this);
+ }
+ 
+ if (this.mode === 'SURVIVAL') {
+ let mapCx = (this.cols*CONFIG.TILE_SIZE)/2, mapCy = (this.rows*CONFIG.TILE_SIZE)/2;
+ this.ctx.fillStyle = "rgba(52, 152, 219, 0.2)";
+ this.ctx.beginPath(); this.ctx.arc(mapCx, mapCy, 9999, 0, Math.PI*2); this.ctx.arc(mapCx, mapCy, Math.max(0, this.zoneRadius), 0, Math.PI*2, true); this.ctx.fill();
+ }
 
-  this.ctx.restore();
+ this.ctx.restore();
  }
 
  drawMap() {
-  let sx = Math.floor(this.camera.x / CONFIG.TILE_SIZE), sy = Math.floor(this.camera.y / CONFIG.TILE_SIZE);
-  let ex = sx + Math.ceil(this.canvas.width / CONFIG.TILE_SIZE) + 1, ey = sy + Math.ceil(this.canvas.height / CONFIG.TILE_SIZE) + 1;
-  sx = Math.max(0, sx); sy = Math.max(0, sy);
-  ex = Math.min(this.cols, ex); ey = Math.min(this.rows, ey);
+ let sx = Math.floor(this.camera.x / CONFIG.TILE_SIZE), sy = Math.floor(this.camera.y / CONFIG.TILE_SIZE);
+ let ex = sx + Math.ceil(this.canvas.width / CONFIG.TILE_SIZE) + 1, ey = sy + Math.ceil(this.canvas.height / CONFIG.TILE_SIZE) + 1;
+ sx = Math.max(0, sx); sy = Math.max(0, sy);
+ ex = Math.min(this.cols, ex); ey = Math.min(this.rows, ey);
 
-  for (let y = sy; y < ey; y++) {
-  for (let x = sx; x < ex; x++) {
-   let px = x * CONFIG.TILE_SIZE, py = y * CONFIG.TILE_SIZE;
-   if (this.grid[y][x] === TILE.WALL) {
-    this.ctx.fillStyle = (this.mode === 'URA' || this.mode === 'SHIN_URA') ? "#330000" : "#2c3e50";
-    this.ctx.fillRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
-    this.ctx.fillStyle = "rgba(0,0,0,0.3)";
-    this.ctx.fillRect(px, py+CONFIG.TILE_SIZE-5, CONFIG.TILE_SIZE, 5);
-   } else if (this.grid[y][x] === TILE.FLOOR) {
-    this.ctx.fillStyle = (this.mode === 'URA' || this.mode === 'SHIN_URA') ? "#550000" : "#95a5a6";
-    this.ctx.fillRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
-   } else if (this.grid[y][x] === TILE.GOAL) {
-    this.ctx.fillStyle = "#f1c40f"; this.ctx.fillRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
-   }
-  }
-  }
+ for (let y = sy; y < ey; y++) {
+ for (let x = sx; x < ex; x++) {
+ let px = x * CONFIG.TILE_SIZE, py = y * CONFIG.TILE_SIZE;
+ if (this.grid[y][x] === TILE.WALL) {
+ this.ctx.fillStyle = (this.mode === 'URA' || this.mode === 'SHIN_URA') ? "#330000" : "#2c3e50";
+ this.ctx.fillRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+ this.ctx.fillStyle = "rgba(0,0,0,0.3)";
+ this.ctx.fillRect(px, py+CONFIG.TILE_SIZE-5, CONFIG.TILE_SIZE, 5);
+ } else if (this.grid[y][x] === TILE.FLOOR) {
+ this.ctx.fillStyle = (this.mode === 'URA' || this.mode === 'SHIN_URA') ? "#550000" : "#95a5a6";
+ this.ctx.fillRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+ } else if (this.grid[y][x] === TILE.GOAL) {
+ this.ctx.fillStyle = "#f1c40f"; this.ctx.fillRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+ }
+ }
+ }
  }
 }
 
 class UIManager {
  constructor() {
-  this.screens = ['title-screen', 'home-screen', 'gacha-screen', 'party-screen', 'zukan-screen', 'save-load-screen', 'result-screen', 'gacha-result-screen', 'name-edit-screen', 'audio-settings-screen', 'new-ura-prompt-screen'];
+ this.screens = ['title-screen', 'home-screen', 'gacha-screen', 'party-screen', 'zukan-screen', 'save-load-screen', 'result-screen', 'gacha-result-screen', 'name-edit-screen', 'audio-settings-screen', 'new-ura-prompt-screen'];
  }
  
  hideAll() { this.screens.forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); }); }
  
  showScreen(id) {
-  this.hideAll();
-  if(id === 'home-screen') {
-  this.updateHUD();
-  if(saveData.hasPendingUra) {
-   document.getElementById('new-ura-prompt-screen').classList.remove('hidden');
-  } else {
-   document.getElementById(id).classList.remove('hidden');
-  }
-  } else {
-  document.getElementById(id).classList.remove('hidden');
-  }
+ this.hideAll();
+ if(id === 'home-screen') {
+ this.updateHUD();
+ if(saveData.hasPendingUra) {
+ document.getElementById('new-ura-prompt-screen').classList.remove('hidden');
+ } else {
+ document.getElementById(id).classList.remove('hidden');
+ }
+ } else {
+ document.getElementById(id).classList.remove('hidden');
+ }
  }
 
  updateHUD() {
-  document.getElementById('ui-coin').textContent = saveData.coins;
-  document.getElementById('ui-orb').textContent = saveData.orbs;
-  document.getElementById('gacha-coin').textContent = saveData.coins;
-  document.getElementById('gacha-orb').textContent = saveData.orbs;
-  document.getElementById('ui-player-name').textContent = saveData.playerName;
-  
-  const char = saveData.getCharData();
-  const pet = saveData.getPetData();
-  
-  document.getElementById('home-avatar-icon').textContent = char.icon;
-  document.getElementById('home-pet-icon').textContent = pet.id !== 'p0' ? pet.icon : '';
-  
-  this.updateStatusIcon();
+ document.getElementById('ui-coin').textContent = saveData.coins;
+ document.getElementById('ui-orb').textContent = saveData.orbs;
+ document.getElementById('gacha-coin').textContent = saveData.coins;
+ document.getElementById('gacha-orb').textContent = saveData.orbs;
+ document.getElementById('ui-player-name').textContent = saveData.playerName;
+ 
+ const char = saveData.getCharData();
+ const pet = saveData.getPetData();
+ 
+ document.getElementById('home-avatar-icon').textContent = char.icon;
+ document.getElementById('home-pet-icon').textContent = pet.id !== 'p0' ? pet.icon : '';
+ 
+ this.updateStatusIcon();
  }
 
  updateStatusIcon() {
-  if(!game || !game.player) return;
-  const sIcon = document.getElementById('icon-speed');
-  const mIcon = document.getElementById('icon-mask');
-  if(game.player.buffs.SKATE > 0 || game.player.petData.buff === 'SPEED') sIcon.classList.add('active'); else sIcon.classList.remove('active');
-  if(game.player.buffs.MASK > 0 || game.player.petData.buff === 'MASK') mIcon.classList.add('active'); else mIcon.classList.remove('active');
+ if(!game || !game.player) return;
+ const sIcon = document.getElementById('icon-speed');
+ const mIcon = document.getElementById('icon-mask');
+ if(game.player.buffs.SKATE > 0 || game.player.petData.buff === 'SPEED') sIcon.classList.add('active'); else sIcon.classList.remove('active');
+ if(game.player.buffs.MASK > 0 || game.player.petData.buff === 'MASK') mIcon.classList.add('active'); else mIcon.classList.remove('active');
  }
 
  showMessage(text) {
-  const msg = document.getElementById('center-message');
-  msg.textContent = text;
-  msg.style.opacity = 1;
-  setTimeout(() => msg.style.opacity = 0, 2000);
+ const msg = document.getElementById('center-message');
+ msg.textContent = text;
+ msg.style.opacity = 1;
+ setTimeout(() => msg.style.opacity = 0, 2000);
  }
 
  renderPartyList(type) {
-  const list = document.getElementById('party-list');
-  list.innerHTML = '';
-  let pool = type === 'CHAR' ? DB.CHARACTERS : (type === 'PET' ? DB.PETS : DB.ONI_DATA);
-  let unlocked = type === 'CHAR' ? saveData.unlockedChars : (type === 'PET' ? saveData.unlockedPets : saveData.unlockedOnis);
-  let equipped = type === 'CHAR' ? saveData.equipCharId : (type === 'PET' ? saveData.equipPetId : saveData.equipOniId);
+ const list = document.getElementById('party-list');
+ list.innerHTML = '';
+ let pool = type === 'CHAR' ? DB.CHARACTERS : (type === 'PET' ? DB.PETS : DB.ONI_DATA);
+ let unlocked = type === 'CHAR' ? saveData.unlockedChars : (type === 'PET' ? saveData.unlockedPets : saveData.unlockedOnis);
+ let equipped = type === 'CHAR' ? saveData.equipCharId : (type === 'PET' ? saveData.equipPetId : saveData.equipOniId);
 
-  pool.forEach(item => {
-  const card = document.createElement('div');
-  card.className = `char-card ${item.rarity} ${unlocked.includes(item.id) ? '' : 'locked'} ${equipped === item.id ? 'selected' : ''}`;
-  
-  if(type === 'ONI') {
-   let canvas = document.createElement('canvas'); canvas.width=64; canvas.height=64; canvas.className = 'canvas-icon';
-   if(unlocked.includes(item.id)) EnemyOni.drawCustomOni(canvas.getContext('2d'), 32, 40, 32, 32, item.type, 0, 0, false);
-   else { let ctx=canvas.getContext('2d'); ctx.fillStyle="#000"; ctx.fillRect(16,24,32,32); ctx.fillStyle="#fff"; ctx.font="20px Arial"; ctx.fillText("?", 25, 48); }
-   card.appendChild(canvas);
-  } else {
-   const icon = document.createElement('div');
-   icon.style.fontSize = "2.5rem"; icon.textContent = unlocked.includes(item.id) ? item.icon : '❓';
-   card.appendChild(icon);
-  }
-  
-  const rarity = document.createElement('div'); rarity.className = 'rarity'; rarity.textContent = item.rarity || '-';
-  const name = document.createElement('div'); name.style.fontSize = "0.8rem"; name.textContent = unlocked.includes(item.id) ? item.name : '未解放';
-  
-  card.appendChild(rarity); card.appendChild(name);
+ pool.forEach(item => {
+ const card = document.createElement('div');
+ card.className = `char-card ${item.rarity} ${unlocked.includes(item.id) ? '' : 'locked'} ${equipped === item.id ? 'selected' : ''}`;
+ 
+ if(type === 'ONI') {
+ let canvas = document.createElement('canvas'); canvas.width=64; canvas.height=64; canvas.className = 'canvas-icon';
+ if(unlocked.includes(item.id)) EnemyOni.drawCustomOni(canvas.getContext('2d'), 32, 40, 32, 32, item.type, 0, 0, false);
+ else { let ctx=canvas.getContext('2d'); ctx.fillStyle="#000"; ctx.fillRect(16,24,32,32); ctx.fillStyle="#fff"; ctx.font="20px Arial"; ctx.fillText("?", 25, 48); }
+ card.appendChild(canvas);
+ } else {
+ const icon = document.createElement('div');
+ icon.style.fontSize = "2.5rem"; icon.textContent = unlocked.includes(item.id) ? item.icon : '❓';
+ card.appendChild(icon);
+ }
+ 
+ const rarity = document.createElement('div'); rarity.className = 'rarity'; rarity.textContent = item.rarity || '-';
+ const name = document.createElement('div'); name.style.fontSize = "0.8rem"; name.textContent = unlocked.includes(item.id) ? item.name : '未解放';
+ 
+ card.appendChild(rarity); card.appendChild(name);
 
-  if(unlocked.includes(item.id)) {
-   card.onclick = () => {
-    if(type === 'CHAR') saveData.equipCharId = item.id;
-    else if (type === 'PET') saveData.equipPetId = item.id;
-    else if (type === 'ONI') saveData.equipOniId = item.id;
-    saveData.save();
-    this.renderPartyList(type);
-   };
-  }
-  list.appendChild(card);
-  });
+ if(unlocked.includes(item.id)) {
+ card.onclick = () => {
+ if(type === 'CHAR') saveData.equipCharId = item.id;
+ else if (type === 'PET') saveData.equipPetId = item.id;
+ else if (type === 'ONI') saveData.equipOniId = item.id;
+ saveData.save();
+ this.renderPartyList(type);
+ };
+ }
+ list.appendChild(card);
+ });
  }
 
  renderZukan() {
-  const list = document.getElementById('zukan-list');
-  list.innerHTML = '';
-  DB.ONI_DATA.forEach(oni => {
-  const card = document.createElement('div');
-  let isEnc = saveData.encounteredOnis.includes(oni.type);
-  card.className = `char-card ${oni.rarity} ${isEnc ? '' : 'locked'}`;
-  
-  let canvas = document.createElement('canvas'); canvas.width=64; canvas.height=64; canvas.className = 'canvas-icon';
-  if(isEnc) EnemyOni.drawCustomOni(canvas.getContext('2d'), 32, 40, 32, 32, oni.type, 0, 0, false);
-  else { let ctx=canvas.getContext('2d'); ctx.fillStyle="#000"; ctx.fillRect(16,24,32,32); ctx.fillStyle="#fff"; ctx.font="20px Arial"; ctx.fillText("?", 25, 48); }
-  
-  card.appendChild(canvas);
-  const rarity = document.createElement('div'); rarity.className = 'rarity'; rarity.textContent = oni.rarity;
-  const name = document.createElement('div'); name.style.fontSize = "0.7rem"; name.textContent = isEnc ? oni.name : '未遭遇';
-  card.appendChild(rarity); card.appendChild(name);
-  list.appendChild(card);
-  });
-  this.showScreen('zukan-screen');
+ const list = document.getElementById('zukan-list');
+ list.innerHTML = '';
+ DB.ONI_DATA.forEach(oni => {
+ const card = document.createElement('div');
+ let isEnc = saveData.encounteredOnis.includes(oni.type);
+ card.className = `char-card ${oni.rarity} ${isEnc ? '' : 'locked'}`;
+ 
+ let canvas = document.createElement('canvas'); canvas.width=64; canvas.height=64; canvas.className = 'canvas-icon';
+ if(isEnc) EnemyOni.drawCustomOni(canvas.getContext('2d'), 32, 40, 32, 32, oni.type, 0, 0, false);
+ else { let ctx=canvas.getContext('2d'); ctx.fillStyle="#000"; ctx.fillRect(16,24,32,32); ctx.fillStyle="#fff"; ctx.font="20px Arial"; ctx.fillText("?", 25, 48); }
+ 
+ card.appendChild(canvas);
+ const rarity = document.createElement('div'); rarity.className = 'rarity'; rarity.textContent = oni.rarity;
+ const name = document.createElement('div'); name.style.fontSize = "0.7rem"; name.textContent = isEnc ? oni.name : '未遭遇';
+ card.appendChild(rarity); card.appendChild(name);
+ list.appendChild(card);
+ });
+ this.showScreen('zukan-screen');
  }
 
  changeName() {
-  const input = document.getElementById('name-input').value.trim();
-  if(input.length > 0) { saveData.playerName = input; saveData.save(); this.showScreen('home-screen'); }
+ const input = document.getElementById('name-input').value.trim();
+ if(input.length > 0) { saveData.playerName = input; saveData.save(); this.showScreen('home-screen'); }
  }
  
  exportSave() {
-  const code = btoa(encodeURIComponent(JSON.stringify(saveData)));
-  const ta = document.getElementById('save-data-text');
-  ta.value = code;
-  ta.select();
-  try { document.execCommand('copy'); alert('セーブコードをコピーしました'); } catch(e) {}
+ const code = btoa(encodeURIComponent(JSON.stringify(saveData)));
+ const ta = document.getElementById('save-data-text');
+ ta.value = code;
+ ta.select();
+ try { document.execCommand('copy'); alert('セーブコードをコピーしました'); } catch(e) {}
  }
 
  importSave() {
-  const code = document.getElementById('save-data-text').value.trim();
-  try {
-  const json = decodeURIComponent(atob(code));
-  const data = JSON.parse(json);
-  if(data && data.coins !== undefined) {
-   Object.assign(saveData, data);
-   saveData.save();
-   alert('データをロードしました');
-   this.showScreen('home-screen');
-  } else alert('無効なコードです');
-  } catch(e) { alert('無効なコードです'); }
+ const code = document.getElementById('save-data-text').value.trim();
+ try {
+ const json = decodeURIComponent(atob(code));
+ const data = JSON.parse(json);
+ if(data && data.coins !== undefined) {
+ Object.assign(saveData, data);
+ saveData.save();
+ alert('データをロードしました');
+ this.showScreen('home-screen');
+ } else alert('無効なコードです');
+ } catch(e) { alert('無効なコードです'); }
  }
 }
 
@@ -1892,7 +1893,42 @@ window.onload = function() {
  const zukanBtn = document.querySelector('.left-menu .side-btn:first-child');
  if(zukanBtn) zukanBtn.onclick = () => uiManager.renderZukan();
 };
+// 画面4隅のタップコマンド判定
+(function() {
+  const secretSequence = ['TL', 'TR', 'BR', 'BL', 'TL', 'TR', 'BR', 'BL'];
+  let inputSequence = [];
 
+  window.addEventListener('click', (e) => {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const x = e.clientX;
+    const y = e.clientY;
+
+    // タップ位置を画面4分割で判定
+    let tappedCorner = '';
+    if (x < width / 2 && y < height / 2) tappedCorner = 'TL';      // 左上
+    else if (x >= width / 2 && y < height / 2) tappedCorner = 'TR'; // 右上
+    else if (x >= width / 2 && y >= height / 2) tappedCorner = 'BR';// 右下
+    else if (x < width / 2 && y >= height / 2) tappedCorner = 'BL'; // 左下
+
+    // 正しい
+    if (tappedCorner === secretSequence[inputSequence.length]) {
+      inputSequence.push(tappedCorner);
+
+      // 8ステップすべて成功した場合
+      if (inputSequence.length === secretSequence.length) {
+        const uraScreen = document.getElementById('new-ura-prompt-screen');
+        if (uraScreen) {
+          uraScreen.classList.remove('hidden');
+        }
+        inputSequence = [];
+      }
+    } else {
+      // 
+      inputSequence = (tappedCorner === 'TL') ? ['TL'] : [];
+    }
+  });
+})();
 </script>
 </body>
 </html>

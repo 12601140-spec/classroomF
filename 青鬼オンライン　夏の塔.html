@@ -152,12 +152,13 @@
     <section id="save-load-screen" class="overlay hidden">
         <article class="modal-box">
             <h2>データ引継ぎ</h2>
-            <p style="font-size: 0.9rem; margin-bottom:10px;">コードをコピーしてバックアップしてください。</p>
+            <p style="font-size: 0.9rem; margin-bottom:10px;">現在のセーブコードです。コピーして保存してください。</p>
             <textarea id="save-data-text" placeholder="ここにセーブコードが表示されます"></textarea>
-            <button class="btn" onclick="uiManager.exportSave()">コード発行/コピー</button>
+            <p id="save-load-msg" style="font-size: 0.85rem; font-weight: bold; min-height: 1.2rem; margin-bottom: 8px; color: #f1c40f;"></p>
+            <button class="btn" onclick="uiManager.exportSave()">コードをクリップボードにコピー</button>
             <button class="btn green" onclick="uiManager.importSave()">コードからロード</button>
             <br>
-            <button class="btn red" style="margin-top: 20px;" onclick="uiManager.showScreen('home-screen')">閉じる</button>
+            <button class="btn red" style="margin-top: 15px;" onclick="uiManager.showScreen('home-screen')">閉じる</button>
         </article>
     </section>
 
@@ -1302,12 +1303,30 @@ class Game {
 const game = new Game();
 
 const uiManager = {
+    utf8ToBase64(str) {
+        return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+    },
+
+    base64ToUtf8(str) {
+        return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    },
+
     showScreen(id) {
         document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
         if(id === 'home-screen') {
             document.getElementById('ui-player-name').innerText = saveData.playerName;
         }
+        if(id === 'save-load-screen') {
+            this.updateSaveCodeDisplay();
+        }
+    },
+
+    updateSaveCodeDisplay() {
+        const str = this.utf8ToBase64(JSON.stringify(saveData));
+        document.getElementById('save-data-text').value = str;
+        const msgEl = document.getElementById('save-load-msg');
+        if(msgEl) msgEl.innerText = '';
     },
     
     openSummerTowerMenu() {
@@ -1363,20 +1382,49 @@ const uiManager = {
     },
 
     exportSave() {
-        const str = btoa(JSON.stringify(saveData));
-        document.getElementById('save-data-text').value = str;
-        try { document.execCommand('copy'); alert('コピーしました！'); }catch(e){}
+        const str = this.utf8ToBase64(JSON.stringify(saveData));
+        const textArea = document.getElementById('save-data-text');
+        textArea.value = str;
+        textArea.select();
+        const msgEl = document.getElementById('save-load-msg');
+        try {
+            document.execCommand('copy');
+            if(msgEl) {
+                msgEl.style.color = '#2ecc71';
+                msgEl.innerText = 'セーブコードをコピーしました！';
+            }
+        } catch(e) {
+            if(msgEl) {
+                msgEl.style.color = '#e74c3c';
+                msgEl.innerText = 'コピーに失敗しました。手動でコピーしてください。';
+            }
+        }
     },
 
     importSave() {
         const str = document.getElementById('save-data-text').value.trim();
+        const msgEl = document.getElementById('save-load-msg');
         if(str) {
             try {
-                const obj = JSON.parse(atob(str));
+                const jsonStr = this.base64ToUtf8(str);
+                const obj = JSON.parse(jsonStr);
                 Object.assign(saveData, obj);
                 saveData.save();
-                alert('ロード成功！');
-            } catch(e) { alert('不正なコードです。'); }
+                if(msgEl) {
+                    msgEl.style.color = '#2ecc71';
+                    msgEl.innerText = 'データをロードしました！';
+                }
+            } catch(e) {
+                if(msgEl) {
+                    msgEl.style.color = '#e74c3c';
+                    msgEl.innerText = '不正なコードです。';
+                }
+            }
+        } else {
+            if(msgEl) {
+                msgEl.style.color = '#e74c3c';
+                msgEl.innerText = 'コードを入力してください。';
+            }
         }
     }
 };

@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>青鬼オンライン 外伝 - 夏の塔</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --text-color: #ecf0f1;
+            --ui-bg: rgba(0, 0, 0, 0.85);
+            --btn-bg: linear-gradient(to bottom, #3498db, #2980b9);
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
+        body, html { width: 100%; height: 100%; background-color: #000; overflow: hidden; font-family: 'Helvetica Neue', Arial, sans-serif; color: var(--text-color); }
+
+        #game-container { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background-color: #111; }
+        #game-canvas { display: block; image-rendering: pixelated; z-index: 10; position: absolute; top:0; left:0; width: 100%; height: 100%; }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .shake-active { animation: shake 0.3s ease-in-out; }
+
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--ui-bg); z-index: 100; transition: opacity 0.3s ease; }
+        .hidden { display: none !important; }
+
+        h1, h2 { text-shadow: 0 0 10px rgba(255,255,255,0.5); text-align: center; margin: 10px; }
+        h1 { font-size: 3rem; color: #3498db; }
+        h2 { font-size: 2rem; color: #f1c40f; }
+
+        .btn { padding: 12px 30px; font-size: 1.2rem; font-weight: bold; color: white; background: var(--btn-bg); border: 2px solid #fff; border-radius: 25px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin: 10px; transition: transform 0.1s; }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { background: #555; border-color: #333; cursor: not-allowed; opacity: 0.7; }
+        .btn.red { background: linear-gradient(to bottom, #e74c3c, #c0392b); }
+        .btn.green { background: linear-gradient(to bottom, #2ecc71, #27ae60); }
+        .btn.purple { background: linear-gradient(to bottom, #9b59b6, #8e44ad); }
+
+        #home-screen {
+            background-color: #0b192c;
+            background-image: linear-gradient(0deg, transparent 24%, rgba(52, 152, 219, 0.15) 25%, rgba(52, 152, 219, 0.15) 26%, transparent 27%, transparent 74%, rgba(52, 152, 219, 0.15) 75%, rgba(52, 152, 219, 0.15) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(52, 152, 219, 0.15) 25%, rgba(52, 152, 219, 0.15) 26%, transparent 27%, transparent 74%, rgba(52, 152, 219, 0.15) 75%, rgba(52, 152, 219, 0.15) 76%, transparent 77%, transparent);
+            background-size: 50px 50px; display: flex; flex-direction: column; justify-content: space-between;
+        }
+        
+        #home-header { width: 100%; padding: 15px; display: flex; justify-content: space-between; align-items: flex-start; background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%); position: absolute; top: 0; left: 0; z-index: 20; }
+        .player-info { display: flex; align-items: center; background: rgba(11, 30, 54, 0.8); border: 2px solid #2980b9; border-radius: 30px; padding: 5px 15px; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.5); cursor: pointer;}
+        .player-rank { background: #f39c12; color: #000; font-weight: 900; padding: 2px 8px; border-radius: 10px; font-size: 0.9rem;}
+        .player-name { font-weight: bold; color: #fff;}
+        .currency-container { display: flex; flex-direction: column; gap: 5px; }
+        .currency-box { background: rgba(0,0,0,0.7); border: 2px solid #f1c40f; border-radius: 20px; padding: 5px 15px; color: #f1c40f; font-weight: bold; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.5);}
+
+        #home-bottom-menu { width: 100%; padding: 20px; display: flex; flex-direction: column; gap: 12px; align-items: center; background: linear-gradient(0deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 80%, transparent 100%); z-index: 10; padding-bottom: 30px; }
+        .banner-btn { width: 95%; max-width: 450px; border: none; border-radius: 15px; padding: 15px 20px; text-align: left; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; justify-content: center; }
+        .banner-btn:active { transform: scale(0.96); }
+        .banner-title { font-size: 1.8rem; font-weight: 900; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); }
+        .banner-sub { font-size: 1rem; color: #fff; font-weight: bold; opacity: 0.9;}
+        .mode-summer { background: linear-gradient(135deg, #0984e3, #74b9ff); border: 3px solid #81ecec; height: 100px; }
+
+        #summer-tower-screen {
+            background: url('images.jpeg') center/cover no-repeat; /* Fallback or styling */
+            background-color: #001f3f; 
+        }
+        .tower-floors-list { display: flex; flex-direction: column; gap: 15px; width: 90%; max-width: 500px; max-height: 60vh; overflow-y: auto; padding: 10px; }
+        .floor-card { background: rgba(0,0,0,0.7); border: 2px solid #3498db; border-radius: 10px; padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; transition: 0.2s; }
+        .floor-card.locked { filter: grayscale(100%); opacity: 0.6; border-color: #555; pointer-events: none; }
+        .floor-card.boss { border: 2px solid #e74c3c; animation: pulseRed 2s infinite; background: rgba(50,0,0,0.8); }
+        @keyframes pulseRed { 0% { box-shadow: 0 0 5px #e74c3c; } 50% { box-shadow: 0 0 20px #e74c3c; } 100% { box-shadow: 0 0 5px #e74c3c; } }
+        
+        .floor-info h3 { font-size: 1.5rem; margin-bottom: 5px; }
+        .floor-info p { font-size: 0.9rem; color: #ccc; }
+        .floor-status { display: flex; flex-direction: column; align-items: flex-end; }
+        .timer-text { font-size: 0.85rem; color: #f39c12; margin-top: 5px; font-weight: bold; }
+        
+        .danger-neon { color: #ff0000; text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000; font-weight: 900; letter-spacing: 2px; }
+
+        #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+        .hud-top { position: absolute; top: 10px; width: 100%; display: flex; justify-content: center; font-size: 1.5rem; font-weight: bold; color: white; text-shadow: 2px 2px 4px #000; }
+        #timer-panel { color: #f1c40f; }
+        #joystick-zone { position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px; background: rgba(255,255,255,0.15); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); pointer-events: auto; touch-action: none; }
+        #joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(255,255,255,0.6); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        
+        /* Modal */
+        .modal-box { background: rgba(0, 0, 0, 0.9); border: 2px solid #3498db; padding: 30px; border-radius: 15px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.8);}
+        textarea { width: 100%; padding: 10px; height: 100px; margin: 10px 0; border-radius: 5px; border: 1px solid #7f8c8d; background: #2c3e50; color: #fff; resize: none; font-family: monospace; }
+        input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #7f8c8d; background: #2c3e50; color: #fff; }
+    </style>
+</head>
+<body>
+
+<main id="game-container">
+    <canvas id="game-canvas"></canvas>
+
+    <aside id="hud" class="hidden">
+        <section class="hud-top">
+            <span id="timer-panel" class="hidden">03:00</span>
+            <span id="info-panel" style="margin-left: 20px;"></span>
+        </section>
+        <section id="joystick-zone"><figure id="joystick-knob"></figure></section>
+    </aside>
+
+    <section id="title-screen" class="overlay">
+        <h1 style="font-size: 3rem; letter-spacing: 5px;">青鬼オンライン外伝<br><span style="color:#0984e3; font-size:2.5rem;">夏の塔</span></h1>
+        <p style="font-size: 1.5rem; margin-top: 30px; animation: blink 1.5s infinite;">画面をタップしてスタート</p>
+        <style>@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }</style>
+    </section>
+
+    <section id="home-screen" class="overlay hidden">
+        <header id="home-header">
+            <section class="player-info" onclick="uiManager.showScreen('name-edit-screen')">
+                <p class="player-rank">Lv.MAX</p>
+                <p class="player-name" id="ui-player-name">ゲスト</p>
+            </section>
+        </header>
+
+        <div style="flex-grow: 1; display:flex; justify-content: center; align-items: center; flex-direction: column;">
+            <p style="font-size: 6rem; filter: drop-shadow(0 10px 5px rgba(0,0,0,0.5)); animation: float 3s ease-in-out infinite;">👦</p>
+        </div>
+        <style>@keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }</style>
+
+        <nav id="home-bottom-menu">
+            <button class="banner-btn mode-summer" onclick="uiManager.openSummerTowerMenu()">
+                <span class="banner-title">夏の塔</span>
+                <span class="banner-sub">最上階のサマードラゴンを倒せ</span>
+            </button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" onclick="uiManager.showScreen('save-load-screen')">データ引継ぎ</button>
+            </div>
+        </nav>
+    </section>
+
+    <section id="summer-tower-screen" class="overlay hidden">
+        <h2 style="color: #81ecec; margin-bottom: 20px;">夏の塔 - 階層選択</h2>
+        <div class="tower-floors-list" id="tower-floors-container">
+            <!-- 動的に生成される -->
+        </div>
+        <button class="btn red" style="margin-top: 20px;" onclick="uiManager.showScreen('home-screen')">ホームへ戻る</button>
+    </section>
+
+    <section id="save-load-screen" class="overlay hidden">
+        <article class="modal-box">
+            <h2>データ引継ぎ</h2>
+            <p style="font-size: 0.9rem; margin-bottom:10px;">コードをコピーしてバックアップしてください。</p>
+            <textarea id="save-data-text" placeholder="ここにセーブコードが表示されます"></textarea>
+            <button class="btn" onclick="uiManager.exportSave()">コード発行/コピー</button>
+            <button class="btn green" onclick="uiManager.importSave()">コードからロード</button>
+            <br>
+            <button class="btn red" style="margin-top: 20px;" onclick="uiManager.showScreen('home-screen')">閉じる</button>
+        </article>
+    </section>
+
+    <section id="name-edit-screen" class="overlay hidden">
+        <article class="modal-box">
+            <h2>名前変更</h2>
+            <input type="text" id="name-input" maxlength="10" placeholder="新しい名前を入力">
+            <button class="btn green" onclick="uiManager.changeName()">決定</button>
+            <button class="btn red" onclick="uiManager.showScreen('home-screen')">キャンセル</button>
+        </article>
+    </section>
+
+    <section id="result-screen" class="overlay hidden">
+        <h2 id="result-title" style="font-size: 4rem; margin-bottom: 0;"></h2>
+        <p id="result-desc" style="font-size: 1.5rem; margin: 20px; text-align: center; font-weight:bold;"></p>
+        <p id="result-time" style="font-size: 2rem; margin-bottom: 30px; color:#f1c40f; font-weight:bold;"></p>
+        <button class="btn" onclick="uiManager.showScreen('summer-tower-screen')">塔へ戻る</button>
+    </section>
+</main>
+
+<script>
+const TILE = { EMPTY: 0, WALL: 1, FLOOR: 2, DOOR: 3, SEA: 4, SHIP: 5, FENCE: 6 };
+const CONFIG = {
+    FPS: 60,
+    TILE_SIZE: 48,
+    PLAYER_SPEED: 180,
+    SUMMER_TOWER: {
+        COLS: 25,
+        ROWS: 25
+    }
+};
+
+const ENEMY_TYPES = {
+    NORMAL: 0,
+    DEEPBLUE: 1,        // 真っ青な青鬼
+    SQUAT_GIANT: 2,     // 巨大スクワット鬼
+    WATER_GUN: 3,       // 水鉄砲青鬼
+    SQUAT_WAVE: 4,      // 巨大スクワット波動鬼
+    SUMMER_DRAGON: 5    // 水龍青鬼(ボス)
+};
+
+const Utils = {
+    random: (min, max) => Math.random() * (max - min) + min,
+    randomInt: (min, max) => Math.floor(Math.random() * (max - min)) + min,
+    distance: (x1, y1, x2, y2) => Math.sqrt((x2-x1)**2 + (y2-y1)**2),
+    checkCollision: (r1, r2) => (r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y)
+};
+
+class SaveData {
+    constructor() {
+        this.playerName = "ゲスト";
+        this.summerTowerFloor = 1; // 1~5, 6 is cleared
+        this.summerTowerNextTime = 0; // 次回挑戦可能時間(ms)
+        this.clearTimes = { 1: "-", 2: "-", 3: "-", 4: "-", 5: "-" };
+        this.load();
+    }
+    save() {
+        try { localStorage.setItem('aooni_summer_v1', JSON.stringify(this)); } catch(e){}
+    }
+    load() {
+        try {
+            const data = localStorage.getItem('aooni_summer_v1');
+            if (data) {
+                const parsed = JSON.parse(data);
+                Object.assign(this, parsed);
+                if(!this.clearTimes) this.clearTimes = { 1: "-", 2: "-", 3: "-", 4: "-", 5: "-" };
+            }
+        } catch(e){}
+    }
+    recordClear(floor, timeStr) {
+        if (!this.clearTimes[floor] || this.clearTimes[floor] === "-" || timeStr < this.clearTimes[floor]) {
+            this.clearTimes[floor] = timeStr;
+        }
+        if (this.summerTowerFloor === floor) {
+            this.summerTowerFloor++;
+            // 24時間後に次を解放 (24 * 60 * 60 * 1000)
+            this.summerTowerNextTime = Date.now() + (24 * 60 * 60 * 1000); 
+        }
+        this.save();
+    }
+}
+const saveData = new SaveData();
+
+class MapGenerator {
+    static generateMaze(cols, rows) {
+        let grid = Array.from({length: rows}, () => Array(cols).fill(TILE.WALL));
+        let startX = 1, startY = 1;
+        grid[startY][startX] = TILE.FLOOR;
+        let stack = [{x: startX, y: startY}];
+        const dirs = [[0,-2],[2,0],[0,2],[-2,0]];
+        
+        while(stack.length > 0) {
+            let curr = stack[stack.length - 1];
+            let unvisited = [];
+            for(let d of dirs) {
+                let nx = curr.x + d[0], ny = curr.y + d[1];
+                if(nx > 0 && nx < cols-1 && ny > 0 && ny < rows-1 && grid[ny][nx] === TILE.WALL) {
+                    unvisited.push(d);
+                }
+            }
+            if(unvisited.length > 0) {
+                let dir = unvisited[Math.floor(Math.random() * unvisited.length)];
+                grid[curr.y + dir[1]/2][curr.x + dir[0]/2] = TILE.FLOOR;
+                grid[curr.y + dir[1]][curr.x + dir[0]] = TILE.FLOOR;
+                stack.push({x: curr.x + dir[0], y: curr.y + dir[1]});
+            } else {
+                stack.pop();
+            }
+        }
+        
+        // Ensure center is a room for the door
+        let cx = Math.floor(cols/2), cy = Math.floor(rows/2);
+        for(let y=cy-1; y<=cy+1; y++){
+            for(let x=cx-1; x<=cx+1; x++){
+                grid[y][x] = TILE.FLOOR;
+            }
+        }
+        return grid;
+    }
+
+    static generateWideRoom(cols, rows) {
+        let grid = Array.from({length: rows}, () => Array(cols).fill(TILE.WALL));
+        for(let y=1; y<rows-1; y++) {
+            for(let x=1; x<cols-1; x++) grid[y][x] = TILE.FLOOR;
+        }
+        return grid;
+    }
+
+    static generatePrisonRoom(cols, rows) {
+        let grid = this.generateWideRoom(cols, rows);
+        // 牢屋の配置: 上中央、左下、右下
+        const prisons = [
+            { x: Math.floor(cols/2)-2, y: 2 },
+            { x: 2, y: rows-6 },
+            { x: cols-6, y: rows-6 }
+        ];
+        prisons.forEach(p => {
+            for(let y=p.y; y<p.y+4; y++) {
+                for(let x=p.x; x<p.x+4; x++) {
+                    if(y===p.y || y===p.y+3 || x===p.x || x===p.x+3) grid[y][x] = TILE.FENCE;
+                    else grid[y][x] = TILE.FLOOR;
+                }
+            }
+        });
+        return { grid, prisons };
+    }
+
+    static generateShip(cols, rows) {
+        let grid = Array.from({length: rows}, () => Array(cols).fill(TILE.WALL));
+        let seaBoundary = Math.floor(rows / 4);
+        
+        for(let y=0; y<rows; y++) {
+            for(let x=0; x<cols; x++) {
+                if(y < seaBoundary) grid[y][x] = TILE.SEA;
+                else {
+                    // 船の形 (左右を削る)
+                    let inset = Math.floor(Math.abs(y - rows/2) / 3);
+                    if (y >= rows - 2) inset = cols; // 船尾を丸める
+                    if (x > inset && x < cols - inset - 1) grid[y][x] = TILE.SHIP;
+                    else grid[y][x] = TILE.SEA; // 外側は海
+                }
+            }
+        }
+        return { grid, seaBoundary };
+    }
+
+    static getRandomFloor(grid, cols, rows, margin = 1) {
+        let max = 1000;
+        while(max-- > 0) {
+            let x = Utils.randomInt(margin, cols-margin);
+            let y = Utils.randomInt(margin, rows-margin);
+            if (grid[y][x] === TILE.FLOOR) return {x, y};
+        }
+        return {x: Math.floor(cols/2), y: Math.floor(rows/2)};
+    }
+}
+
+class Pathfinder {
+    static findPath(grid, startX, startY, goalX, goalY) {
+        const rows = grid.length, cols = grid[0].length;
+        const queue = [{x: startX, y: startY, path: []}];
+        const visited = new Set();
+        visited.add(`${startX},${startY}`);
+        const dirs = [{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}];
+        let steps = 0;
+
+        while(queue.length > 0 && steps < 150) { 
+            let curr = queue.shift();
+            steps++;
+            if(curr.x === goalX && curr.y === goalY) return curr.path;
+
+            for(let d of dirs) {
+                let nx = curr.x + d.x, ny = curr.y + d.y;
+                if(nx>=0 && nx<cols && ny>=0 && ny<rows && (grid[ny][nx] === TILE.FLOOR || grid[ny][nx] === TILE.SHIP)) {
+                    let key = `${nx},${ny}`;
+                    if(!visited.has(key)) {
+                        visited.add(key);
+                        queue.push({x: nx, y: ny, path: [...curr.path, {x:nx, y:ny}]});
+                    }
+                }
+            }
+        }
+        return [];
+    }
+}
+
+class Entity {
+    constructor(x, y, w, h) { this.x = x; this.y = y; this.w = w; this.h = h; this.isDead = false; }
+    getRect() { return { x: this.x, y: this.y, w: this.w, h: this.h }; }
+    getCenter() { return { x: this.x + this.w/2, y: this.y + this.h/2 }; }
+}
+
+class Player extends Entity {
+    constructor(x, y) {
+        super(x, y, 24, 24);
+        this.speed = CONFIG.PLAYER_SPEED;
+        this.dir = 0;
+        this.isMoving = false;
+        this.anim = 0;
+        this.hasCannonball = false;
+    }
+
+    update(dt, grid, cols, rows) {
+        if (this.isDead) return;
+        if (this.isMoving) this.anim += dt * 10;
+        else this.anim = 0;
+    }
+
+    move(dx, dy, grid, cols, rows) {
+        if(this.isDead) return;
+        if (dx === 0 && dy === 0) { this.isMoving = false; return; }
+
+        this.isMoving = true;
+        if(Math.abs(dx) > Math.abs(dy)) this.dir = dx > 0 ? 2 : 1;
+        else this.dir = dy > 0 ? 0 : 3;
+
+        let len = Math.sqrt(dx*dx + dy*dy);
+        if(len === 0) return;
+
+        let vx = (dx/len) * this.speed * game.deltaTime;
+        let vy = (dy/len) * this.speed * game.deltaTime;
+
+        this.x += vx;
+        if(this.checkWall(grid, cols, rows)) this.x -= vx;
+        this.y += vy;
+        if(this.checkWall(grid, cols, rows)) this.y -= vy;
+    }
+
+    checkWall(grid, cols, rows) {
+        let left = Math.floor(this.x / CONFIG.TILE_SIZE), right = Math.floor((this.x + this.w) / CONFIG.TILE_SIZE);
+        let top = Math.floor(this.y / CONFIG.TILE_SIZE), bottom = Math.floor((this.y + this.h) / CONFIG.TILE_SIZE);
+        if(left<0 || right>=cols || top<0 || bottom>=rows) return true;
+        
+        let tl = grid[top][left], tr = grid[top][right], bl = grid[bottom][left], br = grid[bottom][right];
+        const isSolid = (t) => t === TILE.WALL || t === TILE.SEA || t === TILE.FENCE || t === TILE.DOOR;
+        return isSolid(tl) || isSolid(tr) || isSolid(bl) || isSolid(br);
+    }
+
+    draw(ctx) {
+        if(this.isDead) return;
+        let bob = this.isMoving ? Math.sin(this.anim)*3 : 0;
+        let cx = this.x - 8, cy = this.y - 24;
+
+        // Shadow
+        ctx.fillStyle = "rgba(0,0,0,0.3)";
+        ctx.beginPath(); ctx.ellipse(this.x+this.w/2, this.y+this.h, 12, 4, 0, 0, Math.PI*2); ctx.fill();
+
+        // Body
+        ctx.fillStyle = "#3498db"; 
+        ctx.fillRect(cx+8, cy+16+bob, 24, 24);
+        ctx.fillStyle = "#FFDCB6";
+        ctx.fillRect(cx+6, cy+bob, 28, 20);
+        
+        // Eyes
+        ctx.fillStyle = "#000";
+        if(this.dir===0 || this.dir===2) ctx.fillRect(cx+18, cy+8+bob, 4, 4);
+        if(this.dir===0 || this.dir===1) ctx.fillRect(cx+10, cy+8+bob, 4, 4);
+
+        // Icon
+        ctx.font = "20px Arial";
+        ctx.fillText("👦", this.x - 6, this.y - 35 + bob);
+
+        if(this.hasCannonball) {
+            ctx.fillStyle = "#333";
+            ctx.beginPath(); ctx.arc(this.x+this.w/2, this.y-10+bob, 8, 0, Math.PI*2); ctx.fill();
+        }
+    }
+}
+
+class Projectile extends Entity {
+    constructor(x, y, vx, vy, type, life) {
+        super(x, y, 16, 16);
+        this.vx = vx; this.vy = vy; this.type = type; this.life = life;
+        this.radius = 0; // For wave
+    }
+    
+    update(dt) {
+        this.life -= dt;
+        if(this.type === 'WATER' || this.type === 'CANNON') {
+            this.x += this.vx * dt;
+            this.y += this.vy * dt;
+        } else if (this.type === 'WAVE_BLUE' || this.type === 'WAVE_ORANGE') {
+            this.radius += 150 * dt; // 広がる速度
+            this.w = this.radius * 2; this.h = this.radius * 2;
+            this.x -= (150 * dt); this.y -= (150 * dt); // 中心を維持
+        }
+    }
+
+    draw(ctx) {
+        if (this.type === 'WATER') {
+            ctx.fillStyle = "rgba(52, 152, 219, 0.8)";
+            ctx.beginPath(); ctx.arc(this.x+8, this.y+8, 8, 0, Math.PI*2); ctx.fill();
+        } else if (this.type === 'CANNON') {
+            ctx.fillStyle = "#333";
+            ctx.beginPath(); ctx.arc(this.x+8, this.y+8, 8, 0, Math.PI*2); ctx.fill();
+        } else if (this.type === 'WAVE_BLUE' || this.type === 'WAVE_ORANGE') {
+            ctx.strokeStyle = this.type === 'WAVE_BLUE' ? "rgba(52,152,219,0.7)" : "rgba(230,126,34,0.7)";
+            ctx.lineWidth = 5;
+            ctx.beginPath(); ctx.arc(this.x+this.radius, this.y+this.radius, this.radius, 0, Math.PI*2); ctx.stroke();
+        }
+    }
+}
+
+class GameObject extends Entity {
+    constructor(x, y, w, h, type) {
+        super(x, y, w, h);
+        this.type = type; 
+        this.active = false;
+        this.visible = true;
+    }
+    
+    draw(ctx) {
+        if(!this.visible) return;
+        if (this.type === 'BUTTON') {
+            ctx.fillStyle = this.active ? "#2ecc71" : "#e74c3c";
+            ctx.fillRect(this.x+4, this.y+4, this.w-8, this.h-8);
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            ctx.fillRect(this.x+4, this.y+4, this.w-8, this.h/2);
+        } else if (this.type === 'STATUE') {
+            ctx.fillStyle = "#7f8c8d";
+            ctx.fillRect(this.x, this.y, this.w, this.h);
+            ctx.font = "24px Arial"; ctx.fillText("🗿", this.x+8, this.y+30);
+        } else if (this.type === 'SWITCH') {
+            ctx.fillStyle = this.active ? "#f1c40f" : "#95a5a6";
+            ctx.beginPath(); ctx.arc(this.x+this.w/2, this.y+this.h/2, this.w/2-4, 0, Math.PI*2); ctx.fill();
+        } else if (this.type === 'CANNON') {
+            ctx.fillStyle = "#2c3e50";
+            ctx.fillRect(this.x, this.y, this.w, this.h);
+            ctx.fillStyle = "#000";
+            ctx.fillRect(this.x+10, this.y-10, this.w-20, 20); // 砲身
+        } else if (this.type === 'CANNONBALL_PILE') {
+            ctx.fillStyle = "#333";
+            ctx.beginPath(); ctx.arc(this.x+10, this.y+20, 10, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x+30, this.y+20, 10, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x+20, this.y+10, 10, 0, Math.PI*2); ctx.fill();
+        }
+    }
+}
+
+class EnemyOni extends Entity {
+    constructor(x, y, type) {
+        super(x, y, 32, 32);
+        this.type = type;
+        this.speed = 185; // 真っ青な青鬼はプレイヤー(180)より少し速い
+        this.dir = 0;
+        this.anim = 0;
+        this.path = [];
+        this.stateTimer = 0;
+        this.isStunned = false; // 4階クリア時用
+        this.scale = 1;
+        this.initType();
+    }
+
+    initType() {
+        if (this.type === ENEMY_TYPES.SQUAT_GIANT) {
+            this.w = 64; this.h = 64; this.speed = 140; this.scale = 2;
+        } else if (this.type === ENEMY_TYPES.WATER_GUN || this.type === ENEMY_TYPES.SQUAT_WAVE) {
+            this.speed = 0; // 牢屋から動かない
+            if (this.type === ENEMY_TYPES.SQUAT_WAVE) { this.w = 64; this.h = 64; this.scale = 2; }
+        }
+    }
+
+    update(dt, game) {
+        if(this.isStunned) return;
+        this.anim += dt * 8;
+        this.stateTimer -= dt;
+
+        let pc = game.player.getCenter();
+        let myCenter = this.getCenter();
+        
+        // 当たり判定 (波動鬼や水鉄砲鬼は直接触れてもアウト)
+        if(Utils.checkCollision(this.getRect(), game.player.getRect())) {
+            game.killPlayer("青鬼に捕食された");
+        }
+
+        if (this.type === ENEMY_TYPES.DEEPBLUE) {
+            this.chasePlayer(dt, game);
+        } 
+        else if (this.type === ENEMY_TYPES.SQUAT_GIANT) {
+            this.chasePlayer(dt, game);
+            if (this.stateTimer <= 0) {
+                // スクワットジャンプ着地
+                game.shakeScreen();
+                this.stateTimer = 2.0; // 2秒おき
+            }
+        }
+        else if (this.type === ENEMY_TYPES.WATER_GUN) {
+            // 水鉄砲発射
+            if (this.stateTimer <= 0) {
+                let dx = pc.x - myCenter.x, dy = pc.y - myCenter.y;
+                let len = Math.sqrt(dx*dx + dy*dy);
+                if (len > 0) {
+                    let vx = (dx/len) * 300, vy = (dy/len) * 300;
+                    game.projectiles.push(new Projectile(myCenter.x-8, myCenter.y-8, vx, vy, 'WATER', 5.0));
+                }
+                this.stateTimer = 1.5;
+            }
+        }
+        else if (this.type === ENEMY_TYPES.SQUAT_WAVE) {
+            // 波動発生
+            if (this.stateTimer <= 0) {
+                game.shakeScreen();
+                let isBlue = Math.random() > 0.5;
+                let waveType = isBlue ? 'WAVE_BLUE' : 'WAVE_ORANGE';
+                game.projectiles.push(new Projectile(myCenter.x, myCenter.y, 0, 0, waveType, 4.0));
+                this.stateTimer = 3.0;
+            }
+        }
+    }
+
+    chasePlayer(dt, game) {
+        if(this.stateTimer <= 0) {
+            let sx = Math.floor((this.x + this.w/2)/CONFIG.TILE_SIZE), sy = Math.floor((this.y + this.h/2)/CONFIG.TILE_SIZE);
+            let gx = Math.floor((game.player.x + game.player.w/2)/CONFIG.TILE_SIZE), gy = Math.floor((game.player.y + game.player.h/2)/CONFIG.TILE_SIZE);
+            this.path = Pathfinder.findPath(game.grid, sx, sy, gx, gy);
+            this.stateTimer = 0.5;
+        }
+        if(this.path && this.path.length > 0) {
+            let next = this.path[0];
+            let tx = next.x * CONFIG.TILE_SIZE + (CONFIG.TILE_SIZE - this.w)/2;
+            let ty = next.y * CONFIG.TILE_SIZE + (CONFIG.TILE_SIZE - this.h)/2;
+            let dx = tx - this.x, dy = ty - this.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            
+            if(dist < 5) this.path.shift();
+            else {
+                let vx = (dx/dist) * this.speed * dt, vy = (dy/dist) * this.speed * dt;
+                
+                this.x += vx;
+                if(this.checkWall(game.grid, game.cols, game.rows)) this.x -= vx;
+                
+                this.y += vy;
+                if(this.checkWall(game.grid, game.cols, game.rows)) this.y -= vy;
+                
+                if (Math.abs(dx) > Math.abs(dy)) this.dir = dx > 0 ? 2 : 1; else this.dir = dy > 0 ? 0 : 3;
+            }
+        }
+    }
+
+    checkWall(grid, cols, rows) {
+        let cx = this.x + this.w/2;
+        let cy = this.y + this.h/2;
+        let margin = 10; 
+        let left = Math.floor((cx - margin) / CONFIG.TILE_SIZE);
+        let right = Math.floor((cx + margin) / CONFIG.TILE_SIZE);
+        let top = Math.floor((cy - margin) / CONFIG.TILE_SIZE);
+        let bottom = Math.floor((cy + margin) / CONFIG.TILE_SIZE);
+        
+        if(left<0 || right>=cols || top<0 || bottom>=rows) return true;
+        
+        let tl = grid[top][left], tr = grid[top][right], bl = grid[bottom][left], br = grid[bottom][right];
+        const isSolid = (t) => t === TILE.WALL || t === TILE.SEA || t === TILE.FENCE || t === TILE.DOOR;
+        return isSolid(tl) || isSolid(tr) || isSolid(bl) || isSolid(br);
+    }
+
+    draw(ctx) {
+        if(this.isStunned) {
+            ctx.save();
+            ctx.translate(this.x + this.w/2, this.y + this.h/2);
+            ctx.rotate(Math.PI / 2); // 横に倒れる
+            ctx.translate(-(this.x + this.w/2), -(this.y + this.h/2));
+        }
+
+        let cx = this.x - (12 * this.scale), cy = this.y - (40 * this.scale);
+        let bob = Math.sin(this.anim)*5;
+        
+        // スクワットの沈み込み表現
+        if ((this.type === ENEMY_TYPES.SQUAT_GIANT || this.type === ENEMY_TYPES.SQUAT_WAVE) && this.stateTimer < 0.3) {
+            bob += 20; 
+        }
+
+        let headW = 56 * this.scale, headH = 40 * this.scale;
+        let bodyW = 40 * this.scale, bodyH = 42 * this.scale;
+
+        ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath(); ctx.ellipse(this.x+this.w/2, this.y+this.h, this.w/2, this.h/4, 0, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = '#0000cd'; // 真っ青な青鬼ベースカラー
+        if(this.type === ENEMY_TYPES.SQUAT_GIANT || this.type === ENEMY_TYPES.SQUAT_WAVE) ctx.fillStyle = '#27ae60';
+        
+        ctx.fillRect(cx+(headW-bodyW)/2, cy+30*this.scale+bob, bodyW, bodyH); // Body
+        ctx.fillRect(cx, cy+bob, headW, headH); // Head
+
+        // Eyes
+        ctx.fillStyle = "#fff";
+        let eSize = 12 * this.scale;
+        ctx.fillRect(cx+10*this.scale, cy+15*this.scale+bob, eSize, eSize); 
+        ctx.fillRect(cx+34*this.scale, cy+15*this.scale+bob, eSize, eSize);
+        ctx.fillStyle = "#000";
+        ctx.fillRect(cx+14*this.scale, cy+18*this.scale+bob, 4*this.scale, 4*this.scale); 
+        ctx.fillRect(cx+38*this.scale, cy+18*this.scale+bob, 4*this.scale, 4*this.scale);
+        
+        // Mouth
+        ctx.fillRect(cx+18*this.scale, cy+32*this.scale+bob, 20*this.scale, 6*this.scale);
+
+        // 銃 (水鉄砲鬼)
+        if (this.type === ENEMY_TYPES.WATER_GUN) {
+            ctx.font = "24px Arial";
+            ctx.fillText("🔫", this.x + 20, this.y + 10 + bob);
+        }
+
+        if(this.isStunned) ctx.restore();
+    }
+}
+
+class SummerDragon extends Entity {
+    constructor(x, y) {
+        super(x, y, 100, 100);
+        this.hp = 10;
+        this.state = 'MOVE'; // MOVE, ATK1, ATK2, ATK3, ATK4
+        this.stateTimer = 2.0;
+        this.anim = 0;
+        this.targetX = x;
+        this.atkSubTimer = 0;
+        this.atkStep = 0;
+    }
+
+    update(dt, game) {
+        this.anim += dt * 5;
+        this.stateTimer -= dt;
+
+        if (this.state === 'MOVE') {
+            let dx = this.targetX - this.x;
+            if(Math.abs(dx) > 5) {
+                this.x += Math.sign(dx) * 150 * dt;
+            } else {
+                if (this.stateTimer <= 0) {
+                    this.pickAttack();
+                } else if(Math.random() < 0.02) {
+                    this.targetX = Utils.random(100, game.cols*CONFIG.TILE_SIZE - 200);
+                }
+            }
+        } 
+        else {
+            this.executeAttack(dt, game);
+        }
+    }
+
+    pickAttack() {
+        let r = Math.random();
+        if(r < 0.25) { this.state = 'ATK1'; this.stateTimer = 4.0; this.atkStep = 0; } // 雷
+        else if(r < 0.5) { this.state = 'ATK2'; this.stateTimer = 3.0; this.atkStep = 0; } // 円形水球
+        else if(r < 0.75) { this.state = 'ATK3'; this.stateTimer = 5.0; this.atkSubTimer = 0; } // 水破壊ビーム
+        else { this.state = 'ATK4'; this.stateTimer = 5.0; this.atkSubTimer = 0; } // 連続水球
+    }
+
+    executeAttack(dt, game) {
+        let pc = game.player.getCenter();
+        let mc = this.getCenter();
+
+        if (this.state === 'ATK1') {
+            // 雷: 最初の瞬間に8マス警告、3秒後に判定
+            if (this.atkStep === 0) {
+                this.thunderSpots = [];
+                for(let i=0; i<8; i++) {
+                    this.thunderSpots.push({
+                        x: Utils.randomInt(2, game.cols-2) * CONFIG.TILE_SIZE,
+                        y: Utils.randomInt(game.seaBoundary+1, game.rows-2) * CONFIG.TILE_SIZE,
+                        w: CONFIG.TILE_SIZE, h: CONFIG.TILE_SIZE
+                    });
+                }
+                this.atkStep = 1;
+            }
+            if (this.stateTimer <= 1.0 && this.atkStep === 1) {
+                // 判定
+                game.shakeScreen();
+                this.thunderSpots.forEach(s => {
+                    if (Utils.checkCollision(s, game.player.getRect())) {
+                        game.killPlayer("水龍青鬼の雷に撃たれた");
+                    }
+                });
+                this.atkStep = 2; // フェードアウト用
+            }
+            if (this.stateTimer <= 0) this.state = 'MOVE';
+        }
+        else if (this.state === 'ATK2') {
+            // 水球 (円を描く)
+            this.atkSubTimer += dt;
+            if (this.atkSubTimer > 0.1) {
+                this.atkSubTimer = 0;
+                this.atkStep += 0.5; // angle
+                let vx = Math.cos(this.atkStep) * 200, vy = Math.sin(this.atkStep) * 200;
+                game.projectiles.push(new Projectile(mc.x, mc.y, vx, vy, 'WATER', 4.0));
+            }
+            if (this.stateTimer <= 0) this.state = 'MOVE';
+        }
+        else if (this.state === 'ATK3') {
+            // 水破壊 (ビーム) + 狙い水球
+            if (!this.beamX) this.beamX = mc.x - 120; // 幅5マス分
+            this.atkSubTimer -= dt;
+            if(this.atkSubTimer <= 0) {
+                // 狙い水球
+                let dx = pc.x - mc.x, dy = pc.y - mc.y;
+                let len = Math.sqrt(dx*dx+dy*dy);
+                game.projectiles.push(new Projectile(mc.x, mc.y, (dx/len)*300, (dy/len)*300, 'WATER', 5.0));
+                this.atkSubTimer = 1.0;
+            }
+            // ビーム判定
+            let beamRect = { x: this.beamX, y: mc.y + 50, w: 240, h: 2000 };
+            if(Utils.checkCollision(beamRect, game.player.getRect())) game.killPlayer("水龍青鬼の激流に呑まれた");
+            
+            if (this.stateTimer <= 0) { this.beamX = null; this.state = 'MOVE'; }
+        }
+        else if (this.state === 'ATK4') {
+            // 狙い連続水球 (5秒間、1秒5発 = 0.2秒間隔)
+            this.atkSubTimer -= dt;
+            if(this.atkSubTimer <= 0) {
+                let dx = pc.x - mc.x, dy = pc.y - mc.y;
+                let len = Math.sqrt(dx*dx+dy*dy);
+                game.projectiles.push(new Projectile(mc.x, mc.y, (dx/len)*400, (dy/len)*400, 'WATER', 5.0));
+                this.atkSubTimer = 0.2;
+            }
+            if (this.stateTimer <= 0) this.state = 'MOVE';
+        }
+    }
+
+    draw(ctx) {
+        let bob = Math.sin(this.anim) * 10;
+        let cx = this.x, cy = this.y + bob;
+        
+        // Dragon Body
+        ctx.fillStyle = "#0984e3";
+        ctx.beginPath();
+        ctx.moveTo(cx+50, cy);
+        ctx.quadraticCurveTo(cx+100, cy-50, cx+150, cy+50);
+        ctx.quadraticCurveTo(cx+50, cy+100, cx, cy+50);
+        ctx.fill();
+
+        // Ao Oni Face (scaled up)
+        ctx.fillStyle = "#3498db";
+        ctx.fillRect(cx+10, cy+20, 80, 60);
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(cx+20, cy+40, 15, 15); ctx.fillRect(cx+65, cy+40, 15, 15);
+        ctx.fillStyle = "#000";
+        ctx.fillRect(cx+25, cy+45, 5, 5); ctx.fillRect(cx+70, cy+45, 5, 5);
+        ctx.fillRect(cx+35, cy+65, 30, 10); // Mouth
+
+        // Horns
+        ctx.fillStyle = "#f1c40f";
+        ctx.beginPath(); ctx.moveTo(cx+20, cy+20); ctx.lineTo(cx+10, cy-10); ctx.lineTo(cx+40, cy+20); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(cx+80, cy+20); ctx.lineTo(cx+90, cy-10); ctx.lineTo(cx+60, cy+20); ctx.fill();
+
+        // Draw Attacks warning
+        if (this.state === 'ATK1' && this.atkStep === 1) {
+            ctx.fillStyle = "rgba(241, 196, 15, 0.4)";
+            this.thunderSpots.forEach(s => {
+                ctx.fillRect(s.x, s.y, s.w, s.h);
+                if(this.stateTimer < 3.8) {
+                    ctx.font = "30px Arial"; ctx.fillText("⚡", s.x+10, s.y+35);
+                }
+            });
+        }
+        else if (this.state === 'ATK3' && this.beamX) {
+            ctx.fillStyle = "rgba(41, 128, 185, 0.6)";
+            ctx.fillRect(this.beamX, this.y + 100, 240, 2000); // ビーム描画
+        }
+        
+        // HP Bar
+        ctx.fillStyle = "red";
+        ctx.fillRect(cx, cy - 20, 100, 10);
+        ctx.fillStyle = "green";
+        ctx.fillRect(cx, cy - 20, (this.hp/10)*100, 10);
+    }
+}
+
+class Game {
+    constructor() {
+        this.canvas = document.getElementById('game-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.isRunning = false;
+        this.lastTime = 0;
+        this.keys = {};
+        this.camera = { x: 0, y: 0 };
+        this.setupEvents();
+    }
+
+    setupEvents() {
+        window.addEventListener('resize', () => this.resize());
+        window.addEventListener('keydown', e => this.keys[e.key] = true);
+        window.addEventListener('keyup', e => this.keys[e.key] = false);
+
+        // Touch Joystick
+        const zone = document.getElementById('joystick-zone');
+        const knob = document.getElementById('joystick-knob');
+        let jx=0, jy=0, active=false;
+        
+        const updateKnob = (e) => {
+            if(!active) return;
+            const touch = e.touches ? e.touches[0] : e;
+            const rect = zone.getBoundingClientRect();
+            const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+            let dx = touch.clientX - cx, dy = touch.clientY - cy;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            const maxR = rect.width/2;
+            if(dist > maxR) { dx = (dx/dist)*maxR; dy = (dy/dist)*maxR; }
+            knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            this.joyDelta = {x: dx/maxR, y: dy/maxR};
+        };
+        
+        zone.addEventListener('touchstart', e => { active=true; updateKnob(e); });
+        zone.addEventListener('touchmove', e => { e.preventDefault(); updateKnob(e); }, {passive: false});
+        zone.addEventListener('touchend', () => { active=false; knob.style.transform='translate(-50%, -50%)'; this.joyDelta=null; });
+        zone.addEventListener('mousedown', e => { active=true; updateKnob(e); });
+        window.addEventListener('mousemove', e => { if(active) updateKnob(e); });
+        window.addEventListener('mouseup', () => { active=false; knob.style.transform='translate(-50%, -50%)'; this.joyDelta=null; });
+        
+        this.resize();
+    }
+
+    resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+    }
+
+    shakeScreen() {
+        this.canvas.classList.remove('shake-active');
+        void this.canvas.offsetWidth; // trigger reflow
+        this.canvas.classList.add('shake-active');
+    }
+
+    startSummerTower(floor) {
+        this.floor = floor;
+        this.mode = 'SUMMER_TOWER';
+        this.gameState = 'PLAYING';
+        this.timeElapsed = 0;
+        this.cols = CONFIG.SUMMER_TOWER.COLS;
+        this.rows = CONFIG.SUMMER_TOWER.ROWS;
+        this.projectiles = [];
+        this.objects = [];
+        this.onis = [];
+        
+        document.getElementById('home-screen').classList.add('hidden');
+        document.getElementById('summer-tower-screen').classList.add('hidden');
+        document.getElementById('hud').classList.remove('hidden');
+        document.getElementById('timer-panel').classList.remove('hidden');
+        document.getElementById('info-panel').innerText = `夏の塔 ${floor}階`;
+
+        this.initFloorData(floor);
+        
+        this.player = new Player(this.spawnPoint.x * CONFIG.TILE_SIZE, this.spawnPoint.y * CONFIG.TILE_SIZE);
+        
+        this.isRunning = true;
+        this.lastTime = performance.now();
+        requestAnimationFrame(t => this.loop(t));
+    }
+
+    initFloorData(floor) {
+        if (floor === 1) {
+            this.grid = MapGenerator.generateMaze(this.cols, this.rows);
+            this.spawnPoint = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+            // ギミック: ボタン2つ、中央に扉
+            let b1 = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+            let b2 = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+            this.objects.push(new GameObject(b1.x*CONFIG.TILE_SIZE, b1.y*CONFIG.TILE_SIZE, 48, 48, 'BUTTON'));
+            this.objects.push(new GameObject(b2.x*CONFIG.TILE_SIZE, b2.y*CONFIG.TILE_SIZE, 48, 48, 'BUTTON'));
+            this.door = new GameObject(Math.floor(this.cols/2)*CONFIG.TILE_SIZE, Math.floor(this.rows/2)*CONFIG.TILE_SIZE, 48, 48, 'DOOR');
+            this.grid[Math.floor(this.rows/2)][Math.floor(this.cols/2)] = TILE.DOOR;
+            this.objects.push(this.door);
+            // 敵
+            this.floorTimer = 30.0;
+            this.spawnOni(ENEMY_TYPES.DEEPBLUE);
+        } 
+        else if (floor === 2) {
+            this.cols = 40; this.rows = 40;
+            this.grid = MapGenerator.generateMaze(this.cols, this.rows);
+            this.spawnPoint = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+            // ランダムな角2つにボタン
+            let corners = [{x:1,y:1}, {x:this.cols-2,y:1}, {x:1,y:this.rows-2}, {x:this.cols-2,y:this.rows-2}];
+            corners.sort(()=>Math.random()-0.5);
+            this.objects.push(new GameObject(corners[0].x*CONFIG.TILE_SIZE, corners[0].y*CONFIG.TILE_SIZE, 48, 48, 'BUTTON'));
+            this.objects.push(new GameObject(corners[1].x*CONFIG.TILE_SIZE, corners[1].y*CONFIG.TILE_SIZE, 48, 48, 'BUTTON'));
+            this.floorState = 0; // 0:ボタン押し中, 1:10秒カウント, 2:ゴール出現
+            this.spawnOni(ENEMY_TYPES.SQUAT_GIANT);
+            this.spawnOni(ENEMY_TYPES.SQUAT_GIANT);
+        }
+        else if (floor === 3) {
+            this.grid = MapGenerator.generateWideRoom(this.cols, this.rows);
+            this.spawnPoint = {x: 2, y: this.rows-3};
+            // 敵: 水鉄砲
+            this.spawnOni(ENEMY_TYPES.WATER_GUN, {x: this.cols-3, y: 3});
+            // ギミック: 石像とスイッチ
+            this.statue = new GameObject(Math.floor(this.cols/2)*CONFIG.TILE_SIZE, Math.floor(this.rows/2)*CONFIG.TILE_SIZE, 48, 48, 'STATUE');
+            this.objects.push(this.statue);
+            let s1 = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows, 3);
+            this.switch1 = new GameObject(s1.x*CONFIG.TILE_SIZE, s1.y*CONFIG.TILE_SIZE, 48, 48, 'SWITCH');
+            this.objects.push(this.switch1);
+            this.floorState = 0;
+        }
+        else if (floor === 4) {
+            let data = MapGenerator.generatePrisonRoom(this.cols, this.rows);
+            this.grid = data.grid;
+            this.prisons = data.prisons; // 牢屋の座標リスト
+            this.spawnPoint = {x: Math.floor(this.cols/2), y: Math.floor(this.rows/2)};
+            this.floorTimer = 180.0; // 3分耐久
+            this.oniSpawnTimer = 30.0;
+            this.jailSpawnTimer = 60.0;
+            this.spawnOni(ENEMY_TYPES.DEEPBLUE);
+            this.door = new GameObject(Math.floor(this.cols/2)*CONFIG.TILE_SIZE, 1*CONFIG.TILE_SIZE, 48, 48, 'DOOR');
+            this.grid[1][Math.floor(this.cols/2)] = TILE.DOOR;
+            this.objects.push(this.door);
+        }
+        else if (floor === 5) {
+            this.gameState = 'MOVIE';
+            this.movieTimer = 5.0;
+            let data = MapGenerator.generateShip(this.cols, this.rows);
+            this.grid = data.grid;
+            this.seaBoundary = data.seaBoundary;
+            this.spawnPoint = {x: Math.floor(this.cols/2), y: this.rows - 5};
+            
+            // ギミック配置
+            this.objects.push(new GameObject(Math.floor(this.cols/2)*CONFIG.TILE_SIZE, (this.rows-3)*CONFIG.TILE_SIZE, 48, 48, 'CANNONBALL_PILE'));
+            this.objects.push(new GameObject(5*CONFIG.TILE_SIZE, (this.seaBoundary+1)*CONFIG.TILE_SIZE, 48, 48, 'CANNON'));
+            this.objects.push(new GameObject((this.cols-6)*CONFIG.TILE_SIZE, (this.seaBoundary+1)*CONFIG.TILE_SIZE, 48, 48, 'CANNON'));
+            this.objects.push(new GameObject(Math.floor(this.cols/2)*CONFIG.TILE_SIZE, (this.seaBoundary+1)*CONFIG.TILE_SIZE, 48, 48, 'CANNON'));
+            
+            this.boss = new SummerDragon(Math.floor(this.cols/2)*CONFIG.TILE_SIZE, 2*CONFIG.TILE_SIZE);
+            this.onis.push(this.boss);
+        }
+    }
+
+    spawnOni(type, fixedPos = null) {
+        let pos = fixedPos || MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+        this.onis.push(new EnemyOni(pos.x * CONFIG.TILE_SIZE, pos.y * CONFIG.TILE_SIZE, type));
+    }
+
+    loop(time) {
+        if (!this.isRunning) return;
+        this.deltaTime = Math.min((time - this.lastTime) / 1000, 0.1);
+        this.lastTime = time;
+
+        this.update();
+        this.draw();
+
+        requestAnimationFrame(t => this.loop(t));
+    }
+
+    update() {
+        if(this.gameState === 'MOVIE') {
+            this.movieTimer -= this.deltaTime;
+            if(this.movieTimer <= 0) this.gameState = 'PLAYING';
+            return;
+        }
+
+        this.timeElapsed += this.deltaTime;
+        this.updateHUD();
+
+        let dx = 0, dy = 0;
+        if (this.keys['ArrowUp'] || this.keys['w']) dy = -1;
+        if (this.keys['ArrowDown'] || this.keys['s']) dy = 1;
+        if (this.keys['ArrowLeft'] || this.keys['a']) dx = -1;
+        if (this.keys['ArrowRight'] || this.keys['d']) dx = 1;
+        
+        if (this.joyDelta) {
+            if(Math.abs(this.joyDelta.x) > 0.2) dx = this.joyDelta.x;
+            if(Math.abs(this.joyDelta.y) > 0.2) dy = this.joyDelta.y;
+        }
+
+        this.player.move(dx, dy, this.grid, this.cols, this.rows);
+        this.player.update(this.deltaTime, this.grid, this.cols, this.rows);
+
+        // カメラ追従
+        this.camera.x = this.player.x - this.canvas.width/2 + 12;
+        this.camera.y = this.player.y - this.canvas.height/2 + 12;
+
+        this.projectiles.forEach(p => p.update(this.deltaTime));
+        this.projectiles = this.projectiles.filter(p => p.life > 0);
+
+        // プレイヤーとプロジェクタイル当たり判定
+        this.projectiles.forEach(p => {
+            if(p.type === 'WATER' && Utils.checkCollision(p.getRect(), this.player.getRect())) {
+                this.killPlayer("水鉄砲青鬼の攻撃を受けた");
+            }
+            if((p.type === 'WAVE_BLUE' || p.type === 'WAVE_ORANGE')) {
+                // 円周との接触判定 (雑に距離で判定)
+                let pc = this.player.getCenter();
+                let dist = Utils.distance(p.x+p.radius, p.y+p.radius, pc.x, pc.y);
+                if (Math.abs(dist - p.radius) < 5) {
+                    if (p.type === 'WAVE_BLUE' && this.player.isMoving) this.killPlayer("波動(青)に動いて当たった");
+                    if (p.type === 'WAVE_ORANGE' && !this.player.isMoving) this.killPlayer("波動(橙)に止まって当たった");
+                }
+            }
+            // 大砲の弾がボスに当たるか
+            if (p.type === 'CANNON' && this.floor === 5) {
+                if (Utils.checkCollision(p.getRect(), this.boss.getRect())) {
+                    this.boss.hp -= 1;
+                    p.life = 0; // 消す
+                    if(this.boss.hp <= 0) this.clearFloor();
+                }
+            }
+        });
+
+        this.onis.forEach(o => o.update(this.deltaTime, this));
+
+        this.checkFloorMechanics();
+    }
+
+    checkFloorMechanics() {
+        let pRect = this.player.getRect();
+        
+        if (this.floor === 1) {
+            let activeCount = 0;
+            this.objects.forEach(obj => {
+                if (obj.type === 'BUTTON') {
+                    if(Utils.checkCollision(pRect, obj.getRect())) obj.active = true;
+                    if(obj.active) activeCount++;
+                }
+            });
+            if (activeCount === 2 && this.grid[Math.floor(this.rows/2)][Math.floor(this.cols/2)] === TILE.DOOR) {
+                this.grid[Math.floor(this.rows/2)][Math.floor(this.cols/2)] = TILE.FLOOR; // 扉開く
+                this.door.visible = false;
+            }
+            if (activeCount === 2 && Utils.checkCollision(pRect, this.door.getRect())) {
+                this.clearFloor();
+            }
+
+            this.floorTimer -= this.deltaTime;
+            if(this.floorTimer <= 0) {
+                this.spawnOni(ENEMY_TYPES.DEEPBLUE);
+                this.floorTimer = 30.0;
+            }
+        }
+        else if (this.floor === 2) {
+            let activeCount = 0;
+            this.objects.forEach(obj => {
+                if (obj.type === 'BUTTON') {
+                    if(Utils.checkCollision(pRect, obj.getRect())) obj.active = true;
+                    if(obj.active) activeCount++;
+                }
+            });
+            if (activeCount === 2 && this.floorState === 0) {
+                this.floorState = 1;
+                this.floorTimer = 10.0;
+                // ゴール出現
+                let g = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+                this.goal = new GameObject(g.x*CONFIG.TILE_SIZE, g.y*CONFIG.TILE_SIZE, 48, 48, 'DOOR'); // ゴール代わり
+                this.objects.push(this.goal);
+            }
+            if (this.floorState === 1) {
+                this.floorTimer -= this.deltaTime;
+                if(this.floorTimer <= 0) {
+                    // 角に4体追加
+                    let corners = [{x:1,y:1}, {x:this.cols-2,y:1}, {x:1,y:this.rows-2}, {x:this.cols-2,y:this.rows-2}];
+                    corners.forEach(c => this.spawnOni(ENEMY_TYPES.SQUAT_GIANT, c));
+                    this.floorState = 2;
+                }
+            }
+            if (this.goal && Utils.checkCollision(pRect, this.goal.getRect())) {
+                this.clearFloor();
+            }
+        }
+        else if (this.floor === 3) {
+            if(this.floorState === 0) {
+                // 石像を押す処理
+                if(Utils.checkCollision(pRect, this.statue.getRect())) {
+                    let dx = this.statue.x - this.player.x, dy = this.statue.y - this.player.y;
+                    if(Math.abs(dx) > Math.abs(dy)) this.statue.x += Math.sign(dx) * 150 * this.deltaTime;
+                    else this.statue.y += Math.sign(dy) * 150 * this.deltaTime;
+                }
+                if(Utils.checkCollision(this.statue.getRect(), this.switch1.getRect())) {
+                    this.switch1.active = true;
+                    this.floorState = 1;
+                    // 新しいスイッチ出現
+                    let s2 = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows, 3);
+                    this.switch2 = new GameObject(s2.x*CONFIG.TILE_SIZE, s2.y*CONFIG.TILE_SIZE, 48, 48, 'SWITCH');
+                    this.objects.push(this.switch2);
+                }
+            } else if (this.floorState === 1) {
+                if(Utils.checkCollision(pRect, this.switch2.getRect())) {
+                    this.switch2.active = true;
+                    // 上部の扉生成
+                    this.door = new GameObject(Math.floor(this.cols/2)*CONFIG.TILE_SIZE, 1*CONFIG.TILE_SIZE, 48, 48, 'DOOR');
+                    this.grid[1][Math.floor(this.cols/2)] = TILE.FLOOR; // 穴あけ
+                    this.objects.push(this.door);
+                    this.floorState = 2;
+                }
+            } else if (this.floorState === 2) {
+                if(Utils.checkCollision(pRect, this.door.getRect())) this.clearFloor();
+            }
+        }
+        else if (this.floor === 4) {
+            this.floorTimer -= this.deltaTime;
+            document.getElementById('timer-panel').innerText = this.formatTime(Math.max(0, this.floorTimer));
+            
+            if (this.floorTimer > 0) {
+                this.oniSpawnTimer -= this.deltaTime;
+                if(this.oniSpawnTimer <= 0) {
+                    this.spawnOni(ENEMY_TYPES.DEEPBLUE, {x:1, y:Math.floor(this.rows/2)});
+                    this.oniSpawnTimer = 30.0;
+                }
+                
+                this.jailSpawnTimer -= this.deltaTime;
+                if (this.jailSpawnTimer <= 0) {
+                    let isWave = Math.random() > 0.5;
+                    let p = this.prisons[Utils.randomInt(0, 3)];
+                    this.spawnOni(isWave ? ENEMY_TYPES.SQUAT_WAVE : ENEMY_TYPES.WATER_GUN, {x: p.x+1, y: p.y+1});
+                    this.jailSpawnTimer = 60.0;
+                }
+            } else {
+                // 3分経過: 敵停止、扉開く
+                this.onis.forEach(o => o.isStunned = true);
+                this.grid[1][Math.floor(this.cols/2)] = TILE.FLOOR;
+                this.door.visible = false;
+                if(Utils.checkCollision(pRect, this.door.getRect())) this.clearFloor();
+            }
+        }
+        else if (this.floor === 5) {
+            this.objects.forEach(obj => {
+                if(obj.type === 'CANNONBALL_PILE') {
+                    if(Utils.checkCollision(pRect, obj.getRect())) this.player.hasCannonball = true;
+                }
+                if(obj.type === 'CANNON') {
+                    if(Utils.checkCollision(pRect, obj.getRect()) && this.player.hasCannonball) {
+                        this.player.hasCannonball = false;
+                        // 大砲発射
+                        this.projectiles.push(new Projectile(obj.x+16, obj.y-10, 0, -500, 'CANNON', 3.0));
+                    }
+                }
+            });
+        }
+    }
+
+    draw() {
+        this.ctx.fillStyle = '#000';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        if (this.gameState === 'MOVIE') {
+            this.ctx.fillStyle = "#fff";
+            this.ctx.font = "30px Arial";
+            this.ctx.textAlign = "center";
+            this.ctx.fillText("塔が崩れ、海原へ投げ出された...", this.canvas.width/2, this.canvas.height/2);
+            this.ctx.font = "80px Arial";
+            this.ctx.fillText("⛈️ 🌊 🐉", this.canvas.width/2, this.canvas.height/2 + 80);
+            return;
+        }
+
+        this.ctx.save();
+        this.ctx.translate(-this.camera.x, -this.camera.y);
+
+        const startCol = Math.max(0, Math.floor(this.camera.x / CONFIG.TILE_SIZE));
+        const endCol = Math.min(this.cols, Math.ceil((this.camera.x + this.canvas.width) / CONFIG.TILE_SIZE));
+        const startRow = Math.max(0, Math.floor(this.camera.y / CONFIG.TILE_SIZE));
+        const endRow = Math.min(this.rows, Math.ceil((this.camera.y + this.canvas.height) / CONFIG.TILE_SIZE));
+
+        for (let y = startRow; y < endRow; y++) {
+            for (let x = startCol; x < endCol; x++) {
+                const tile = this.grid[y][x];
+                let px = x * CONFIG.TILE_SIZE, py = y * CONFIG.TILE_SIZE;
+                
+                if (tile === TILE.WALL) {
+                    this.ctx.fillStyle = '#34495e';
+                    this.ctx.fillRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                    this.ctx.fillStyle = '#2c3e50';
+                    this.ctx.fillRect(px, py + CONFIG.TILE_SIZE - 10, CONFIG.TILE_SIZE, 10);
+                } else if (tile === TILE.FLOOR || tile === TILE.SHIP) {
+                    this.ctx.fillStyle = tile === TILE.SHIP ? '#8d6e63' : '#bdc3c7'; // 船は茶色、他はグレー
+                    this.ctx.fillRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                    this.ctx.strokeStyle = "rgba(0,0,0,0.1)";
+                    this.ctx.strokeRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                } else if (tile === TILE.SEA) {
+                    this.ctx.fillStyle = '#2980b9';
+                    this.ctx.fillRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                    // 波アニメーション
+                    this.ctx.fillStyle = "rgba(255,255,255,0.3)";
+                    let waveOffset = (performance.now()/500 + x + y) % 20;
+                    this.ctx.fillRect(px+waveOffset, py+waveOffset, 10, 2);
+                } else if (tile === TILE.DOOR) {
+                    this.ctx.fillStyle = '#8e44ad';
+                    this.ctx.fillRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                    this.ctx.fillStyle = '#fff'; this.ctx.font = "24px Arial"; this.ctx.fillText("🚪", px+10, py+30);
+                } else if (tile === TILE.FENCE) {
+                    this.ctx.fillStyle = '#7f8c8d';
+                    this.ctx.fillRect(px, py, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                    this.ctx.strokeStyle = "#fff";
+                    this.ctx.beginPath(); this.ctx.moveTo(px,py); this.ctx.lineTo(px+CONFIG.TILE_SIZE, py+CONFIG.TILE_SIZE); this.ctx.stroke();
+                }
+            }
+        }
+
+        // ソートして描画 (Y座標順で奥から手前へ)
+        let renderList = [...this.objects, this.player, ...this.onis, ...this.projectiles];
+        renderList.sort((a,b) => a.y - b.y);
+        renderList.forEach(e => e.draw(this.ctx));
+
+        this.ctx.restore();
+    }
+
+    updateHUD() {
+        if(this.floor !== 4) {
+            document.getElementById('timer-panel').innerText = this.formatTime(this.timeElapsed);
+        }
+    }
+
+    formatTime(seconds) {
+        let m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        let s = Math.floor(seconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    }
+
+    killPlayer(reason) {
+        this.isRunning = false;
+        this.player.isDead = true;
+        document.getElementById('hud').classList.add('hidden');
+        uiManager.showScreen('result-screen');
+        document.getElementById('result-title').innerText = "GAME OVER";
+        document.getElementById('result-title').style.color = "#e74c3c";
+        document.getElementById('result-desc').innerText = reason;
+        document.getElementById('result-time').innerText = "";
+    }
+
+    clearFloor() {
+        this.isRunning = false;
+        let timeStr = this.formatTime(this.timeElapsed);
+        saveData.recordClear(this.floor, timeStr);
+        
+        document.getElementById('hud').classList.add('hidden');
+        uiManager.showScreen('result-screen');
+        document.getElementById('result-title').innerText = "STAGE CLEAR!";
+        document.getElementById('result-title').style.color = "#2ecc71";
+        document.getElementById('result-desc').innerText = `${this.floor}階を突破した！`;
+        document.getElementById('result-time').innerText = `Time: ${timeStr}`;
+    }
+}
+const game = new Game();
+
+const uiManager = {
+    showScreen(id) {
+        document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+        if(id === 'home-screen') {
+            document.getElementById('ui-player-name').innerText = saveData.playerName;
+        }
+    },
+    
+    openSummerTowerMenu() {
+        this.showScreen('summer-tower-screen');
+        this.renderSummerTowerFloors();
+    },
+
+    renderSummerTowerFloors() {
+        const container = document.getElementById('tower-floors-container');
+        container.innerHTML = '';
+        const now = Date.now();
+        const waitTime = saveData.summerTowerNextTime - now;
+        const isWaiting = waitTime > 0;
+
+        for (let i = 1; i <= 5; i++) {
+            let isLocked = i > saveData.summerTowerFloor;
+            // 直近の階層で、待機中ならロック扱い
+            if (i === saveData.summerTowerFloor && isWaiting) isLocked = true;
+
+            let div = document.createElement('div');
+            div.className = `floor-card ${isLocked ? 'locked' : ''} ${i === 5 ? 'boss' : ''}`;
+            
+            let btnHtml = '';
+            if (isLocked) {
+                if (i === saveData.summerTowerFloor && isWaiting) {
+                    let hrs = Math.floor(waitTime / (1000*60*60));
+                    let mins = Math.floor((waitTime / (1000*60)) % 60);
+                    btnHtml = `<p class="timer-text">解放まで: ${hrs}時間${mins}分</p>`;
+                } else {
+                    btnHtml = `<p>🔒</p>`;
+                }
+            } else {
+                btnHtml = `<button class="btn ${i===5 ? 'red' : ''}" onclick="game.startSummerTower(${i})">挑戦</button>`;
+            }
+
+            let title = i === 5 ? `<span class="danger-neon">⚠️☢️ 最終階: サマードラゴン ☢️⚠️</span>` : `${i}階`;
+            
+            div.innerHTML = `
+                <div class="floor-info">
+                    <h3>${title}</h3>
+                    <p>Best Time: ${saveData.clearTimes[i]}</p>
+                </div>
+                <div class="floor-status">${btnHtml}</div>
+            `;
+            container.appendChild(div);
+        }
+    },
+
+    changeName() {
+        const val = document.getElementById('name-input').value.trim();
+        if(val) { saveData.playerName = val; saveData.save(); }
+        this.showScreen('home-screen');
+    },
+
+    exportSave() {
+        const str = btoa(JSON.stringify(saveData));
+        document.getElementById('save-data-text').value = str;
+        try { document.execCommand('copy'); alert('コピーしました！'); }catch(e){}
+    },
+
+    importSave() {
+        const str = document.getElementById('save-data-text').value.trim();
+        if(str) {
+            try {
+                const obj = JSON.parse(atob(str));
+                Object.assign(saveData, obj);
+                saveData.save();
+                alert('ロード成功！');
+            } catch(e) { alert('不正なコードです。'); }
+        }
+    }
+};
+
+window.onload = () => {
+    // 最初のタップでタイトル画面を消す
+    document.getElementById('title-screen').addEventListener('click', () => {
+        uiManager.showScreen('home-screen');
+    });
+};
+
+</script>
+</body>
+</html>

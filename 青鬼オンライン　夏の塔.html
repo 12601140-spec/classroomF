@@ -125,9 +125,9 @@
             </section>
         </header>
 
-        <div style="flex-grow: 1; display:flex; justify-content: center; align-items: center; flex-direction: column;">
+        <figure style="flex-grow: 1; display:flex; justify-content: center; align-items: center; flex-direction: column; margin: 0;">
             <p style="font-size: 6rem; filter: drop-shadow(0 10px 5px rgba(0,0,0,0.5)); animation: float 3s ease-in-out infinite;">👦</p>
-        </div>
+        </figure>
         <style>@keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }</style>
 
         <nav id="home-bottom-menu">
@@ -135,17 +135,17 @@
                 <span class="banner-title">夏の塔</span>
                 <span class="banner-sub">最上階のサマードラゴンを倒せ</span>
             </button>
-            <div style="display: flex; gap: 10px;">
+            <menu style="display: flex; gap: 10px; margin: 0; padding: 0;">
                 <button class="btn" onclick="uiManager.showScreen('save-load-screen')">データ引継ぎ</button>
-            </div>
+            </menu>
         </nav>
     </section>
 
     <section id="summer-tower-screen" class="overlay hidden">
         <h2 style="color: #81ecec; margin-bottom: 20px;">夏の塔 - 階層選択</h2>
-        <div class="tower-floors-list" id="tower-floors-container">
+        <section class="tower-floors-list" id="tower-floors-container">
             <!-- 動的に生成される -->
-        </div>
+        </section>
         <button class="btn red" style="margin-top: 20px;" onclick="uiManager.showScreen('home-screen')">ホームへ戻る</button>
     </section>
 
@@ -1327,8 +1327,8 @@ const uiManager = {
             // 直近の階層で、待機中ならロック扱い
             if (i === saveData.summerTowerFloor && isWaiting) isLocked = true;
 
-            let div = document.createElement('div');
-            div.className = `floor-card ${isLocked ? 'locked' : ''} ${i === 5 ? 'boss' : ''}`;
+            let card = document.createElement('article');
+            card.className = `floor-card ${isLocked ? 'locked' : ''} ${i === 5 ? 'boss' : ''}`;
             
             let btnHtml = '';
             if (isLocked) {
@@ -1345,14 +1345,14 @@ const uiManager = {
 
             let title = i === 5 ? `<span class="danger-neon">⚠️☢️ 最終階: サマードラゴン ☢️⚠️</span>` : `${i}階`;
             
-            div.innerHTML = `
-                <div class="floor-info">
+            card.innerHTML = `
+                <section class="floor-info">
                     <h3>${title}</h3>
                     <p>Best Time: ${saveData.clearTimes[i]}</p>
-                </div>
-                <div class="floor-status">${btnHtml}</div>
+                </section>
+                <section class="floor-status">${btnHtml}</section>
             `;
-            container.appendChild(div);
+            container.appendChild(card);
         }
     },
 

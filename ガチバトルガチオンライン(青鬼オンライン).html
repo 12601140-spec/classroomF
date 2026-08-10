@@ -3,48 +3,49 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
- <title>青鬼オンライン外伝 - 変身ガチバトル P2Pオンライン</title>
+ <title>青鬼オンライン外伝 - 変身ガチバトル</title>
  <script src="https://cdn.tailwindcss.com"></script>
  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
  <style>
  :root {
-   --primary-color: #1a2a3a;
-   --accent-color: #3498db;
+   --primary-color: #2c3e50;
+   --accent-color: #e74c3c;
    --oni-purple: #8e44ad;
-   --danger-red: #e74c3c;
    --gold-yellow: #f1c40f;
-   --ui-bg: rgba(11, 22, 38, 0.95);
+   --text-color: #ecf0f1;
+   --ui-bg: rgba(5, 12, 24, 0.92);
+   --btn-blue: linear-gradient(135deg, #2980b9, #3498db);
  }
 
  * { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
 
  body, html {
    width: 100%; height: 100%;
-   background-color: #050a12; overflow: hidden;
+   background-color: #000; overflow: hidden;
    font-family: 'Helvetica Neue', Arial, sans-serif;
-   color: #ecf0f1;
+   color: var(--text-color);
  }
 
  #game-container {
    position: relative; width: 100%; height: 100%;
-   display: flex; justify-content: center; align-items: center; background-color: #000;
+   display: flex; justify-content: center; align-items: center; background-color: #080e18;
  }
 
  #game-canvas { display: block; image-rendering: pixelated; z-index: 10; position: absolute; top:0; left:0; }
 
  .overlay {
    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-   display: flex; flex-direction: column; justify-content: center; align-items: center;
+   display: flex; flex-direction: column; justify-content: space-between; align-items: center;
    background: var(--ui-bg); z-index: 100; transition: opacity 0.3s ease;
-   overflow-y: auto; padding: 20px 10px;
+   overflow-y: auto; padding: 15px;
  }
 
  .hidden { display: none !important; }
 
  .btn {
-   padding: 10px 22px; font-size: 1rem; font-weight: bold; color: white;
-   background: linear-gradient(135deg, #2980b9, #3498db); border: 2px solid #5dade2;
-   border-radius: 20px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+   padding: 12px 24px; font-size: 1.05rem; font-weight: bold; color: white;
+   background: var(--btn-blue); border: 2px solid #5dade2;
+   border-radius: 25px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.6);
    transition: all 0.15s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
  }
  .btn:active { transform: scale(0.95); }
@@ -53,64 +54,107 @@
  .btn.purple { background: linear-gradient(135deg, #7d3c98, #8e44ad); border-color: #bb8fce; }
  .btn.gold { background: linear-gradient(135deg, #d35400, #f39c12); border-color: #f8c471; }
 
- /* ホーム画面 */
  #home-screen {
-   background: radial-gradient(circle at center, #1b2a4a 0%, #080e18 100%);
-   display: flex; flex-direction: column; justify-content: space-between;
+   background-color: #0b192c;
+   background-image: 
+     linear-gradient(0deg, transparent 24%, rgba(52, 152, 219, 0.12) 25%, rgba(52, 152, 219, 0.12) 26%, transparent 27%, transparent 74%, rgba(52, 152, 219, 0.12) 75%, rgba(52, 152, 219, 0.12) 76%, transparent 77%, transparent),
+     linear-gradient(90deg, transparent 24%, rgba(52, 152, 219, 0.12) 25%, rgba(52, 152, 219, 0.12) 26%, transparent 27%, transparent 74%, rgba(52, 152, 219, 0.12) 75%, rgba(52, 152, 219, 0.12) 76%, transparent 77%, transparent);
+   background-size: 40px 40px;
+   padding: 0;
  }
 
- .top-bar {
-   width: 100%; padding: 15px; display: flex; justify-content: space-between; align-items: center;
+ #home-header {
+   width: 100%; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
    background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, transparent 100%);
    position: absolute; top: 0; left: 0; z-index: 20;
  }
+ .player-info { display: flex; align-items: center; background: rgba(11, 30, 54, 0.85); border: 2px solid #2980b9; border-radius: 30px; padding: 6px 16px; gap: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
+ .player-rank { background: #f39c12; color: #000; font-weight: 900; padding: 2px 8px; border-radius: 10px; font-size: 0.85rem; }
+ .player-name { font-weight: bold; color: #fff; font-size: 1rem; }
+ 
+ .currency-box { background: rgba(0,0,0,0.7); border: 2px solid #f1c40f; border-radius: 20px; padding: 6px 16px; color: #f1c40f; font-weight: bold; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.5); font-size: 1rem; }
 
- .currency-box {
-   background: rgba(0,0,0,0.6); border: 2px solid var(--gold-yellow);
-   border-radius: 20px; padding: 4px 14px; color: var(--gold-yellow); font-weight: bold; font-size: 0.95rem;
+ /* サイドメニュー */
+ .left-menu { position: absolute; left: 15px; top: 80px; display: flex; flex-direction: column; gap: 14px; z-index: 20; }
+ .side-menu { position: absolute; right: 15px; top: 80px; display: flex; flex-direction: column; gap: 14px; z-index: 20; }
+ .side-btn { 
+   display: flex; flex-direction: column; align-items: center; justify-content: center;
+   width: 68px; height: 68px; background: linear-gradient(135deg, #2c3e50, #1a252f);
+   border: 2px solid #3498db; border-radius: 16px; cursor: pointer; color: #fff;
+   box-shadow: 0 4px 10px rgba(0,0,0,0.6); transition: all 0.15s ease;
  }
+ .side-btn:active { transform: scale(0.92); border-color: #f1c40f; }
+ .side-btn-icon { font-size: 1.8rem; margin-bottom: 2px; }
+ .side-btn span { font-size: 0.7rem; font-weight: bold; }
 
- /* スキン・青鬼編成画面 */
- .slot-container {
-   display: flex; gap: 12px; margin: 12px 0; justify-content: center; flex-wrap: wrap;
+ #home-avatar-showcase {
+   flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
+   position: relative; margin-top: 50px; z-index: 10; width: 100%;
  }
+ .showcase-platform {
+   width: 240px; height: 70px; background: radial-gradient(ellipse at center, rgba(52, 152, 219, 0.7) 0%, rgba(142, 68, 173, 0.2) 50%, transparent 75%);
+   border-radius: 50%; position: absolute; bottom: 25%; left: 50%; transform: translateX(-50%); z-index: 1;
+   box-shadow: 0 0 25px rgba(52, 152, 219, 0.6);
+ }
+ #home-avatar-icon { font-size: 8.5rem; z-index: 2; animation: float 3s ease-in-out infinite; filter: drop-shadow(0 12px 8px rgba(0,0,0,0.6)); }
+ #home-oni-preview { font-size: 3.8rem; position: absolute; top: 22%; right: 28%; z-index: 3; animation: float 2.5s ease-in-out infinite alternate; filter: drop-shadow(0 8px 6px rgba(0,0,0,0.6)); }
+
+ @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-16px); } 100% { transform: translateY(0px); } }
+
+ /* 下部メインバナー */
+ #home-bottom-menu {
+   width: 100%; padding: 20px; display: flex; flex-direction: column; gap: 10px; align-items: center;
+   background: linear-gradient(0deg, rgba(5, 12, 24, 0.98) 0%, rgba(5, 12, 24, 0.7) 80%, transparent 100%);
+   z-index: 20; padding-bottom: 25px;
+ }
+ .banner-btn {
+   width: 95%; max-width: 440px; border: 2px solid rgba(255,255,255,0.2); border-radius: 16px; padding: 14px 20px;
+   cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+   transition: transform 0.1s; display: flex; align-items: center; justify-content: space-between;
+ }
+ .banner-btn:active { transform: scale(0.97); }
+ .banner-btn.online { background: linear-gradient(135deg, #1e3c72, #2a5298); border-color: #3498db; }
+ .banner-btn.solo { background: linear-gradient(135deg, #4a154b, #6b117b); border-color: #8e44ad; }
+
+ /* ガチャ・アイテムカード */
+ .slot-container { display: flex; gap: 12px; margin: 10px 0; justify-content: center; flex-wrap: wrap; }
  .skin-slot {
    width: 85px; height: 110px; background: rgba(255,255,255,0.05); border: 2px dashed #3498db;
    border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center;
    position: relative; cursor: pointer; transition: all 0.2s; padding: 5px; text-align: center;
  }
- .skin-slot.filled { border-style: solid; background: rgba(52, 152, 219, 0.2); border-color: #5dade2; }
+ .skin-slot.filled { border-style: solid; background: rgba(52, 152, 219, 0.25); border-color: #5dade2; }
  .skin-slot.oni-slot { border-color: #8e44ad; }
- .skin-slot.oni-slot.filled { background: rgba(142, 68, 173, 0.25); border-color: #bb8fce; }
+ .skin-slot.oni-slot.filled { background: rgba(142, 68, 173, 0.35); border-color: #bb8fce; }
 
  .item-grid {
-   display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px;
-   max-height: 35vh; overflow-y: auto; width: 100%; padding: 10px; background: rgba(0,0,0,0.4);
-   border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+   display: grid; grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); gap: 10px;
+   max-height: 38vh; overflow-y: auto; width: 100%; padding: 10px; background: rgba(0,0,0,0.5);
+   border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
  }
  .card-item {
-   background: #2c3e50; border: 2px solid #7f8c8d; border-radius: 8px; padding: 8px;
+   background: #1c2833; border: 2px solid #566573; border-radius: 10px; padding: 8px;
    display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative; text-align: center;
  }
- .card-item.selected { border-color: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
- .card-item.locked { opacity: 0.5; filter: grayscale(80%); }
- .card-item.SSR { border-color: #f1c40f; }
- .card-item.SR { border-color: #9b59b6; }
+ .card-item.selected { border-color: #2ecc71; box-shadow: 0 0 12px rgba(46, 204, 113, 0.6); }
+ .card-item.locked { opacity: 0.4; filter: grayscale(90%); }
+ .card-item.SSR { border-color: #f1c40f; background: linear-gradient(135deg, #2c2200, #1c2833); }
+ .card-item.SR { border-color: #9b59b6; background: linear-gradient(135deg, #220a2e, #1c2833); }
 
  /* HUD */
  #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
- .hud-panel { position: absolute; background: rgba(0,0,0,0.7); border: 2px solid #444; border-radius: 10px; padding: 8px 14px; font-weight: bold; }
+ .hud-panel { position: absolute; background: rgba(0,0,0,0.75); border: 2px solid #444; border-radius: 12px; padding: 8px 16px; font-weight: bold; }
  #alive-panel { top: 15px; left: 15px; font-size: 1.1rem; color: #2ecc71; }
  #oni-timer-panel { top: 15px; left: 50%; transform: translateX(-50%); font-size: 1.2rem; color: #e74c3c; min-width: 180px; text-align: center; }
 
- #kill-log { position: absolute; top: 15px; right: 15px; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
- .log-entry { background: rgba(0,0,0,0.8); padding: 4px 10px; border-radius: 4px; font-size: 0.85rem; border-left: 3px solid #e74c3c; animation: fadeIn 0.2s forwards; }
+ #kill-log { position: absolute; top: 15px; right: 15px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+ .log-entry { background: rgba(0,0,0,0.85); padding: 5px 12px; border-radius: 6px; font-size: 0.85rem; border-left: 4px solid #e74c3c; animation: fadeIn 0.2s forwards; }
 
- #joystick-zone { position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); pointer-events: auto; touch-action: none; }
- #joystick-knob { position: absolute; top: 50%; left: 50%; width: 45px; height: 45px; background: rgba(255,255,255,0.4); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+ #joystick-zone { position: absolute; bottom: 25px; left: 25px; width: 130px; height: 130px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.25); pointer-events: auto; touch-action: none; }
+ #joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(255,255,255,0.45); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
 
- .modal-box { background: rgba(15, 25, 40, 0.95); border: 2px solid #3498db; padding: 20px; border-radius: 16px; text-align: center; width: 90%; max-width: 440px; }
- .input-field { width: 100%; background: #111; color: #fff; border: 1px solid #444; font-size: 1.1rem; padding: 10px; border-radius: 8px; margin: 10px 0; text-align: center; tracking: 2px; }
+ .modal-box { background: rgba(11, 22, 38, 0.96); border: 2px solid #3498db; padding: 22px; border-radius: 20px; text-align: center; width: 92%; max-width: 440px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+ .input-field { width: 100%; background: #080e18; color: #fff; border: 1px solid #3498db; font-size: 1.1rem; padding: 10px; border-radius: 10px; margin: 10px 0; text-align: center; letter-spacing: 2px; }
  </style>
 </head>
 <body>
@@ -127,59 +171,107 @@
 
  <!-- タイトル画面 -->
  <section id="title-screen" class="overlay cursor-pointer" onclick="uiManager.showScreen('home-screen')">
-   <h1 style="font-size: 2.8rem; font-weight: 900; color: #3498db; text-shadow: 0 0 20px rgba(52,152,219,0.6); text-align: center;">青鬼オンライン<br><span style="color:#e74c3c; font-size:2rem;">外伝：5人変身ガチバトル</span></h1>
-   <p style="margin-top: 30px; font-size: 1.2rem; opacity: 0.8;" class="animate-pulse">画面をタップしてスタート</p>
+   <header style="margin-top: auto; margin-bottom: auto; text-align: center;">
+     <h1 style="font-size: 3rem; font-weight: 900; color: #3498db; text-shadow: 0 0 25px rgba(52,152,219,0.8);">青鬼オンライン<br><span style="color:#e74c3c; font-size:2.2rem;">外伝：5人変身ガチバトル</span></h1>
+     <p style="margin-top: 35px; font-size: 1.25rem; opacity: 0.9;" class="animate-pulse">画面をタップしてスタート</p>
+   </header>
  </section>
 
- <!-- ホーム（ロビー）画面 -->
+ <!-- ホーム（青鬼サバイバル風 UI）画面 -->
  <section id="home-screen" class="overlay hidden">
-   <header class="top-bar">
-     <span style="font-weight: bold; font-size: 1.1rem;" id="player-display-name">プレイヤー</span>
-     <span class="currency-box">🪙 青銭: <span id="ui-coins">0</span></span>
+   <!-- トップヘッダー -->
+   <header id="home-header">
+     <aside class="player-info">
+       <span class="player-rank">Lv.1</span>
+       <span class="player-name" id="player-display-name">プレイヤー</span>
+     </aside>
+     <aside class="currency-box">
+       <span>🪙</span>
+       <span id="ui-coins">0</span>
+     </aside>
    </header>
 
-   <article style="text-align: center; margin-top: 50px;">
-     <h2 style="font-size: 1.8rem; color: #f1c40f; font-weight: bold;">オンラインガチバトル</h2>
-     <p style="font-size: 0.85rem; color: #aaa; margin-top: 3px;">最大5人対戦！ウイルスを取って編成した青鬼に変身せよ！</p>
-     
-     <!-- 選択中パーティ＆青鬼プレビュー -->
-     <section class="slot-container" id="home-party-preview" style="margin-top: 15px;"></section>
-     <span id="synergy-badge" style="font-weight: bold; color: #3498db; font-size: 0.85rem; background: rgba(0,0,0,0.5); padding: 5px 14px; border-radius: 12px; display: inline-block;">編成補正: 計算中</span>
+   <!-- 左サイドボタン -->
+   <nav class="left-menu">
+     <button class="side-btn" onclick="uiManager.showScreen('zukan-screen')">
+       <span class="side-btn-icon">📖</span>
+       <span>青鬼図鑑</span>
+     </button>
+     <button class="side-btn" onclick="uiManager.showScreen('save-screen')">
+       <span class="side-btn-icon">💾</span>
+       <span>セーブ</span>
+     </button>
+   </nav>
+
+   <!-- 右サイドボタン -->
+   <nav class="side-menu">
+     <button class="side-btn" onclick="uiManager.showScreen('team-setup-screen')">
+       <span class="side-btn-icon">👕</span>
+       <span>編成</span>
+     </button>
+     <button class="side-btn" onclick="uiManager.showScreen('gacha-screen')">
+       <span class="side-btn-icon">🎰</span>
+       <span>ガチャ</span>
+     </button>
+   </nav>
+
+   <!-- 中央アバター showcase -->
+   <article id="home-avatar-showcase">
+     <figure class="showcase-platform"></figure>
+     <div id="home-avatar-icon">👦</div>
+     <div id="home-oni-preview">👹</div>
+     <span id="synergy-badge" style="position: absolute; bottom: 8%; font-weight: bold; color: #f1c40f; font-size: 0.85rem; background: rgba(0,0,0,0.7); border: 1px solid #f1c40f; padding: 6px 16px; border-radius: 15px; z-index: 10;">
+       編成補正: 計算中
+     </span>
    </article>
 
-   <!-- オンライン対戦（募集・参加）エリア -->
-   <section style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; width: 90%; max-width: 400px; margin: 15px 0; text-align: center;">
-     <p style="font-size: 0.95rem; font-weight: bold; color: #f1c40f; margin-bottom: 10px;">🌐 P2P 5人マルチ対戦</p>
-     <section style="display: flex; gap: 8px; justify-content: center; align-items: center; margin-bottom: 10px;">
-       <button class="btn green" style="flex: 1;" onclick="networkManager.hostRoom()">部屋をつくる(募集)</button>
-     </section>
-     <section style="display: flex; gap: 8px; align-items: center;">
-       <input type="text" id="join-room-id" class="input-field" style="margin:0; font-size: 0.9rem; padding: 8px;" placeholder="6桁の番号を入力" maxlength="6">
-       <button class="btn gold" style="white-space: nowrap;" onclick="networkManager.joinRoom()">参加</button>
-     </section>
-   </section>
+   <!-- 下部メインバナー対戦メニュー -->
+   <footer id="home-bottom-menu">
+     <button class="banner-btn online" onclick="uiManager.showScreen('online-modal-screen')">
+       <div>
+         <p style="font-size: 1.25rem; font-weight: 900; color: #fff;">🌐 P2P 5人オンライン対戦</p>
+         <p style="font-size: 0.75rem; color: #b0c4de;">全国のプレイヤーと変身サバイバル！</p>
+       </div>
+       <span style="font-size: 1.8rem;">⚔️</span>
+     </button>
 
-   <!-- 各種メニューボタン -->
-   <nav style="display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 320px; margin-bottom: 20px;">
-     <button class="btn purple" onclick="uiManager.showScreen('team-setup-screen')">👕 スキン・青鬼編成</button>
-     <section style="display: flex; gap: 8px;">
-       <button class="btn gold" style="flex:1; font-size: 0.85rem;" onclick="uiManager.showScreen('gacha-screen')">🎰 ガチャ</button>
-       <button class="btn" style="flex:1; font-size: 0.85rem;" onclick="uiManager.showScreen('zukan-screen')">📖 青鬼図鑑</button>
-       <button class="btn red" style="flex:1; font-size: 0.85rem;" onclick="uiManager.showScreen('save-screen')">💾 セーブ</button>
-     </section>
-   </nav>
+     <button class="banner-btn solo" onclick="gameEngine.startSoloMatch()">
+       <div>
+         <p style="font-size: 1.1rem; font-weight: bold; color: #fff;">🤖 ソロ (Bot) バトル</p>
+         <p style="font-size: 0.75rem; color: #d8bfd8;">手軽にAIと対戦トレーニング</p>
+       </div>
+       <span style="font-size: 1.5rem;">🎮</span>
+     </button>
+   </footer>
  </section>
 
- <!-- 待機ルーム（ホスト/ゲスト）画面 -->
+ <!-- オンライン部屋作成/参加モーダル -->
+ <section id="online-modal-screen" class="overlay hidden">
+   <article class="modal-box">
+     <h2 style="font-size: 1.5rem; color: #f1c40f; font-weight: bold; margin-bottom: 12px;">🌐 P2P オンライン対戦</h2>
+     <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px;">部屋を作成して友達を招待するか、部屋番号を入力して参加しよう！</p>
+
+     <button class="btn green" style="width: 100%; margin: 8px 0;" onclick="networkManager.hostRoom()">🏠 部屋をつくる (ホスト)</button>
+
+     <div style="margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+       <input type="text" id="join-room-id" class="input-field" placeholder="6桁の部屋番号" maxlength="6">
+       <button class="btn gold" style="width: 100%; margin-top: 5px;" onclick="networkManager.joinRoom()">🚪 部屋に参加する</button>
+     </div>
+
+     <button class="btn red" style="width: 100%; margin-top: 10px;" onclick="uiManager.showScreen('home-screen')">キャンセル</button>
+   </article>
+ </section>
+
+ <!-- 待機ルーム画面 -->
  <section id="room-lobby-screen" class="overlay hidden">
    <article class="modal-box">
-     <h3 style="font-size: 1.4rem; font-weight: bold; color: #3498db; margin-bottom: 10px;">対戦相手を待機中...</h3>
-     <p style="font-size: 0.9rem; color: #aaa;">部屋番号 (招待コード):</p>
-     <p id="lobby-room-code" style="font-size: 2.2rem; font-weight: bold; color: #f1c40f; letter-spacing: 4px; margin: 5px 0;">------</p>
+     <h3 style="font-size: 1.4rem; font-weight: bold; color: #3498db; margin-bottom: 8px;">対戦相手を待機中...</h3>
+     <p style="font-size: 0.85rem; color: #aaa;">部屋番号 (招待コード):</p>
+     <p id="lobby-room-code" style="font-size: 2.3rem; font-weight: bold; color: #f1c40f; letter-spacing: 4px; margin: 6px 0;">------</p>
      
-     <p style="font-size: 0.9rem; margin-top: 15px;">参加人数: <span id="lobby-player-count" style="color:#2ecc71; font-size:1.3rem; font-weight:bold;">1</span> / 5 人</p>
+     <p style="font-size: 0.9rem; margin-top: 12px;">参加人数: <span id="lobby-player-count" style="color:#2ecc71; font-size:1.3rem; font-weight:bold;">1</span> / 5 人</p>
      
-     <ul id="lobby-player-list" style="list-style: none; padding: 0; margin: 15px 0; max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 8px;"></ul>
+     <ul id="lobby-player-list" style="list-style: none; padding: 0; margin: 15px 0; max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.4); border-radius: 10px;"></ul>
 
      <section style="display: flex; gap: 10px; margin-top: 15px;">
        <button id="btn-start-game" class="btn green hidden" style="flex: 1;" onclick="networkManager.startGameFromHost()">⚔️ ゲーム開始！</button>
@@ -190,74 +282,73 @@
 
  <!-- スキン・青鬼編成画面 -->
  <section id="team-setup-screen" class="overlay hidden">
-   <h2 style="font-size: 1.4rem; font-weight: bold; color: #f1c40f;">編成（キャラ2体 ＋ 変身青鬼1体）</h2>
-   <p style="font-size: 0.8rem; color: #ccc; margin-bottom: 8px;">キャラの組み合わせで速度や変身時間が変化！</p>
+   <header style="text-align: center; margin-top: 10px;">
+     <h2 style="font-size: 1.5rem; color: #f1c40f; font-weight: bold;">チーム＆変身青鬼編成</h2>
+     <p style="font-size: 0.8rem; color: #ccc;">人間キャラ2体 ＋ 変身青鬼1体を自由にカスタマイズ！</p>
+   </header>
 
-   <!-- 選択中スロット -->
    <section class="slot-container" id="setup-slots"></section>
 
-   <!-- 補正情報表示 -->
-   <article id="setup-info-panel" style="background: rgba(0,0,0,0.6); border: 1px solid #3498db; border-radius: 8px; padding: 8px 12px; width: 90%; max-width: 420px; font-size: 0.8rem; margin-bottom: 8px; text-align: left;">
+   <article id="setup-info-panel" style="background: rgba(0,0,0,0.6); border: 1px solid #3498db; border-radius: 10px; padding: 10px; width: 92%; max-width: 420px; font-size: 0.85rem; margin-bottom: 8px;">
      <p><strong>変身青鬼:</strong> <span id="info-oni-name" style="color:#e74c3c;">青鬼</span></p>
      <p><strong>変身時間:</strong> <span id="info-duration" style="color:#f1c40f;">15秒</span> | <strong>速度補正:</strong> <span id="info-speed" style="color:#2ecc71;">+0</span></p>
    </article>
 
-   <!-- タブ切替 -->
-   <nav style="display: flex; gap: 8px; margin-bottom: 8px; width: 90%; max-width: 420px;">
-     <button id="tab-btn-chars" class="btn" style="flex:1; padding: 4px 8px; font-size: 0.8rem;" onclick="uiManager.switchSetupTab('CHARS')">キャラ選択</button>
-     <button id="tab-btn-oni" class="btn purple" style="flex:1; padding: 4px 8px; font-size: 0.8rem;" onclick="uiManager.switchSetupTab('ONI')">青鬼変身先選択</button>
+   <nav style="display: flex; gap: 10px; margin-bottom: 8px; width: 92%; max-width: 420px;">
+     <button id="tab-btn-chars" class="btn" style="flex:1; padding: 6px 12px; font-size: 0.85rem;" onclick="uiManager.switchSetupTab('CHARS')">キャラ選択</button>
+     <button id="tab-btn-oni" class="btn purple" style="flex:1; padding: 6px 12px; font-size: 0.85rem;" onclick="uiManager.switchSetupTab('ONI')">変身青鬼選択</button>
    </nav>
 
-   <!-- 所持リスト -->
-   <section style="width: 90%; max-width: 420px;">
+   <section style="width: 92%; max-width: 420px;">
      <section id="inventory-grid" class="item-grid"></section>
    </section>
 
-   <button class="btn green" style="margin-top: 12px; width: 80%; max-width: 300px;" onclick="uiManager.saveTeamAndReturn()">決定・完了</button>
+   <button class="btn green" style="margin-top: 12px; width: 85%; max-width: 300px;" onclick="uiManager.saveTeamAndReturn()">決定・完了</button>
  </section>
 
- <!-- ガチャ画面 -->
+ <!-- リッチガチャ画面 -->
  <section id="gacha-screen" class="overlay hidden">
    <article class="modal-box">
-     <h2 style="font-size: 1.5rem; color: #f1c40f; margin-bottom: 10px;">青鬼＆キャラガチャ</h2>
-     <p style="font-size: 0.85rem; color: #ccc;">青銭を使って青鬼スキンやキャラを獲得！</p>
+     <h2 style="font-size: 1.6rem; color: #f1c40f; font-weight: bold; margin-bottom: 8px;">👹 青鬼＆キャラガチャ</h2>
+     <p style="font-size: 0.85rem; color: #ccc;">ガチャから【変身用青鬼】や【レアキャラ】が登場！</p>
 
-     <section style="margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-       <p style="font-size: 1.2rem; color: #f1c40f; font-weight: bold; margin-bottom: 5px;">1回ガチャ: 🪙 200青銭</p>
-       <button class="btn gold" style="font-size: 1.1rem; padding: 10px 25px;" onclick="uiManager.rollGacha()">ガチャを引く！</button>
+     <section style="margin: 20px 0; padding: 18px; background: rgba(0,0,0,0.5); border-radius: 15px; border: 1px solid rgba(241,196,15,0.3);">
+       <p style="font-size: 1.3rem; color: #f1c40f; font-weight: bold; margin-bottom: 8px;">1回ガチャ: 🪙 200青銭</p>
+       <button class="btn gold" style="font-size: 1.15rem; padding: 12px 30px;" onclick="uiManager.rollGacha()">ガチャを引く！</button>
      </section>
 
-     <article id="gacha-result" class="hidden" style="margin-top: 10px; padding: 10px; background: rgba(142,68,173,0.3); border: 2px solid #8e44ad; border-radius: 8px;">
-       <p style="font-size: 0.8rem; color: #aaa;">獲得アイテム！</p>
-       <p id="gacha-result-name" style="font-size: 1.3rem; font-weight: bold; color: #fff; margin-top: 4px;"></p>
+     <article id="gacha-result" class="hidden" style="margin-top: 10px; padding: 12px; background: rgba(142,68,173,0.35); border: 2px solid #8e44ad; border-radius: 12px;">
+       <p id="gacha-type-tag" style="font-size: 0.8rem; font-weight: bold; color: #f1c40f;"></p>
+       <p id="gacha-result-icon" style="font-size: 3rem; margin: 4px 0;"></p>
+       <p id="gacha-result-name" style="font-size: 1.3rem; font-weight: bold; color: #fff;"></p>
      </article>
 
-     <button class="btn red" style="margin-top: 15px; width: 100%;" onclick="uiManager.showScreen('home-screen')">戻る</button>
+     <button class="btn red" style="margin-top: 18px; width: 100%;" onclick="uiManager.showScreen('home-screen')">戻る</button>
    </article>
  </section>
 
  <!-- 青鬼図鑑画面 -->
  <section id="zukan-screen" class="overlay hidden">
-   <h2 style="font-size: 1.5rem; color: #3498db; margin-bottom: 10px;">変身可能 青鬼図鑑</h2>
-   <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 10px;">各青鬼の能力と解放条件</p>
-   <section id="zukan-grid" class="item-grid" style="width: 90%; max-width: 450px; max-height: 60vh;"></section>
+   <h2 style="font-size: 1.6rem; color: #3498db; font-weight: bold; margin-bottom: 8px;">変身青鬼図鑑</h2>
+   <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 12px;">全15種類の青鬼をコンプリートしよう！</p>
+   <section id="zukan-grid" class="item-grid" style="width: 92%; max-width: 450px; max-height: 60vh;"></section>
    <button class="btn red" style="margin-top: 15px;" onclick="uiManager.showScreen('home-screen')">戻る</button>
  </section>
 
- <!-- 独自セーブ/ロード画面 -->
+ <!-- セーブ/データ管理画面 -->
  <section id="save-screen" class="overlay hidden">
    <article class="modal-box">
-     <h3 style="font-size: 1.3rem; font-weight: bold; margin-bottom: 8px;">データ管理（独自セーブ）</h3>
-     <p style="font-size: 0.85rem; color: #aaa;">ゲームデータはブラウザに自動保存されています。</p>
+     <h3 style="font-size: 1.3rem; font-weight: bold; margin-bottom: 8px;">データ管理</h3>
+     <p style="font-size: 0.85rem; color: #aaa;">ゲームデータは自動保存されます。</p>
      
-     <section style="margin: 20px 0; text-align: left; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.85rem;">
-       <p>🪙 所持青銭: <span id="save-info-coins">0</span></p>
-       <p>👥 解放キャラ数: <span id="save-info-chars">0</span></p>
-       <p>👹 解放青鬼数: <span id="save-info-onis">0</span></p>
+     <section style="margin: 20px 0; text-align: left; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 10px; font-size: 0.9rem; line-height: 1.6;">
+       <p>🪙 所持青銭: <span id="save-info-coins" style="color:#f1c40f; font-weight:bold;">0</span></p>
+       <p>👥 解放キャラ: <span id="save-info-chars" style="color:#2ecc71; font-weight:bold;">0</span> / 8</p>
+       <p>👹 解放青鬼: <span id="save-info-onis" style="color:#9b59b6; font-weight:bold;">0</span> / 15</p>
      </section>
 
      <section style="display: flex; flex-direction: column; gap: 10px;">
-       <button class="btn green" onclick="saveData.save(); uiManager.showMessage('手動セーブ完了！');">💾 手動セーブ実行</button>
+       <button class="btn green" onclick="saveData.save(); uiManager.showMessage('手動セーブが完了しました！');">💾 手動セーブ</button>
        <button class="btn red" onclick="uiManager.resetSaveData()">⚠️ データ初期化</button>
      </section>
 
@@ -267,20 +358,14 @@
 
  <!-- リザルト画面 -->
  <section id="result-screen" class="overlay hidden">
-   <h2 id="result-rank-title" style="font-size: 3rem; font-weight: 900; color: #f1c40f;">1位 / 5人</h2>
-   <p id="result-detail" style="font-size: 1.2rem; margin: 15px 0;">撃破数: 0体</p>
+   <h2 id="result-rank-title" style="font-size: 3.2rem; font-weight: 900; color: #f1c40f;">1位 / 5人</h2>
+   <p id="result-detail" style="font-size: 1.25rem; margin: 15px 0;">撃破数: 0体</p>
    <p style="font-size: 1.8rem; color: #f1c40f; font-weight: bold; margin-bottom: 25px;">獲得青銭: +<span id="result-coin-amount">0</span></p>
    <button class="btn gold" style="font-size: 1.2rem; padding: 12px 35px;" onclick="networkManager.leaveRoom(); uiManager.showScreen('home-screen');">ホームへ</button>
  </section>
 </main>
 
 <script>
-/**
- * ============================================================================
- * 青鬼オンライン外伝：5人P2P変身ガチバトル Engine
- * ============================================================================
- */
-
 const DB = {
   CHARACTERS: [
     { id: 'c1', name: 'ひろし', color: '#3498db', speedBase: 180, rarity: 'N', icon: '👦', type: 'BALANCE' },
@@ -296,38 +381,37 @@ const DB = {
     NORMAL: 0, FUWATTY: 1, SQUAT: 2, JELLY: 3, DEMON: 4, ICE: 5, FIRE: 6, SLIME: 7, SPIDER: 8, MUMMY: 9, NINJA: 10, GIANT: 11, GHOST: 12, BOMB: 13, METAL: 14
   },
   ONI_DATA: [
-    { id: 'o0', type: 0, name: '青鬼', rarity: 'N', desc: '標準的な基本の青鬼。安定した能力。', condition: '初期から解放' },
-    { id: 'o1', type: 1, name: 'フワッティー', rarity: 'R', desc: '高速直線移動が得意。', condition: 'ガチャで獲得' },
-    { id: 'o2', type: 2, name: 'スクワット鬼', rarity: 'R', desc: '跳躍感のある独特の歩み。', condition: 'ガチャで獲得' },
-    { id: 'o3', type: 3, name: 'クラゲ鬼', rarity: 'SR', desc: '水のように滑らかに動く。', condition: 'ガチャで獲得' },
-    { id: 'o4', type: 4, name: '魔王鬼', rarity: 'SSR', desc: '威厳溢れる姿。圧倒的オーラ。', condition: 'ガチャ(超低確率)で獲得' },
-    { id: 'o5', type: 5, name: '氷鬼', rarity: 'SR', desc: '冷気を纏う青鬼。', condition: 'ガチャで獲得' },
-    { id: 'o6', type: 6, name: '炎鬼', rarity: 'SR', desc: '燃え盛る情熱の青鬼。', condition: 'ガチャで獲得' },
-    { id: 'o7', type: 7, name: 'スライム鬼', rarity: 'R', desc: '伸縮自在の液体ボディ。', condition: 'ガチャで獲得' },
-    { id: 'o8', type: 8, name: 'クモ鬼', rarity: 'SR', desc: '不気味に迫る多脚鬼。', condition: 'ガチャで獲得' },
-    { id: 'o9', type: 9, name: 'ミイラ鬼', rarity: 'R', desc: '包帯に巻かれた重厚な鬼。', condition: 'ガチャで獲得' },
-    { id: 'o10', type: 10, name: '忍者鬼', rarity: 'SR', desc: '素早い身のこなしの鬼。', condition: 'ガチャで獲得' },
-    { id: 'o11', type: 11, name: '巨人鬼', rarity: 'SR', desc: '巨大な体躯で逃げ場を塞ぐ。', condition: 'ガチャで獲得' },
-    { id: 'o12', type: 12, name: '亡霊鬼', rarity: 'SSR', desc: '壁をすり抜ける驚異の鬼！', condition: 'ガチャ(超低確率)で獲得' },
-    { id: 'o13', type: 13, name: '爆弾鬼', rarity: 'SR', desc: '危険なオーラを放つ。', condition: 'ガチャで獲得' },
-    { id: 'o14', type: 14, name: 'メタル鬼', rarity: 'SSR', desc: '黄金の輝きを放つ最強鬼。', condition: 'ガチャ(超低確率)で獲得' }
+    { id: 'o0', type: 0, name: '青鬼', rarity: 'N', desc: '本家でおなじみの巨頭の青鬼。', condition: '初期解放', icon: '👹' },
+    { id: 'o1', type: 1, name: 'フワッティー', rarity: 'R', desc: '四角く素早い暴走の青鬼。', condition: 'ガチャで獲得', icon: '👾' },
+    { id: 'o2', type: 2, name: 'スクワット鬼', rarity: 'R', desc: '独特な上下運動で迫る鬼。', condition: 'ガチャで獲得', icon: '👹' },
+    { id: 'o3', type: 3, name: 'クラゲ鬼', rarity: 'SR', desc: '水のように滑らかに動く。', condition: 'ガチャで獲得', icon: '🪼' },
+    { id: 'o4', type: 4, name: '魔王鬼', rarity: 'SSR', desc: '威厳溢れる真紅と漆黒のオーラ。', condition: 'ガチャで獲得', icon: '👺' },
+    { id: 'o5', type: 5, name: '氷鬼', rarity: 'SR', desc: '冷気を纏う青鬼。', condition: 'ガチャで獲得', icon: '🥶' },
+    { id: 'o6', type: 6, name: '炎鬼', rarity: 'SR', desc: '燃え盛る情熱の青鬼。', condition: 'ガチャで獲得', icon: '🔥' },
+    { id: 'o7', type: 7, name: 'スライム鬼', rarity: 'R', desc: '伸縮自在の液体ボディ。', condition: 'ガチャで獲得', icon: '🧪' },
+    { id: 'o8', type: 8, name: 'クモ鬼', rarity: 'SR', desc: '不気味に迫る多脚鬼。', condition: 'ガチャで獲得', icon: '🕷️' },
+    { id: 'o9', type: 9, name: 'ミイラ鬼', rarity: 'R', desc: '包帯に巻かれた重厚な鬼。', condition: 'ガチャで獲得', icon: '🩹' },
+    { id: 'o10', type: 10, name: '忍者鬼', rarity: 'SR', desc: '素早い身のこなしの鬼。', condition: 'ガチャで獲得', icon: '🥷' },
+    { id: 'o11', type: 11, name: '巨人鬼', rarity: 'SR', desc: '巨大な体躯で逃げ場を塞ぐ。', condition: 'ガチャで獲得', icon: '🗿' },
+    { id: 'o12', type: 12, name: '亡霊鬼', rarity: 'SSR', desc: '壁をすり抜ける驚異の鬼！', condition: 'ガチャで獲得', icon: '👻' },
+    { id: 'o13', type: 13, name: '爆弾鬼', rarity: 'SR', desc: '危険なオーラを放つ。', condition: 'ガチャで獲得', icon: '💣' },
+    { id: 'o14', type: 14, name: 'メタル鬼', rarity: 'SSR', desc: '黄金の輝きを放つ最強鬼。', condition: 'ガチャで獲得', icon: '👑' }
   ],
-  NPC_NAMES: ["ひろし", "タケル", "ミカ", "タクヤ", "Bot-A", "Bot-B"]
+  NPC_NAMES: ["ひろしBot", "タケルBot", "ミカBot", "タクヤBot", "青鬼マニア"]
 };
 
 const CONFIG = {
   TILE_SIZE: 48, COLS: 50, ROWS: 50, MAX_PLAYERS: 5, VIRUS_BOX_COUNT: 8
 };
 
-// 独自セーブデータクラス
 class SaveData {
   constructor() {
     this.playerName = "プレイヤー";
-    this.coins = 500;
+    this.coins = 600;
     this.unlockedChars = ['c1', 'c2'];
-    this.unlockedOnis = ['o0', 'o1']; // 初期解放の変身青鬼
-    this.teamChars = ['c1', 'c2'];    // 人間キャラ2体
-    this.selectedOni = 'o0';           // 変身する青鬼1体
+    this.unlockedOnis = ['o0', 'o1']; 
+    this.teamChars = ['c1', 'c2'];    
+    this.selectedOni = 'o0';           
     this.load();
   }
   save() {
@@ -345,7 +429,7 @@ class SaveData {
   reset() {
     localStorage.removeItem('aooni_p2p_gachi_save');
     this.playerName = "プレイヤー";
-    this.coins = 500;
+    this.coins = 600;
     this.unlockedChars = ['c1', 'c2'];
     this.unlockedOnis = ['o0', 'o1'];
     this.teamChars = ['c1', 'c2'];
@@ -356,17 +440,25 @@ class SaveData {
 const saveData = new SaveData();
 
 const Utils = {
-  random: (min, max) => Math.random() * (max - min) + min,
-  randomInt: (min, max) => Math.floor(Math.random() * (max - min)) + min,
+  random: (min, max, rng = Math.random) => rng() * (max - min) + min,
+  randomInt: (min, max, rng = Math.random) => Math.floor(rng() * (max - min)) + min,
   distance: (x1, y1, x2, y2) => Math.sqrt((x2-x1)**2 + (y2-y1)**2),
   checkCollision: (r1, r2) => (r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y),
-  generateCode: () => Math.floor(100000 + Math.random() * 900000).toString()
+  generateCode: () => Math.floor(100000 + Math.random() * 900000).toString(),
+  createRng: (seed) => {
+    let s = seed % 2147483647;
+    if (s <= 0) s += 2147483646;
+    return () => {
+      s = (s * 16807) % 2147483647;
+      return (s - 1) / 2147483646;
+    };
+  }
 };
 
 const TILE = { EMPTY: 0, WALL: 1, FLOOR: 2 };
 
 class MapGenerator {
-  static generate(cols, rows) {
+  static generate(cols, rows, rng = Math.random) {
     let grid = Array.from({ length: rows }, () => Array(cols).fill(TILE.WALL));
     let rooms = [];
     let leaves = [{ x: 1, y: 1, w: cols - 2, h: rows - 2 }];
@@ -374,10 +466,10 @@ class MapGenerator {
     for (let i = 0; i < 3; i++) {
       let newLeaves = [];
       for (let leaf of leaves) {
-        let splitH = Math.random() > 0.5;
+        let splitH = rng() > 0.5;
         let max = (splitH ? leaf.h : leaf.w) - 8;
         if (max <= 5) { newLeaves.push(leaf); continue; }
-        let split = Utils.randomInt(5, max);
+        let split = Utils.randomInt(5, max, rng);
         if (splitH) {
           newLeaves.push({ x: leaf.x, y: leaf.y, w: leaf.w, h: split });
           newLeaves.push({ x: leaf.x, y: leaf.y + split, w: leaf.w, h: leaf.h - split });
@@ -390,10 +482,10 @@ class MapGenerator {
     }
 
     for (let leaf of leaves) {
-      let rw = Utils.randomInt(4, leaf.w - 1);
-      let rh = Utils.randomInt(4, leaf.h - 1);
-      let rx = leaf.x + Utils.randomInt(1, leaf.w - rw);
-      let ry = leaf.y + Utils.randomInt(1, leaf.h - rh);
+      let rw = Utils.randomInt(4, leaf.w - 1, rng);
+      let rh = Utils.randomInt(4, leaf.h - 1, rng);
+      let rx = leaf.x + Utils.randomInt(1, leaf.w - rw, rng);
+      let ry = leaf.y + Utils.randomInt(1, leaf.h - rh, rng);
       rooms.push({ x: rx, y: ry, w: rw, h: rh });
       for (let y = ry; y < ry + rh; y++) {
         for (let x = rx; x < rx + rw; x++) grid[y][x] = TILE.FLOOR;
@@ -410,22 +502,27 @@ class MapGenerator {
     return grid;
   }
 
-  static getRandomFloor(grid, cols, rows) {
-    let validFloors = [];
-    for (let y = 1; y < rows - 1; y++) {
-      for (let x = 1; x < cols - 1; x++) {
-        if (grid[y][x] === TILE.FLOOR) {
-          validFloors.push({ x, y });
+  static getRandomFloor(grid, cols, rows, charW = 24, charH = 24, rng = Math.random) {
+    while (true) {
+      let gx = Utils.randomInt(1, cols - 1, rng);
+      let gy = Utils.randomInt(1, rows - 1, rng);
+      let px = gx * CONFIG.TILE_SIZE + Math.floor((CONFIG.TILE_SIZE - charW) / 2);
+      let py = gy * CONFIG.TILE_SIZE + Math.floor((CONFIG.TILE_SIZE - charH) / 2);
+
+      let left = Math.floor(px / CONFIG.TILE_SIZE);
+      let right = Math.floor((px + charW - 1) / CONFIG.TILE_SIZE);
+      let top = Math.floor(py / CONFIG.TILE_SIZE);
+      let bottom = Math.floor((py + charH - 1) / CONFIG.TILE_SIZE);
+
+      if (left >= 0 && right < cols && top >= 0 && bottom < rows) {
+        if (grid[top][left] === TILE.FLOOR &&
+            grid[top][right] === TILE.FLOOR &&
+            grid[bottom][left] === TILE.FLOOR &&
+            grid[bottom][right] === TILE.FLOOR) {
+          return { x: px, y: py };
         }
       }
     }
-    if (validFloors.length > 0) {
-      let pick = validFloors[Math.floor(Math.random() * validFloors.length)];
-      // キャラクター(24x24)がタイル(48x48)の中央に来るようオフセット調整
-      let offset = (CONFIG.TILE_SIZE - 24) / 2;
-      return { x: pick.x * CONFIG.TILE_SIZE + offset, y: pick.y * CONFIG.TILE_SIZE + offset };
-    }
-    return { x: 3 * CONFIG.TILE_SIZE + 12, y: 3 * CONFIG.TILE_SIZE + 12 };
   }
 }
 
@@ -445,6 +542,9 @@ class Character {
     this.oniType = DB.ONI_TYPES.NORMAL;
     this.oniTimer = 0;
     this.isLocal = isLocal;
+    this.isBot = false;
+    this.botTarget = null;
+    this.botTimer = 0;
   }
 
   getRect() { return { x: this.x, y: this.y, w: this.w, h: this.h }; }
@@ -473,7 +573,7 @@ class Character {
     let len = Math.sqrt(dx*dx + dy*dy);
     if(len === 0) return;
 
-    let spd = this.isOni ? this.speed * 1.3 : this.speed;
+    let spd = this.isOni ? this.speed * 1.35 : this.speed;
     let vx = (dx/len) * spd * dt;
     let vy = (dy/len) * spd * dt;
 
@@ -485,8 +585,8 @@ class Character {
 
   checkWall(grid, cols, rows) {
     if(this.isOni && this.oniType === DB.ONI_TYPES.GHOST) return false;
-    let left = Math.floor(this.x / CONFIG.TILE_SIZE), right = Math.floor((this.x + this.w) / CONFIG.TILE_SIZE);
-    let top = Math.floor(this.y / CONFIG.TILE_SIZE), bottom = Math.floor((this.y + this.h) / CONFIG.TILE_SIZE);
+    let left = Math.floor(this.x / CONFIG.TILE_SIZE), right = Math.floor((this.x + this.w - 1) / CONFIG.TILE_SIZE);
+    let top = Math.floor(this.y / CONFIG.TILE_SIZE), bottom = Math.floor((this.y + this.h - 1) / CONFIG.TILE_SIZE);
     if(left<0 || right>=cols || top<0 || bottom>=rows) return true;
     return grid[top][left]===TILE.WALL || grid[top][right]===TILE.WALL || grid[bottom][left]===TILE.WALL || grid[bottom][right]===TILE.WALL;
   }
@@ -503,67 +603,166 @@ class Character {
     if(this.isOni) {
       EnemyOniDraw.drawCustomOni(ctx, this.x, this.y, this.w, this.h, this.oniType, this.anim, this.dir);
       ctx.fillStyle = "#f1c40f"; ctx.font = "bold 11px sans-serif"; ctx.textAlign = "center";
-      ctx.fillText(`👹 ${this.name}`, this.x + this.w/2, this.y - 12);
+      ctx.fillText(`👹 ${this.name}`, this.x + this.w/2, this.y - 14);
       return;
     }
 
     let bob = this.isMoving ? Math.sin(this.anim)*3 : 0;
-    let cx = this.x - 8, cy = this.y - 24;
+    let cx = this.x - 4, cy = this.y - 16;
 
     ctx.fillStyle = "rgba(0,0,0,0.3)";
     ctx.beginPath(); ctx.ellipse(this.x+this.w/2, this.y+this.h, 12, 4, 0, 0, Math.PI*2); ctx.fill();
 
     ctx.fillStyle = this.color;
-    ctx.fillRect(cx+8, cy+16+bob, 24, 24);
+    ctx.fillRect(cx+4, cy+16+bob, 24, 20);
     ctx.fillStyle = "#FFDCB6";
-    ctx.fillRect(cx+6, cy+bob, 28, 20);
+    ctx.fillRect(cx+2, cy+bob, 28, 18);
     
     ctx.fillStyle = "#000";
-    if(this.dir===0 || this.dir===2) ctx.fillRect(cx+18, cy+8+bob, 4, 4);
-    if(this.dir===0 || this.dir===1) ctx.fillRect(cx+10, cy+8+bob, 4, 4);
+    if(this.dir===0 || this.dir===2) ctx.fillRect(cx+18, cy+6+bob, 4, 4);
+    if(this.dir===0 || this.dir===1) ctx.fillRect(cx+10, cy+6+bob, 4, 4);
 
-    ctx.font = "18px Arial"; ctx.textAlign = "center";
+    ctx.font = "16px Arial"; ctx.textAlign = "center";
     ctx.fillText(this.icon, this.x + this.w/2, this.y - 8 + bob);
     ctx.fillStyle = "#fff"; ctx.font = "10px sans-serif";
-    ctx.fillText(this.name, this.x + this.w/2, this.y - 24);
+    ctx.fillText(this.name, this.x + this.w/2, this.y - 22);
   }
 }
 
 class EnemyOniDraw {
   static drawCustomOni(ctx, x, y, w, h, type, anim, dir) {
-    let cx = x - (w==48?4:12), cy = y - (h==48?60:40);
-    let bob = Math.sin(anim)*5;
-    
     ctx.save();
-    ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath(); ctx.ellipse(x+w/2, y+h, w/2, h/4, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "rgba(0,0,0,0.45)"; 
+    ctx.beginPath(); 
+    ctx.ellipse(x + w/2, y + h, w * 0.8, h / 3, 0, 0, Math.PI * 2); 
+    ctx.fill();
 
-    let baseColor = '#8e44ad', headW = 48, headH = 36, bodyW = 36, bodyH = 36;
-    if(type === DB.ONI_TYPES.GIANT) { cx -= 8; cy -= 10; headW*=1.3; headH*=1.3; bodyW*=1.3; bodyH*=1.3; }
-    
-    switch(type) {
-      case DB.ONI_TYPES.FUWATTY: baseColor = '#e74c3c'; break;
-      case DB.ONI_TYPES.SQUAT: baseColor = '#27ae60'; break;
-      case DB.ONI_TYPES.JELLY: baseColor = 'rgba(52, 152, 219, 0.8)'; break;
-      case DB.ONI_TYPES.DEMON: baseColor = '#c0392b'; break;
-      case DB.ONI_TYPES.ICE: baseColor = '#00ced1'; break;
-      case DB.ONI_TYPES.FIRE: baseColor = '#ff4500'; break;
-      case DB.ONI_TYPES.SLIME: baseColor = 'rgba(46, 204, 113, 0.8)'; break;
-      case DB.ONI_TYPES.SPIDER: baseColor = '#2c3e50'; break;
-      case DB.ONI_TYPES.NINJA: baseColor = '#1a252f'; break;
-      case DB.ONI_TYPES.GHOST: baseColor = 'rgba(236, 240, 241, 0.6)'; break;
-      case DB.ONI_TYPES.BOMB: baseColor = '#111'; break;
-      case DB.ONI_TYPES.METAL: baseColor = '#f1c40f'; break;
+    let bob = Math.sin(anim) * 4;
+
+    if (type === DB.ONI_TYPES.FUWATTY) {
+      let fw = 42, fh = 42;
+      let fx = x + w/2 - fw/2, fy = y + h/2 - fh/2 + bob;
+
+      let grad = ctx.createLinearGradient(fx, fy, fx, fy + fh);
+      grad.addColorStop(0, '#6c5ce7');
+      grad.addColorStop(1, '#3b2181');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(fx, fy, fw, fh, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#220f52';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.fillStyle = '#110522';
+      ctx.beginPath();
+      ctx.rect(fx + 6, fy + 22, fw - 12, 14);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      for(let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(fx + 8 + i*7, fy + 22);
+        ctx.lineTo(fx + 11.5 + i*7, fy + 28);
+        ctx.lineTo(fx + 15 + i*7, fy + 22);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(fx + 12, fy + 12, 6, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(fx + 30, fy + 12, 6, 0, Math.PI*2); ctx.fill();
+
+      ctx.fillStyle = '#000000';
+      ctx.beginPath(); ctx.arc(fx + 12 + (dir===2?2:dir===1?-2:0), fy + 12, 2.5, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(fx + 30 + (dir===2?2:dir===1?-2:0), fy + 12, 2.5, 0, Math.PI*2); ctx.fill();
+
+      ctx.restore();
+      return;
     }
 
-    ctx.fillStyle = baseColor;
-    ctx.fillRect(cx+(headW-bodyW)/2, cy+20+bob, bodyW, bodyH); 
-    ctx.fillRect(cx, cy+bob, headW, headH); 
+    let headW = 38, headH = 34, bodyW = 28, bodyH = 24;
+    let cx = x + w/2 - headW/2;
+    let cy = y + h - bodyH - headH + 4 + bob;
 
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(cx+8, cy+10+bob, 10, 10); ctx.fillRect(cx+headW-18, cy+10+bob, 10, 10);
-    ctx.fillStyle = "#000";
-    ctx.fillRect(cx+11, cy+13+bob, 4, 4); ctx.fillRect(cx+headW-15, cy+13+bob, 4, 4);
-    ctx.fillRect(cx+14, cy+26+bob, headW-28, 4);
+    let skinColor = '#50468c';      
+    let shadowColor = '#342c63';    
+    let hairColor = '#241e47';      
+    let auraColor = null;
+
+    if (type === DB.ONI_TYPES.DEMON) { skinColor = '#b22222'; hairColor = '#4a0000'; auraColor = 'rgba(255,0,0,0.4)'; }
+    else if (type === DB.ONI_TYPES.ICE) { skinColor = '#00ced1'; hairColor = '#008b8b'; auraColor = 'rgba(0,255,255,0.4)'; }
+    else if (type === DB.ONI_TYPES.FIRE) { skinColor = '#ff4500'; hairColor = '#8b0000'; auraColor = 'rgba(255,140,0,0.5)'; }
+    else if (type === DB.ONI_TYPES.SLIME) { skinColor = '#2ecc71'; hairColor = '#27ae60'; }
+    else if (type === DB.ONI_TYPES.NINJA) { skinColor = '#2c3e50'; hairColor = '#1a252f'; }
+    else if (type === DB.ONI_TYPES.GIANT) { headW = 48; headH = 42; bodyW = 36; bodyH = 30; cx = x + w/2 - headW/2; cy = y + h - bodyH - headH + bob; }
+    else if (type === DB.ONI_TYPES.GHOST) { skinColor = 'rgba(200, 220, 255, 0.75)'; hairColor = 'rgba(100, 120, 180, 0.8)'; }
+    else if (type === DB.ONI_TYPES.METAL) { skinColor = '#f1c40f'; hairColor = '#d35400'; auraColor = 'rgba(241,196,15,0.5)'; }
+
+    if (auraColor) {
+      ctx.fillStyle = auraColor;
+      ctx.beginPath();
+      ctx.arc(x + w/2, y + h/2 + bob, headW * 0.8, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = shadowColor;
+    ctx.fillRect(cx + (headW - bodyW)/2, cy + headH - 4, bodyW, bodyH);
+    ctx.fillStyle = skinColor;
+    ctx.fillRect(cx + (headW - bodyW)/2 + 2, cy + headH - 4, bodyW - 4, bodyH);
+
+    ctx.fillStyle = skinColor;
+    ctx.beginPath();
+    ctx.roundRect(cx, cy, headW, headH, [12, 12, 6, 6]);
+    ctx.fill();
+    ctx.strokeStyle = shadowColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = hairColor;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 10);
+    ctx.lineTo(cx + 8, cy + 2);
+    ctx.lineTo(cx + headW/2, cy + 8);
+    ctx.lineTo(cx + headW - 8, cy + 2);
+    ctx.lineTo(cx + headW, cy + 10);
+    ctx.lineTo(cx + headW, cy);
+    ctx.lineTo(cx, cy);
+    ctx.closePath();
+    ctx.fill();
+
+    let eyeY = cy + 15;
+    let eyeW = 9, eyeH = 10;
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.ellipse(cx + 10, eyeY, eyeW/2, eyeH/2, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#1b1338'; ctx.lineWidth = 1; ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.ellipse(cx + headW - 10, eyeY, eyeW/2, eyeH/2, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#1b1338'; ctx.lineWidth = 1; ctx.stroke();
+
+    let lookX = (dir === 2 ? 1.5 : dir === 1 ? -1.5 : 0);
+    let lookY = (dir === 0 ? 1 : dir === 3 ? -1 : 0);
+    ctx.fillStyle = '#000000';
+    ctx.beginPath(); ctx.arc(cx + 10 + lookX, eyeY + lookY, 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + headW - 10 + lookX, eyeY + lookY, 2.5, 0, Math.PI*2); ctx.fill();
+
+    let mouthY = cy + 25;
+    ctx.fillStyle = '#1c050f';
+    ctx.beginPath();
+    ctx.ellipse(cx + headW/2, mouthY, 10, 5, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(cx + headW/2 - 6, mouthY - 3);
+    ctx.lineTo(cx + headW/2 - 4, mouthY);
+    ctx.lineTo(cx + headW/2 - 2, mouthY - 3);
+    ctx.lineTo(cx + headW/2 + 2, mouthY - 3);
+    ctx.lineTo(cx + headW/2 + 4, mouthY);
+    ctx.lineTo(cx + headW/2 + 6, mouthY - 3);
+    ctx.fill();
+
     ctx.restore();
   }
 }
@@ -585,17 +784,14 @@ class VirusBox {
   }
 }
 
-/**
- * P2P Network Manager
- */
 class NetworkManager {
   constructor() {
     this.peer = null;
-    this.connections = []; // ホスト用
-    this.hostConn = null;  // ゲスト用
+    this.connections = []; 
+    this.hostConn = null;  
     this.isHost = false;
     this.roomId = null;
-    this.playersMap = new Map(); // id -> playerData
+    this.playersMap = new Map(); 
   }
 
   cleanupPeer() {
@@ -635,7 +831,6 @@ class NetworkManager {
       this.playersMap.clear();
       this.connections = [];
       
-      // 自分(ホスト)追加
       const synergy = uiManager.getCalculatedSynergy();
       const mainChar = DB.CHARACTERS.find(c => c.id === saveData.teamChars[0]) || DB.CHARACTERS[0];
       this.playersMap.set(id, {
@@ -715,7 +910,6 @@ class NetworkManager {
         const synergy = uiManager.getCalculatedSynergy();
         const mainChar = DB.CHARACTERS.find(c => c.id === saveData.teamChars[0]) || DB.CHARACTERS[0];
 
-        // 参加リクエスト送信
         this.hostConn.send({
           type: 'JOIN',
           player: {
@@ -773,7 +967,6 @@ class NetworkManager {
       this.broadcastLobbyState();
       this.updateLobbyUI();
     } else if(data.type === 'PLAYER_SYNC') {
-      // ゲーム中のプレイヤー座標動向を全員へブロードキャスト
       gameEngine.updateRemotePlayer(data.id, data.x, data.y, data.dir, data.isMoving, data.isOni, data.oniType);
       this.broadcast({ type: 'REMOTE_SYNC', playerData: data }, conn.peer);
     } else if(data.type === 'VIRUS_CLAIM') {
@@ -844,14 +1037,14 @@ class NetworkManager {
   startGameFromHost() {
     if(!this.isHost) return;
     const players = Array.from(this.playersMap.values());
-    const grid = MapGenerator.generate(CONFIG.COLS, CONFIG.ROWS);
-    
-    // スポーン位置決定
-    const positions = players.map(() => MapGenerator.getRandomFloor(grid, CONFIG.COLS, CONFIG.ROWS));
+    const seed = Date.now();
+    const rng = Utils.createRng(seed);
+    const grid = MapGenerator.generate(CONFIG.COLS, CONFIG.ROWS, rng);
+    const positions = players.map(() => MapGenerator.getRandomFloor(grid, CONFIG.COLS, CONFIG.ROWS, 24, 24, rng));
 
     const gameData = {
       type: 'START_GAME',
-      seed: Date.now(),
+      seed: seed,
       players: players,
       positions: positions
     };
@@ -870,16 +1063,13 @@ class NetworkManager {
 }
 const networkManager = new NetworkManager();
 
-/**
- * Game Engine
- */
 class GameEngine {
   constructor() {
     this.canvas = document.getElementById('game-canvas');
     this.ctx = this.canvas.getContext('2d');
     this.grid = [];
     this.cols = CONFIG.COLS; this.rows = CONFIG.ROWS;
-    this.players = new Map(); // id -> Character
+    this.players = new Map(); 
     this.localPlayerId = null;
     this.virusBoxes = [];
     this.aliveCount = 0;
@@ -924,8 +1114,46 @@ class GameEngine {
     zone.addEventListener('touchend', () => { this.joy.active = false; this.joy.x = 0; this.joy.y = 0; knob.style.transform=`translate(-50%,-50%)`; });
   }
 
+  startSoloMatch() {
+    const synergy = uiManager.getCalculatedSynergy();
+    const mainChar = DB.CHARACTERS.find(c => c.id === saveData.teamChars[0]) || DB.CHARACTERS[0];
+    
+    let players = [
+      {
+        id: 'local',
+        name: saveData.playerName,
+        color: mainChar.color,
+        speed: mainChar.speedBase + synergy.speedBonus,
+        icon: mainChar.icon,
+        oniType: synergy.oniType,
+        oniDuration: synergy.duration
+      }
+    ];
+
+    for(let i=0; i<4; i++) {
+      let botChar = DB.CHARACTERS[i + 1] || DB.CHARACTERS[0];
+      players.push({
+        id: `bot_${i}`,
+        name: DB.NPC_NAMES[i],
+        color: botChar.color,
+        speed: botChar.speedBase,
+        icon: botChar.icon,
+        oniType: Utils.randomInt(0, 5),
+        oniDuration: 14,
+        isBot: true
+      });
+    }
+
+    const seed = Date.now();
+    const rng = Utils.createRng(seed);
+    const grid = MapGenerator.generate(this.cols, this.rows, rng);
+    const positions = players.map(() => MapGenerator.getRandomFloor(grid, this.cols, this.rows, 24, 24, rng));
+    this.startOnlineMatch(seed, players, positions);
+  }
+
   startOnlineMatch(seed, playersData, positions) {
-    this.grid = MapGenerator.generate(this.cols, this.rows);
+    const rng = Utils.createRng(seed);
+    this.grid = MapGenerator.generate(this.cols, this.rows, rng);
     this.players.clear();
     this.virusBoxes = [];
     this.kills = 0;
@@ -940,19 +1168,19 @@ class GameEngine {
       char.x = pos.x; char.y = pos.y;
       char.transformedOniType = p.oniType;
       char.oniDuration = p.oniDuration;
+      char.isBot = !!p.isBot;
       this.players.set(p.id, char);
     });
 
-    // ウィルスボックス初期配置
     for(let i=0; i<CONFIG.VIRUS_BOX_COUNT; i++) {
-      let pos = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+      let pos = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows, 32, 32, rng);
       this.virusBoxes.push(new VirusBox(i, pos.x, pos.y));
     }
 
     this.isPlaying = true;
     uiManager.showScreen('hud');
     document.getElementById('hud').classList.remove('hidden');
-    this.addKillLog("オンラインガチバトル開始！");
+    this.addKillLog("ガチバトル開始！ウイルスを取って鬼に変身せよ！");
   }
 
   updateRemotePlayer(id, x, y, dir, isMoving, isOni, oniType) {
@@ -971,7 +1199,7 @@ class GameEngine {
       char.transformToOni(char.transformedOniType, char.oniDuration);
       this.addKillLog(`${char.name}が【ウイルス】で青鬼に変身！`);
       setTimeout(() => {
-        let pos = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+        let pos = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows, 32, 32);
         box.x = pos.x; box.y = pos.y; box.isDead = false;
       }, 10000);
     }
@@ -1014,20 +1242,19 @@ class GameEngine {
 
     if(localChar && !localChar.isDead) {
       let dx = 0, dy = 0;
-      if(this.keys['KeyW'] || this.keys['ArrowUp']) dy -= 1;
-      if(this.keys['KeyS'] || this.keys['ArrowDown']) dy += 1;
-      if(this.keys['KeyA'] || this.keys['ArrowLeft']) dx -= 1;
-      if(this.keys['KeyD'] || this.keys['ArrowRight']) dx += 1;
+      if(this.keys['ArrowUp'] || this.keys['KeyW']) dy -= 1;
+      if(this.keys['ArrowDown'] || this.keys['KeyS']) dy += 1;
+      if(this.keys['ArrowLeft'] || this.keys['KeyA']) dx -= 1;
+      if(this.keys['ArrowRight'] || this.keys['KeyD']) dx += 1;
+
       if(this.joy.active) { dx = this.joy.x; dy = this.joy.y; }
 
-      localChar.update(dt);
       localChar.move(dx, dy, this.grid, this.cols, this.rows, dt);
+      localChar.update(dt);
 
-      // カメラ移動
-      this.camera.x = localChar.x - this.canvas.width / 2;
-      this.camera.y = localChar.y - this.canvas.height / 2;
+      this.camera.x = localChar.x + localChar.w/2 - this.canvas.width/2;
+      this.camera.y = localChar.y + localChar.h/2 - this.canvas.height/2;
 
-      // ネットワーク同期 (20FPS程度)
       this.syncTimer += dt;
       if(this.syncTimer > 0.05) {
         this.syncTimer = 0;
@@ -1041,47 +1268,59 @@ class GameEngine {
           isOni: localChar.isOni,
           oniType: localChar.oniType
         };
-        if(networkManager.isHost) {
-          networkManager.broadcast({ type: 'REMOTE_SYNC', playerData: syncData });
-        } else {
-          networkManager.sendToHost(syncData);
-        }
+        if(networkManager.isHost) networkManager.broadcast(syncData);
+        else networkManager.sendToHost(syncData);
       }
 
-      // ウイルスボックス取得判定
-      for(let box of this.virusBoxes) {
+      this.virusBoxes.forEach(box => {
         if(!box.isDead && Utils.checkCollision(localChar.getRect(), box.getRect())) {
-          if(networkManager.isHost) {
-            this.claimVirusBox(box.id, localChar.id);
-            networkManager.broadcast({ type: 'VIRUS_CLAIM', boxId: box.id, playerId: localChar.id });
-          } else {
-            networkManager.sendToHost({ type: 'VIRUS_CLAIM', boxId: box.id, playerId: localChar.id });
-          }
+          this.claimVirusBox(box.id, localChar.id);
+          if(!networkManager.isHost) networkManager.sendToHost({ type: 'VIRUS_CLAIM', boxId: box.id, playerId: localChar.id });
+          else networkManager.broadcast({ type: 'VIRUS_CLAIM', boxId: box.id, playerId: localChar.id });
         }
-      }
+      });
 
-      // 鬼の攻撃当たり判定（ローカル鬼が他者を撃破した場合）
       if(localChar.isOni) {
-        this.players.forEach((victim) => {
-          if(victim.id !== localChar.id && !victim.isDead && !victim.isOni) {
-            if(Utils.checkCollision(localChar.getRect(), victim.getRect())) {
-              if(networkManager.isHost) {
-                this.handleKill(localChar.id, victim.id);
-                networkManager.broadcast({ type: 'KILL_EVENT', attackerId: localChar.id, victimId: victim.id });
-              } else {
-                networkManager.sendToHost({ type: 'KILL_EVENT', attackerId: localChar.id, victimId: victim.id });
-              }
-            }
+        this.players.forEach(p => {
+          if(p.id !== localChar.id && !p.isDead && !p.isOni && Utils.checkCollision(localChar.getRect(), p.getRect())) {
+            this.handleKill(localChar.id, p.id);
+            if(!networkManager.isHost) networkManager.sendToHost({ type: 'KILL_EVENT', attackerId: localChar.id, victimId: p.id });
+            else networkManager.broadcast({ type: 'KILL_EVENT', attackerId: localChar.id, victimId: p.id });
           }
         });
       }
     }
 
-    // 各プレイヤー更新
-    this.players.forEach(p => p.update(dt));
+    this.players.forEach(p => {
+      if(p.id !== this.localPlayerId) {
+        p.update(dt);
+        if(p.isBot && !p.isDead) {
+          p.botTimer -= dt;
+          if(p.botTimer <= 0 || !p.botTarget) {
+            p.botTimer = Utils.random(1.5, 3);
+            p.botTarget = { dx: Utils.random(-1, 1), dy: Utils.random(-1, 1) };
+          }
+          p.move(p.botTarget.dx, p.botTarget.dy, this.grid, this.cols, this.rows, dt);
+
+          this.virusBoxes.forEach(box => {
+            if(!box.isDead && Utils.checkCollision(p.getRect(), box.getRect())) {
+              this.claimVirusBox(box.id, p.id);
+            }
+          });
+
+          if(p.isOni) {
+            this.players.forEach(target => {
+              if(target.id !== p.id && !target.isDead && !target.isOni && Utils.checkCollision(p.getRect(), target.getRect())) {
+                this.handleKill(p.id, target.id);
+              }
+            });
+          }
+        }
+      }
+    });
+
     this.virusBoxes.forEach(b => b.update(dt));
 
-    // UI更新
     document.getElementById('alive-count').innerText = this.aliveCount;
     const oniPanel = document.getElementById('oni-timer-panel');
     if(localChar && localChar.isOni) {
@@ -1092,85 +1331,97 @@ class GameEngine {
     }
   }
 
-  endGame(isVictory) {
+  draw() {
+    this.ctx.fillStyle = "#0a0a10";
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    this.ctx.save();
+    this.ctx.translate(-Math.floor(this.camera.x), -Math.floor(this.camera.y));
+
+    let startCol = Math.max(0, Math.floor(this.camera.x / CONFIG.TILE_SIZE));
+    let endCol = Math.min(this.cols, Math.ceil((this.camera.x + this.canvas.width) / CONFIG.TILE_SIZE));
+    let startRow = Math.max(0, Math.floor(this.camera.y / CONFIG.TILE_SIZE));
+    let endRow = Math.min(this.rows, Math.ceil((this.camera.y + this.canvas.height) / CONFIG.TILE_SIZE));
+
+    for (let r = startRow; r < endRow; r++) {
+      for (let c = startCol; c < endCol; c++) {
+        let x = c * CONFIG.TILE_SIZE, y = r * CONFIG.TILE_SIZE;
+        if (this.grid[r][c] === TILE.WALL) {
+          this.ctx.fillStyle = "#1e272e";
+          this.ctx.fillRect(x, y, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+          this.ctx.strokeStyle = "#0f1418";
+          this.ctx.lineWidth = 1;
+          this.ctx.strokeRect(x, y, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+        } else {
+          this.ctx.fillStyle = "#2c3e50";
+          this.ctx.fillRect(x, y, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+          this.ctx.strokeStyle = "#34495e";
+          this.ctx.lineWidth = 1;
+          this.ctx.strokeRect(x, y, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+        }
+      }
+    }
+
+    this.virusBoxes.forEach(box => box.draw(this.ctx));
+
+    const sortedPlayers = Array.from(this.players.values()).sort((a, b) => a.y - b.y);
+    sortedPlayers.forEach(p => p.draw(this.ctx));
+
+    this.ctx.restore();
+  }
+
+  addKillLog(text) {
+    const logContainer = document.getElementById('kill-log');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerText = text;
+    logContainer.appendChild(entry);
+    setTimeout(() => entry.remove(), 4000);
+  }
+
+  endGame(isWin) {
     this.isPlaying = false;
     document.getElementById('hud').classList.add('hidden');
-    
-    let rank = isVictory ? 1 : this.aliveCount + 1;
-    let earnedCoins = (6 - rank) * 100 + this.kills * 80;
+
+    const rank = isWin ? 1 : this.aliveCount;
+    const earnedCoins = (6 - rank) * 120 + this.kills * 60;
     saveData.coins += earnedCoins;
     saveData.save();
 
-    document.getElementById('result-rank-title').innerText = isVictory ? "🏆 青逃(勝利)！" : `${rank}位 / 5人`;
+    document.getElementById('result-rank-title').innerText = `${rank}位 / ${this.players.size}人`;
+    document.getElementById('result-rank-title').style.color = isWin ? '#f1c40f' : '#e74c3c';
     document.getElementById('result-detail').innerText = `撃破数: ${this.kills}体`;
     document.getElementById('result-coin-amount').innerText = earnedCoins;
 
     uiManager.showScreen('result-screen');
   }
-
-  addKillLog(msg) {
-    const logContainer = document.getElementById('kill-log');
-    const entry = document.createElement('div');
-    entry.className = 'log-entry';
-    entry.innerText = msg;
-    logContainer.appendChild(entry);
-    if(logContainer.children.length > 5) logContainer.removeChild(logContainer.children[0]);
-    setTimeout(() => { if(entry.parentNode) entry.parentNode.removeChild(entry); }, 4000);
-  }
-
-  draw() {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.save();
-    this.ctx.translate(-this.camera.x, -this.camera.y);
-
-    // マップ描画
-    for(let r=0; r<this.rows; r++) {
-      for(let c=0; c<this.cols; c++) {
-        let x = c * CONFIG.TILE_SIZE, y = r * CONFIG.TILE_SIZE;
-        if(this.grid[r][c] === TILE.WALL) {
-          this.ctx.fillStyle = "#1a252f"; this.ctx.fillRect(x, y, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
-          this.ctx.strokeStyle = "#2c3e50"; this.ctx.strokeRect(x, y, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
-        } else {
-          this.ctx.fillStyle = "#2c3e50"; this.ctx.fillRect(x, y, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
-          this.ctx.strokeStyle = "#34495e"; this.ctx.strokeRect(x, y, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
-        }
-      }
-    }
-
-    // ウィルスボックス描画
-    this.virusBoxes.forEach(box => box.draw(this.ctx));
-
-    // プレイヤー群描画
-    this.players.forEach(player => player.draw(this.ctx));
-
-    this.ctx.restore();
-  }
 }
 const gameEngine = new GameEngine();
 
-/**
- * UI Manager
- */
 class UIManager {
   constructor() {
-    this.setupTab = 'CHARS'; // 'CHARS' | 'ONI'
+    this.currentSetupTab = 'CHARS';
+    this.tempTeamChars = [...saveData.teamChars];
+    this.tempSelectedOni = saveData.selectedOni;
     this.initUI();
   }
 
   initUI() {
-    this.updateCoinsDisplay();
+    this.updateCoinsUI();
     this.renderHomePartyPreview();
   }
 
   showScreen(id) {
     document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
-    const target = document.getElementById(id);
-    if(target) target.classList.remove('hidden');
-
+    if(id !== 'hud') {
+      document.getElementById(id).classList.remove('hidden');
+    }
     if(id === 'home-screen') {
-      this.updateCoinsDisplay();
+      this.updateCoinsUI();
       this.renderHomePartyPreview();
     } else if(id === 'team-setup-screen') {
+      this.tempTeamChars = [...saveData.teamChars];
+      this.tempSelectedOni = saveData.selectedOni;
       this.renderSetupSlots();
       this.renderInventory();
     } else if(id === 'zukan-screen') {
@@ -1182,100 +1433,64 @@ class UIManager {
     }
   }
 
-  updateCoinsDisplay() {
+  updateCoinsUI() {
     document.getElementById('ui-coins').innerText = saveData.coins;
   }
 
-  showMessage(msg) {
-    let toast = document.getElementById('toast-notification');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'toast-notification';
-      toast.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background:rgba(15,25,40,0.95); color:#fff; border:2px solid #3498db; padding:10px 24px; border-radius:20px; font-weight:bold; z-index:9999; transition:opacity 0.3s ease; pointer-events:none; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.6);';
-      document.body.appendChild(toast);
-    }
-    toast.innerText = msg;
-    toast.style.opacity = '1';
-    toast.style.display = 'block';
-    clearTimeout(this.toastTimeout);
-    this.toastTimeout = setTimeout(() => {
-      toast.style.opacity = '0';
-      setTimeout(() => { toast.style.display = 'none'; }, 300);
-    }, 2500);
-  }
-
   getCalculatedSynergy() {
-    const chars = saveData.teamChars.map(id => DB.CHARACTERS.find(c => c.id === id)).filter(Boolean);
-    const oni = DB.ONI_DATA.find(o => o.id === saveData.selectedOni) || DB.ONI_DATA[0];
+    const c1 = DB.CHARACTERS.find(c => c.id === (this.tempTeamChars[0] || saveData.teamChars[0])) || DB.CHARACTERS[0];
+    const c2 = DB.CHARACTERS.find(c => c.id === (this.tempTeamChars[1] || saveData.teamChars[1])) || DB.CHARACTERS[1];
+    const oni = DB.ONI_DATA.find(o => o.id === (this.tempSelectedOni || saveData.selectedOni)) || DB.ONI_DATA[0];
 
     let speedBonus = 0;
-    let duration = 12; // 基本変身時間 12秒
+    let duration = 15;
 
-    chars.forEach(c => {
-      if(c.type === 'SPEED') speedBonus += 15;
-      if(c.type === 'ATTACK') duration += 2;
-      if(c.type === 'BALANCE') { speedBonus += 5; duration += 1; }
-    });
+    if(c1.type === c2.type) speedBonus += 20;
+    if(oni.rarity === 'SR') duration = 18;
+    if(oni.rarity === 'SSR') duration = 22;
 
-    return {
-      oniType: oni.type,
-      oniName: oni.name,
-      speedBonus: speedBonus,
-      duration: duration
-    };
+    return { speedBonus, duration, oniType: oni.type, oniName: oni.name, oniIcon: oni.icon };
   }
 
   renderHomePartyPreview() {
-    const container = document.getElementById('home-party-preview');
-    container.innerHTML = '';
-
-    // キャラ2体
-    saveData.teamChars.forEach(id => {
-      const c = DB.CHARACTERS.find(x => x.id === id);
-      if(!c) return;
-      const slot = document.createElement('section');
-      slot.className = 'skin-slot filled';
-      slot.innerHTML = `<span style="font-size:1.8rem;">${c.icon}</span><span style="font-size:0.75rem; font-weight:bold; margin-top:4px;">${c.name}</span>`;
-      container.appendChild(slot);
-    });
-
-    // 変身青鬼1体
+    const mainChar = DB.CHARACTERS.find(c => c.id === saveData.teamChars[0]) || DB.CHARACTERS[0];
     const oni = DB.ONI_DATA.find(o => o.id === saveData.selectedOni) || DB.ONI_DATA[0];
-    const oniSlot = document.createElement('section');
-    oniSlot.className = 'skin-slot oni-slot filled';
-    oniSlot.innerHTML = `<span style="font-size:1.8rem;">👹</span><span style="font-size:0.75rem; font-weight:bold; color:#bb8fce; margin-top:4px;">${oni.name}</span>`;
-    container.appendChild(oniSlot);
+
+    document.getElementById('home-avatar-icon').innerText = mainChar.icon;
+    document.getElementById('home-oni-preview').innerText = oni.icon || '👹';
 
     const synergy = this.getCalculatedSynergy();
-    document.getElementById('synergy-badge').innerText = `鬼: ${synergy.oniName} | 変身: ${synergy.duration}s | 速度: +${synergy.speedBonus}`;
+    document.getElementById('synergy-badge').innerText = `【変身: ${oni.name}】 速度+${synergy.speedBonus} / 変身${synergy.duration}秒`;
   }
 
   renderSetupSlots() {
     const container = document.getElementById('setup-slots');
     container.innerHTML = '';
 
-    saveData.teamChars.forEach((id, idx) => {
-      const c = DB.CHARACTERS.find(x => x.id === id);
-      const slot = document.createElement('section');
-      slot.className = 'skin-slot filled';
-      slot.innerHTML = `<span style="font-size:0.7rem; color:#aaa;">キャラ${idx+1}</span><span style="font-size:1.6rem;">${c.icon}</span><span style="font-size:0.75rem; font-weight:bold;">${c.name}</span>`;
-      container.appendChild(slot);
+    this.tempTeamChars.forEach((cid) => {
+      const c = DB.CHARACTERS.find(item => item.id === cid);
+      let div = document.createElement('div');
+      div.className = 'skin-slot filled';
+      div.innerHTML = `<span style="font-size:1.8rem;">${c?c.icon:'❓'}</span><span style="font-size:0.75rem; font-weight:bold;">${c?c.name:'未選択'}</span>`;
+      div.onclick = () => { this.currentSetupTab = 'CHARS'; this.renderInventory(); };
+      container.appendChild(div);
     });
 
-    const oni = DB.ONI_DATA.find(o => o.id === saveData.selectedOni) || DB.ONI_DATA[0];
-    const oniSlot = document.createElement('section');
-    oniSlot.className = 'skin-slot oni-slot filled';
-    oniSlot.innerHTML = `<span style="font-size:0.7rem; color:#bb8fce;">変身青鬼</span><span style="font-size:1.6rem;">👹</span><span style="font-size:0.75rem; font-weight:bold; color:#bb8fce;">${oni.name}</span>`;
-    container.appendChild(oniSlot);
+    const oni = DB.ONI_DATA.find(item => item.id === this.tempSelectedOni);
+    let oniDiv = document.createElement('div');
+    oniDiv.className = 'skin-slot oni-slot filled';
+    oniDiv.innerHTML = `<span style="font-size:1.8rem;">${oni?oni.icon:'👹'}</span><span style="font-size:0.75rem; font-weight:bold; color:#f1c40f;">${oni?oni.name:'青鬼'}</span>`;
+    oniDiv.onclick = () => { this.currentSetupTab = 'ONI'; this.renderInventory(); };
+    container.appendChild(oniDiv);
 
-    const syn = this.getCalculatedSynergy();
-    document.getElementById('info-oni-name').innerText = syn.oniName;
-    document.getElementById('info-duration').innerText = `${syn.duration}秒`;
-    document.getElementById('info-speed').innerText = `+${syn.speedBonus}`;
+    const synergy = this.getCalculatedSynergy();
+    document.getElementById('info-oni-name').innerText = synergy.oniName;
+    document.getElementById('info-duration').innerText = `${synergy.duration}秒`;
+    document.getElementById('info-speed').innerText = `+${synergy.speedBonus}`;
   }
 
   switchSetupTab(tab) {
-    this.setupTab = tab;
+    this.currentSetupTab = tab;
     document.getElementById('tab-btn-chars').className = tab==='CHARS' ? 'btn' : 'btn purple';
     document.getElementById('tab-btn-oni').className = tab==='ONI' ? 'btn' : 'btn purple';
     this.renderInventory();
@@ -1285,124 +1500,144 @@ class UIManager {
     const grid = document.getElementById('inventory-grid');
     grid.innerHTML = '';
 
-    if(this.setupTab === 'CHARS') {
+    if(this.currentSetupTab === 'CHARS') {
       DB.CHARACTERS.forEach(c => {
         const isUnlocked = saveData.unlockedChars.includes(c.id);
-        const isSelected = saveData.teamChars.includes(c.id);
-        const item = document.createElement('article');
-        item.className = `card-item ${c.rarity} ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}`;
-        item.innerHTML = `<span style="font-size:1.5rem;">${c.icon}</span><span style="font-size:0.7rem; font-weight:bold;">${c.name}</span>`;
+        const isSelected = this.tempTeamChars.includes(c.id);
+        let card = document.createElement('div');
+        card.className = `card-item ${c.rarity} ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}`;
+        card.innerHTML = `<span style="font-size:1.8rem;">${c.icon}</span><span style="font-size:0.75rem; font-weight:bold;">${c.name}</span>`;
         if(isUnlocked) {
-          item.onclick = () => {
-            if(isSelected) return;
-            saveData.teamChars.shift();
-            saveData.teamChars.push(c.id);
-            this.renderSetupSlots();
-            this.renderInventory();
+          card.onclick = () => {
+            if(!this.tempTeamChars.includes(c.id)) {
+              this.tempTeamChars.shift();
+              this.tempTeamChars.push(c.id);
+              this.renderSetupSlots();
+              this.renderInventory();
+            }
           };
         }
-        grid.appendChild(item);
+        grid.appendChild(card);
       });
     } else {
       DB.ONI_DATA.forEach(o => {
         const isUnlocked = saveData.unlockedOnis.includes(o.id);
-        const isSelected = saveData.selectedOni === o.id;
-        const item = document.createElement('article');
-        item.className = `card-item ${o.rarity} ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}`;
-        item.innerHTML = `<span style="font-size:1.5rem;">👹</span><span style="font-size:0.7rem; font-weight:bold; color:#bb8fce;">${o.name}</span>`;
+        const isSelected = this.tempSelectedOni === o.id;
+        let card = document.createElement('div');
+        card.className = `card-item ${o.rarity} ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}`;
+        card.innerHTML = `<span style="font-size:1.8rem;">${o.icon}</span><span style="font-size:0.75rem; font-weight:bold; color:#f1c40f;">${o.name}</span>`;
         if(isUnlocked) {
-          item.onclick = () => {
-            saveData.selectedOni = o.id;
+          card.onclick = () => {
+            this.tempSelectedOni = o.id;
             this.renderSetupSlots();
             this.renderInventory();
           };
         }
-        grid.appendChild(item);
+        grid.appendChild(card);
       });
     }
   }
 
   saveTeamAndReturn() {
+    saveData.teamChars = [...this.tempTeamChars];
+    saveData.selectedOni = this.tempSelectedOni;
     saveData.save();
     this.showScreen('home-screen');
   }
 
   rollGacha() {
     if(saveData.coins < 200) {
-      this.showMessage('青銭が足りません！(200青銭必要)');
+      this.showMessage('青銭が足りません！対戦で青銭を獲得しよう！');
       return;
     }
     saveData.coins -= 200;
 
-    // 50%で青鬼、50%でキャラ
-    const isOni = Math.random() < 0.5;
-    let resName = "";
+    // ガチャ排出ロジック: 60%の確率で変身青鬼スキン、40%の確率で人間キャラ
+    let isOniGacha = Math.random() < 0.6;
+    let resultItem = null;
 
-    if(isOni) {
+    if(isOniGacha) {
+      // 未解放の青鬼から選定、全て解放済みなら全青鬼から
       const lockedOnis = DB.ONI_DATA.filter(o => !saveData.unlockedOnis.includes(o.id));
-      if(lockedOnis.length > 0) {
-        const reward = lockedOnis[Math.floor(Math.random() * lockedOnis.length)];
-        saveData.unlockedOnis.push(reward.id);
-        resName = `👹 青鬼スキン: 【${reward.name}】`;
-      } else {
-        saveData.coins += 100;
-        resName = "所持済み重複のため100青銭返還！";
+      resultItem = lockedOnis.length > 0 
+        ? lockedOnis[Math.floor(Math.random() * lockedOnis.length)] 
+        : DB.ONI_DATA[Math.floor(Math.random() * DB.ONI_DATA.length)];
+
+      if(!saveData.unlockedOnis.includes(resultItem.id)) {
+        saveData.unlockedOnis.push(resultItem.id);
       }
     } else {
       const lockedChars = DB.CHARACTERS.filter(c => !saveData.unlockedChars.includes(c.id));
-      if(lockedChars.length > 0) {
-        const reward = lockedChars[Math.floor(Math.random() * lockedChars.length)];
-        saveData.unlockedChars.push(reward.id);
-        resName = `👕 キャラスキン: 【${reward.name}】`;
-      } else {
-        saveData.coins += 100;
-        resName = "所持済み重複のため100青銭返還！";
+      resultItem = lockedChars.length > 0 
+        ? lockedChars[Math.floor(Math.random() * lockedChars.length)] 
+        : DB.CHARACTERS[Math.floor(Math.random() * DB.CHARACTERS.length)];
+
+      if(!saveData.unlockedChars.includes(resultItem.id)) {
+        saveData.unlockedChars.push(resultItem.id);
       }
     }
 
     saveData.save();
-    this.updateCoinsDisplay();
+    this.updateCoinsUI();
 
-    const resultBox = document.getElementById('gacha-result');
-    resultBox.classList.remove('hidden');
-    document.getElementById('gacha-result-name').innerText = resName;
+    // 結果アニメーション表示
+    const resBox = document.getElementById('gacha-result');
+    resBox.classList.remove('hidden');
+    document.getElementById('gacha-type-tag').innerText = isOniGacha ? '👹 青鬼スキン獲得！' : '👦 キャラクター獲得！';
+    document.getElementById('gacha-result-icon').innerText = resultItem.icon || (isOniGacha ? '👹' : '👦');
+    document.getElementById('gacha-result-name').innerText = `[${resultItem.rarity}] ${resultItem.name}`;
   }
 
   renderZukan() {
     const grid = document.getElementById('zukan-grid');
     grid.innerHTML = '';
-
     DB.ONI_DATA.forEach(o => {
       const isUnlocked = saveData.unlockedOnis.includes(o.id);
-      const card = document.createElement('article');
-      card.className = `card-item ${o.rarity} ${!isUnlocked ? 'locked' : ''}`;
-      card.style.padding = "10px";
-      card.style.textAlign = "left";
-      card.style.alignItems = "flex-start";
-      card.innerHTML = `
-        <section style="display:flex; align-items:center; gap:8px; width:100%;">
-          <span style="font-size:1.8rem;">👹</span>
-          <section>
-            <p style="font-weight:bold; font-size:0.95rem; color:#bb8fce;">${o.name} <span style="font-size:0.7rem; color:#f1c40f;">[${o.rarity}]</span></p>
-            <p style="font-size:0.75rem; color:#aaa;">${isUnlocked ? '解放済み' : '未解放'}</p>
-          </section>
-        </section>
-        <p style="font-size:0.75rem; color:#ccc; margin-top:6px;">${o.desc}</p>
-        <p style="font-size:0.7rem; color:#f1c40f; margin-top:4px;">🔑 条件: ${o.condition}</p>
+      let div = document.createElement('div');
+      div.className = `card-item ${o.rarity} ${!isUnlocked ? 'locked' : ''}`;
+      div.style.padding = "10px";
+      div.innerHTML = `
+        <span style="font-size:2.2rem;">${o.icon}</span>
+        <strong style="color:#f1c40f; font-size:0.9rem;">${o.name} [${o.rarity}]</strong>
+        <p style="font-size:0.7rem; color:#ccc; margin-top:4px;">${o.desc}</p>
+        <span style="font-size:0.65rem; color:#3498db; margin-top:3px;">条件: ${o.condition}</span>
       `;
-      grid.appendChild(card);
+      grid.appendChild(div);
     });
   }
 
   resetSaveData() {
     saveData.reset();
-    this.updateCoinsDisplay();
-    this.showMessage('データを初期化しました！');
+    this.updateCoinsUI();
+    this.renderHomePartyPreview();
+    this.showMessage('データを初期化しました');
     this.showScreen('home-screen');
   }
-}
 
+  showMessage(msg) {
+    const banner = document.createElement('div');
+    banner.style.position = 'fixed';
+    banner.style.top = '20px';
+    banner.style.left = '50%';
+    banner.style.transform = 'translateX(-50%)';
+    banner.style.background = 'rgba(0,0,0,0.9)';
+    banner.style.border = '2px solid #f1c40f';
+    banner.style.color = '#f1c40f';
+    banner.style.padding = '10px 24px';
+    banner.style.borderRadius = '20px';
+    banner.style.zIndex = '9999';
+    banner.style.fontWeight = 'bold';
+    banner.innerText = msg;
+    document.body.appendChild(banner);
+    setTimeout(() => banner.remove(), 2500);
+  }
+}
 const uiManager = new UIManager();
+
+window.onload = () => {
+  uiManager.updateCoinsUI();
+  uiManager.renderHomePartyPreview();
+};
 </script>
 </body>
 </html>

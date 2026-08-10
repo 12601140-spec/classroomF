@@ -715,13 +715,11 @@ class EnemyOniDraw {
     ctx.save();
     let bob = Math.sin(anim) * 4;
 
-    // 影
     ctx.fillStyle = "rgba(0,0,0,0.45)"; 
     ctx.beginPath(); 
     ctx.ellipse(x + w/2, y + h, w * 0.95, h / 3, 0, 0, Math.PI * 2); 
     ctx.fill();
 
-    // 1. フワッティー (専用の四角いボディ)
     if (type === DB.ONI_TYPES.FUWATTY) {
       let fw = 44, fh = 42;
       let fx = x + w/2 - fw/2, fy = y + h/2 - fh/2 + bob;
@@ -746,7 +744,6 @@ class EnemyOniDraw {
       return;
     }
 
-    // デフォルト・各鬼のパラメーター設定
     let headW = 46, headH = 42, bodyW = 28, bodyH = 22;
     let cx = x + w/2 - headW/2;
     let cy = y + h - bodyH - headH + 6 + bob;
@@ -755,7 +752,6 @@ class EnemyOniDraw {
     let skinShadow = '#252a54';    
     let darkEyeArea = '#191d3d';    
     let auraColor = null;
-    let isGhost = false;
 
     switch(type) {
       case DB.ONI_TYPES.SQUAT:
@@ -789,7 +785,7 @@ class EnemyOniDraw {
         headW = 56; headH = 50; bodyW = 34; bodyH = 26; cx = x + w/2 - headW/2; cy = y + h - bodyH - headH + bob;
         break;
       case DB.ONI_TYPES.GHOST:
-        skinColor = 'rgba(180, 200, 255, 0.75)'; skinShadow = 'rgba(100, 120, 180, 0.8)'; darkEyeArea = 'rgba(50, 60, 100, 0.9)'; isGhost = true;
+        skinColor = 'rgba(180, 200, 255, 0.75)'; skinShadow = 'rgba(100, 120, 180, 0.8)'; darkEyeArea = 'rgba(50, 60, 100, 0.9)';
         break;
       case DB.ONI_TYPES.BOMB:
         skinColor = '#34495e'; skinShadow = '#1a252f'; auraColor = 'rgba(231, 76, 60, 0.3)';
@@ -819,7 +815,6 @@ class EnemyOniDraw {
       ctx.arc(x + w/2, y + h/2 + bob, headW * 0.8, 0, Math.PI*2); ctx.fill();
     }
 
-    // ろくろ首の長い首
     if (type === DB.ONI_TYPES.LONGNECK) {
       ctx.fillStyle = skinColor; ctx.beginPath();
       ctx.moveTo(cx + headW/2 - 6, cy + headH - 2);
@@ -829,7 +824,6 @@ class EnemyOniDraw {
       ctx.fill();
     }
 
-    // 千手観音の背後の無数の腕
     if (type === DB.ONI_TYPES.ASURA) {
       ctx.fillStyle = skinShadow;
       for(let i = -3; i <= 3; i++) {
@@ -840,29 +834,24 @@ class EnemyOniDraw {
       }
     }
 
-    // 胴体
     ctx.fillStyle = skinShadow; ctx.fillRect(cx + (headW - bodyW)/2, cy + headH - 6, bodyW, bodyH);
     ctx.fillStyle = skinColor; ctx.fillRect(cx + (headW - bodyW)/2 + 3, cy + headH - 6, bodyW - 6, bodyH);
 
-    // ハンマー
     if (type === DB.ONI_TYPES.HAMMER) {
       ctx.fillStyle = '#7f8c8d'; ctx.fillRect(cx - 10, cy + 10, 8, 30);
       ctx.fillStyle = '#2c3e50'; ctx.fillRect(cx - 18, cy + 5, 24, 12);
     }
 
-    // 耳
     ctx.fillStyle = skinShadow; ctx.beginPath();
     ctx.ellipse(cx - 3, cy + headH*0.5, 5, 8, 0, 0, Math.PI*2);
     ctx.ellipse(cx + headW + 3, cy + headH*0.5, 5, 8, 0, 0, Math.PI*2); ctx.fill();
 
-    // 巨大な頭部
     let headGrad = ctx.createLinearGradient(cx, cy, cx, cy + headH);
     headGrad.addColorStop(0, skinColor); headGrad.addColorStop(1, skinShadow);
     ctx.fillStyle = headGrad; ctx.beginPath();
     ctx.roundRect(cx, cy, headW, headH, [18, 18, 10, 10]); ctx.fill();
     ctx.strokeStyle = '#12152e'; ctx.lineWidth = 2; ctx.stroke();
 
-    // ミイラの包帯描画
     if (type === DB.ONI_TYPES.MUMMY) {
       ctx.strokeStyle = '#f5f5dc'; ctx.lineWidth = 2.5;
       for(let i = 0; i < 4; i++) {
@@ -870,22 +859,18 @@ class EnemyOniDraw {
       }
     }
 
-    // 爆弾鬼の導火線
     if (type === DB.ONI_TYPES.BOMB) {
       ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(cx + headW/2, cy); ctx.quadraticCurveTo(cx + headW/2 + 8, cy - 8, cx + headW/2 + 4, cy - 14); ctx.stroke();
       ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(cx + headW/2 + 4, cy - 14, 3, 0, Math.PI*2); ctx.fill();
     }
 
-    // 目元
     ctx.fillStyle = darkEyeArea; let socketY = cy + 18;
     ctx.beginPath();
     ctx.ellipse(cx + 12, socketY + 1, 9, 10, 0, 0, Math.PI*2);
     ctx.ellipse(cx + headW - 12, socketY + 1, 9, 10, 0, 0, Math.PI*2); ctx.fill();
 
-    // 瞳描画
     if (type === DB.ONI_TYPES.BIKEI) {
-      // 少女漫画風キュートな瞳
       ctx.fillStyle = '#ff9ff3';
       ctx.beginPath(); ctx.ellipse(cx + 12, socketY, 6, 7, 0, 0, Math.PI*2);
       ctx.ellipse(cx + headW - 12, socketY, 6, 7, 0, 0, Math.PI*2); ctx.fill();
@@ -906,7 +891,6 @@ class EnemyOniDraw {
       ctx.beginPath(); ctx.arc(cx + headW - 12 + lookX, socketY + lookY, 3, 0, Math.PI*2); ctx.fill();
     }
 
-    // 口と歯
     let mouthY = cy + 32;
     ctx.fillStyle = '#110207'; ctx.beginPath();
     ctx.ellipse(cx + headW/2, mouthY, 13, 6, 0, 0, Math.PI*2); ctx.fill();
@@ -1039,7 +1023,8 @@ class NetworkManager {
       });
       this.broadcastLobbyState(); this.updateLobbyUI();
     } else if(data.type === 'PLAYER_SYNC') {
-      gameEngine.updateRemotePlayer(data.id, data.x, data.y, data.dir, data.isMoving, data.isOni, data.oniType, data.isHidden);
+      // 連続位置・変身・状態情報の更新と他メンバーへのブロードキャスト
+      gameEngine.updateRemotePlayer(data.id, data.x, data.y, data.dir, data.isMoving, data.isOni, data.oniType, data.oniTimer, data.isHidden, data.hiddenLockerId, data.isDead);
       this.broadcast({ type: 'REMOTE_SYNC', playerData: data }, conn.peer);
     } else if(data.type === 'VIRUS_CLAIM') {
       gameEngine.claimVirusBox(data.boxId, data.playerId);
@@ -1061,7 +1046,7 @@ class NetworkManager {
       gameEngine.startOnlineMatch(data.seed, Array.from(this.playersMap.values()), data.positions, data.lockerPositions);
     } else if(data.type === 'REMOTE_SYNC') {
       const p = data.playerData;
-      gameEngine.updateRemotePlayer(p.id, p.x, p.y, p.dir, p.isMoving, p.isOni, p.oniType, p.isHidden);
+      gameEngine.updateRemotePlayer(p.id, p.x, p.y, p.dir, p.isMoving, p.isOni, p.oniType, p.oniTimer, p.isHidden, p.hiddenLockerId, p.isDead);
     } else if(data.type === 'VIRUS_CLAIM') {
       gameEngine.claimVirusBox(data.boxId, data.playerId);
     } else if(data.type === 'KILL_EVENT') {
@@ -1231,11 +1216,13 @@ class GameEngine {
     this.addKillLog("変身バトル開始！全20種の青鬼に変身だ！");
   }
 
-  updateRemotePlayer(id, x, y, dir, isMoving, isOni, oniType, isHidden) {
+  updateRemotePlayer(id, x, y, dir, isMoving, isOni, oniType, oniTimer, isHidden, hiddenLockerId, isDead) {
     const char = this.players.get(id);
     if(char && !char.isLocal) {
       char.x = x; char.y = y; char.dir = dir; char.isMoving = isMoving;
-      char.isOni = isOni; char.oniType = oniType; char.isHidden = isHidden;
+      char.isOni = isOni; char.oniType = oniType; char.oniTimer = oniTimer;
+      char.isHidden = isHidden; char.hiddenLockerId = hiddenLockerId;
+      char.isDead = isDead;
     }
   }
 
@@ -1357,13 +1344,23 @@ class GameEngine {
         });
       }
 
+      // オンライン対戦時：毎フレーム〜約30Hzの頻度で「位置・変身状況・アクション」を通信送信し続ける
       this.syncTimer += dt;
-      if(this.syncTimer > 0.05) {
+      if(this.syncTimer > 0.033) { // 30fpsで常に更新送信
         this.syncTimer = 0;
         const syncData = {
-          type: 'PLAYER_SYNC', id: localChar.id, x: localChar.x, y: localChar.y,
-          dir: localChar.dir, isMoving: localChar.isMoving, isOni: localChar.isOni,
-          oniType: localChar.oniType, isHidden: localChar.isHidden
+          type: 'PLAYER_SYNC', 
+          id: localChar.id, 
+          x: localChar.x, 
+          y: localChar.y,
+          dir: localChar.dir, 
+          isMoving: localChar.isMoving, 
+          isOni: localChar.isOni,
+          oniType: localChar.oniType, 
+          oniTimer: localChar.oniTimer,
+          isHidden: localChar.isHidden,
+          hiddenLockerId: localChar.hiddenLockerId,
+          isDead: localChar.isDead
         };
         if(networkManager.isHost) networkManager.broadcast(syncData);
         else networkManager.sendToHost(syncData);
@@ -1484,134 +1481,128 @@ const gameEngine = new GameEngine();
 class UIManager {
   constructor() {
     this.currentSetupTab = 'CHARS';
-    this.init();
+    this.initUI();
   }
 
-  init() {
-    this.updateCoinsDisplay();
-    this.updateHomeAvatar();
+  initUI() {
+    this.updateHomeScreenUI();
   }
 
   showScreen(screenId) {
     document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
-    const target = document.getElementById(screenId);
-    if(target) target.classList.remove('hidden');
-
-    if(screenId === 'home-screen') {
-      this.updateCoinsDisplay();
-      this.updateHomeAvatar();
-    } else if(screenId === 'team-setup-screen') {
-      this.renderSetupSlots();
-      this.renderSetupGrid();
-    } else if(screenId === 'zukan-screen') {
-      this.renderZukan();
-    } else if(screenId === 'save-screen') {
-      document.getElementById('save-info-coins').innerText = saveData.coins;
-      document.getElementById('save-info-chars').innerText = saveData.unlockedChars.length;
-      document.getElementById('save-info-onis').innerText = saveData.unlockedOnis.length;
+    if(screenId !== 'hud') {
+      const el = document.getElementById(screenId);
+      if(el) el.classList.remove('hidden');
     }
+
+    if(screenId === 'home-screen') this.updateHomeScreenUI();
+    if(screenId === 'team-setup-screen') this.renderTeamSetupScreen();
+    if(screenId === 'zukan-screen') this.renderZukan();
+    if(screenId === 'save-screen') this.updateSaveInfo();
   }
 
-  showMessage(msg) {
-    const toast = document.getElementById('msg-toast');
-    toast.innerText = msg;
-    toast.classList.remove('hidden');
-    setTimeout(() => toast.classList.add('hidden'), 2500);
-  }
-
-  updateCoinsDisplay() {
-    document.getElementById('ui-coins').innerText = saveData.coins;
+  updateHomeScreenUI() {
     document.getElementById('player-display-name').innerText = saveData.playerName;
+    document.getElementById('ui-coins').innerText = saveData.coins;
+
+    const mainChar = DB.CHARACTERS.find(c => c.id === saveData.teamChars[0]) || DB.CHARACTERS[0];
+    const selectedOni = DB.ONI_DATA.find(o => o.id === saveData.selectedOni) || DB.ONI_DATA[0];
+
+    document.getElementById('home-avatar-icon').innerText = mainChar.icon;
+    document.getElementById('home-oni-preview').innerText = selectedOni.icon;
+
+    const synergy = this.getCalculatedSynergy();
+    document.getElementById('synergy-badge').innerText = `編成補正: 鬼変身${synergy.duration}s / 速度+${synergy.speedBonus}`;
   }
 
   getCalculatedSynergy() {
-    const mainChar = DB.CHARACTERS.find(c => c.id === saveData.teamChars[0]) || DB.CHARACTERS[0];
-    const subChar = DB.CHARACTERS.find(c => c.id === saveData.teamChars[1]) || DB.CHARACTERS[1];
-    const oni = DB.ONI_DATA.find(o => o.id === saveData.selectedOni) || DB.ONI_DATA[0];
-
-    let speedBonus = (subChar ? 10 : 0) + oni.speedAdd;
-    let duration = oni.duration;
-
-    return { speedBonus, duration, oniType: oni.type, oniName: oni.name, oniIcon: oni.icon };
+    const selectedOni = DB.ONI_DATA.find(o => o.id === saveData.selectedOni) || DB.ONI_DATA[0];
+    return {
+      oniType: selectedOni.type,
+      duration: selectedOni.duration,
+      speedBonus: selectedOni.speedAdd
+    };
   }
 
-  updateHomeAvatar() {
-    const mainChar = DB.CHARACTERS.find(c => c.id === saveData.teamChars[0]) || DB.CHARACTERS[0];
-    const synergy = this.getCalculatedSynergy();
+  renderTeamSetupScreen() {
+    this.renderSetupSlots();
+    this.switchSetupTab(this.currentSetupTab);
+  }
 
-    document.getElementById('home-avatar-icon').innerText = mainChar.icon;
-    document.getElementById('home-oni-preview').innerText = synergy.oniIcon;
-    document.getElementById('synergy-badge').innerText = `変身: ${synergy.oniName} | 時間: ${synergy.duration}s | 速度補正: +${synergy.speedBonus}`;
+  renderSetupSlots() {
+    const slotsEl = document.getElementById('setup-slots');
+    slotsEl.innerHTML = '';
+
+    for(let i = 0; i < 2; i++) {
+      const charId = saveData.teamChars[i];
+      const char = DB.CHARACTERS.find(c => c.id === charId);
+      const slot = document.createElement('div');
+      slot.className = `skin-slot ${char ? 'filled' : ''}`;
+      slot.innerHTML = char ? `<span style="font-size:2.2rem">${char.icon}</span><span style="font-size:0.75rem">${char.name}</span>` : '＋';
+      slotsEl.appendChild(slot);
+    }
+
+    const oni = DB.ONI_DATA.find(o => o.id === saveData.selectedOni);
+    const oniSlot = document.createElement('div');
+    oniSlot.className = `skin-slot oni-slot ${oni ? 'filled' : ''}`;
+    oniSlot.innerHTML = oni ? `<span style="font-size:2.2rem">${oni.icon}</span><span style="font-size:0.75rem">${oni.name}</span>` : '＋';
+    slotsEl.appendChild(oniSlot);
+
+    if(oni) {
+      document.getElementById('info-oni-name').innerText = oni.name;
+      document.getElementById('info-duration').innerText = `${oni.duration}秒`;
+      document.getElementById('info-speed').innerText = `+${oni.speedAdd}`;
+    }
   }
 
   switchSetupTab(tab) {
     this.currentSetupTab = tab;
-    this.renderSetupGrid();
-  }
+    const btnChars = document.getElementById('tab-btn-chars');
+    const btnOni = document.getElementById('tab-btn-oni');
 
-  renderSetupSlots() {
-    const container = document.getElementById('setup-slots');
-    container.innerHTML = '';
-
-    for(let i=0; i<2; i++) {
-      let charId = saveData.teamChars[i];
-      let char = DB.CHARACTERS.find(c => c.id === charId);
-      let slot = document.createElement('figure');
-      slot.className = `skin-slot ${char ? 'filled' : ''}`;
-      slot.innerHTML = char ? `<span style="font-size:2rem;">${char.icon}</span><span style="font-size:0.7rem;">${char.name}</span>` : `<span>キャラ${i+1}</span>`;
-      container.appendChild(slot);
+    if(tab === 'CHARS') {
+      btnChars.style.opacity = '1.0'; btnOni.style.opacity = '0.5';
+    } else {
+      btnChars.style.opacity = '0.5'; btnOni.style.opacity = '1.0';
     }
-
-    let oni = DB.ONI_DATA.find(o => o.id === saveData.selectedOni);
-    let slotOni = document.createElement('figure');
-    slotOni.className = `skin-slot oni-slot ${oni ? 'filled' : ''}`;
-    slotOni.innerHTML = oni ? `<span style="font-size:2.2rem;">${oni.icon}</span><span style="font-size:0.7rem; color:#e74c3c;">${oni.name}</span>` : `<span>変身青鬼</span>`;
-    container.appendChild(slotOni);
-
-    const synergy = this.getCalculatedSynergy();
-    document.getElementById('info-oni-name').innerText = synergy.oniName;
-    document.getElementById('info-duration').innerText = `${synergy.duration}秒`;
-    document.getElementById('info-speed').innerText = `+${synergy.speedBonus}`;
+    this.renderInventory();
   }
 
-  renderSetupGrid() {
+  renderInventory() {
     const grid = document.getElementById('inventory-grid');
     grid.innerHTML = '';
 
     if(this.currentSetupTab === 'CHARS') {
-      DB.CHARACTERS.forEach(char => {
-        let isUnlocked = saveData.unlockedChars.includes(char.id);
-        let isSelected = saveData.teamChars.includes(char.id);
-        let item = document.createElement('article');
-        item.className = `card-item ${char.rarity} ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}`;
-        item.innerHTML = `<span style="font-size:2rem;">${char.icon}</span><span style="font-size:0.75rem; font-weight:bold; margin-top:4px;">${char.name}</span>`;
+      DB.CHARACTERS.forEach(c => {
+        const isUnlocked = saveData.unlockedChars.includes(c.id);
+        const isSelected = saveData.teamChars.includes(c.id);
+        const card = document.createElement('div');
+        card.className = `card-item ${c.rarity} ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}`;
+        card.innerHTML = `<span style="font-size:2rem">${c.icon}</span><span style="font-size:0.75rem; font-weight:bold;">${c.name}</span>`;
         if(isUnlocked) {
-          item.onclick = () => {
-            if(!isSelected) {
-              saveData.teamChars[1] = saveData.teamChars[0];
-              saveData.teamChars[0] = char.id;
-              this.renderSetupSlots();
-              this.renderSetupGrid();
+          card.onclick = () => {
+            if(!saveData.teamChars.includes(c.id)) {
+              saveData.teamChars[0] = c.id;
+              this.renderTeamSetupScreen();
             }
           };
         }
-        grid.appendChild(item);
+        grid.appendChild(card);
       });
     } else {
-      DB.ONI_DATA.forEach(oni => {
-        let isUnlocked = saveData.unlockedOnis.includes(oni.id);
-        let isSelected = saveData.selectedOni === oni.id;
-        let item = document.createElement('article');
-        item.className = `card-item ${oni.rarity} ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}`;
-        item.innerHTML = `<span style="font-size:2rem;">${oni.icon}</span><span style="font-size:0.75rem; font-weight:bold; color:#e74c3c; margin-top:4px;">${oni.name}</span>`;
+      DB.ONI_DATA.forEach(o => {
+        const isUnlocked = saveData.unlockedOnis.includes(o.id);
+        const isSelected = saveData.selectedOni === o.id;
+        const card = document.createElement('div');
+        card.className = `card-item ${o.rarity} ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}`;
+        card.innerHTML = `<span style="font-size:2rem">${o.icon}</span><span style="font-size:0.75rem; font-weight:bold;">${o.name}</span>`;
         if(isUnlocked) {
-          item.onclick = () => {
-            saveData.selectedOni = oni.id;
-            this.renderSetupSlots();
-            this.renderSetupGrid();
+          card.onclick = () => {
+            saveData.selectedOni = o.id;
+            this.renderTeamSetupScreen();
           };
         }
-        grid.appendChild(item);
+        grid.appendChild(card);
       });
     }
   }
@@ -1623,65 +1614,69 @@ class UIManager {
 
   rollGacha() {
     if(saveData.coins < 200) {
-      this.showMessage('青銭が足りません！(200青銭必要)');
+      this.showMessage('青銭が足りません！');
       return;
     }
-
     saveData.coins -= 200;
-    this.updateCoinsDisplay();
 
-    let isOniRoll = Math.random() > 0.35;
-    let resultObj = null;
+    const isOniGacha = Math.random() < 0.7;
+    let pool = isOniGacha ? DB.ONI_DATA : DB.CHARACTERS;
+    let item = pool[Utils.randomInt(0, pool.length)];
 
-    if(isOniRoll) {
-      let unowned = DB.ONI_DATA.filter(o => !saveData.unlockedOnis.includes(o.id));
-      let pool = unowned.length > 0 ? unowned : DB.ONI_DATA;
-      resultObj = pool[Math.floor(Math.random() * pool.length)];
-      if(!saveData.unlockedOnis.includes(resultObj.id)) saveData.unlockedOnis.push(resultObj.id);
+    if(isOniGacha) {
+      if(!saveData.unlockedOnis.includes(item.id)) saveData.unlockedOnis.push(item.id);
     } else {
-      let unowned = DB.CHARACTERS.filter(c => !saveData.unlockedChars.includes(c.id));
-      let pool = unowned.length > 0 ? unowned : DB.CHARACTERS;
-      resultObj = pool[Math.floor(Math.random() * pool.length)];
-      if(!saveData.unlockedChars.includes(resultObj.id)) saveData.unlockedChars.push(resultObj.id);
+      if(!saveData.unlockedChars.includes(item.id)) saveData.unlockedChars.push(item.id);
     }
-
     saveData.save();
 
-    const resPanel = document.getElementById('gacha-result');
-    resPanel.classList.remove('hidden');
-    document.getElementById('gacha-type-tag').innerText = isOniRoll ? `【変身青鬼】 [${resultObj.rarity}]` : `【キャラ】 [${resultObj.rarity}]`;
-    document.getElementById('gacha-result-icon').innerText = resultObj.icon;
-    document.getElementById('gacha-result-name').innerText = resultObj.name;
+    const resultBox = document.getElementById('gacha-result');
+    resultBox.classList.remove('hidden');
+    document.getElementById('gacha-type-tag').innerText = isOniGacha ? '【変身青鬼】' : '【人間キャラ】';
+    document.getElementById('gacha-result-icon').innerText = item.icon;
+    document.getElementById('gacha-result-name').innerText = item.name;
+
+    this.updateHomeScreenUI();
   }
 
   renderZukan() {
     const grid = document.getElementById('zukan-grid');
     grid.innerHTML = '';
-    DB.ONI_DATA.forEach(oni => {
-      let isUnlocked = saveData.unlockedOnis.includes(oni.id);
-      let item = document.createElement('article');
-      item.className = `card-item ${oni.rarity} ${!isUnlocked ? 'locked' : ''}`;
-      item.innerHTML = `
-        <span style="font-size:2rem;">${isUnlocked ? oni.icon : '❓'}</span>
-        <span style="font-size:0.75rem; font-weight:bold; color:#e74c3c; margin-top:4px;">${isUnlocked ? oni.name : '？？？'}</span>
-        <span style="font-size:0.65rem; color:#aaa; margin-top:2px;">${oni.condition}</span>
-      `;
-      grid.appendChild(item);
+    DB.ONI_DATA.forEach(o => {
+      const isUnlocked = saveData.unlockedOnis.includes(o.id);
+      const card = document.createElement('div');
+      card.className = `card-item ${o.rarity} ${!isUnlocked ? 'locked' : ''}`;
+      card.innerHTML = `<span style="font-size:2rem">${isUnlocked ? o.icon : '❓'}</span><span style="font-size:0.75rem; font-weight:bold;">${isUnlocked ? o.name : '？？？'}</span>`;
+      grid.appendChild(card);
     });
   }
 
+  updateSaveInfo() {
+    document.getElementById('save-info-coins').innerText = saveData.coins;
+    document.getElementById('save-info-chars').innerText = saveData.unlockedChars.length;
+    document.getElementById('save-info-onis').innerText = saveData.unlockedOnis.length;
+  }
+
   resetSaveData() {
-    if(confirm('本当にデータを初期化しますか？')) {
+    if(confirm('セーブデータを初期化してもよろしいですか？')) {
       saveData.reset();
-      this.updateCoinsDisplay();
-      this.updateHomeAvatar();
       this.showMessage('データを初期化しました');
       this.showScreen('home-screen');
     }
   }
-}
 
+  showMessage(msg) {
+    const toast = document.getElementById('msg-toast');
+    toast.innerText = msg;
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 3000);
+  }
+}
 const uiManager = new UIManager();
+
+window.onload = () => {
+  uiManager.updateHomeScreenUI();
+};
 </script>
 </body>
 </html>

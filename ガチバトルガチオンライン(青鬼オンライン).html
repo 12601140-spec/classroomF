@@ -411,13 +411,21 @@ class MapGenerator {
   }
 
   static getRandomFloor(grid, cols, rows) {
-    let max = 1000;
-    while (max-- > 0) {
-      let x = Utils.randomInt(1, cols - 1);
-      let y = Utils.randomInt(1, rows - 1);
-      if (grid[y][x] === TILE.FLOOR) return { x: x * CONFIG.TILE_SIZE, y: y * CONFIG.TILE_SIZE };
+    let validFloors = [];
+    for (let y = 1; y < rows - 1; y++) {
+      for (let x = 1; x < cols - 1; x++) {
+        if (grid[y][x] === TILE.FLOOR) {
+          validFloors.push({ x, y });
+        }
+      }
     }
-    return { x: 3 * CONFIG.TILE_SIZE, y: 3 * CONFIG.TILE_SIZE };
+    if (validFloors.length > 0) {
+      let pick = validFloors[Math.floor(Math.random() * validFloors.length)];
+      // キャラクター(24x24)がタイル(48x48)の中央に来るようオフセット調整
+      let offset = (CONFIG.TILE_SIZE - 24) / 2;
+      return { x: pick.x * CONFIG.TILE_SIZE + offset, y: pick.y * CONFIG.TILE_SIZE + offset };
+    }
+    return { x: 3 * CONFIG.TILE_SIZE + 12, y: 3 * CONFIG.TILE_SIZE + 12 };
   }
 }
 

@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+ <title>青鬼オンライン外伝 - 変身ガチバトル P2Pマルチ</title>
+ <script src="https://cdn.tailwindcss.com"></script>
+ <!-- PeerJS (P2P通信ライブラリ) -->
+ <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+ <style>
+ :root {
+   --primary-color: #1a2a3a;
+   --accent-color: #3498db;
+   --oni-purple: #8e44ad;
+   --danger-red: #e74c3c;
+   --gold-yellow: #f1c40f;
+   --ui-bg: rgba(11, 22, 38, 0.92);
+ }
+
+ * { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
+
+ body, html {
+   width: 100%; height: 100%;
+   background-color: #050a12; overflow: hidden;
+   font-family: 'Helvetica Neue', Arial, sans-serif;
+   color: #ecf0f1;
+ }
+
+ #game-container {
+   position: relative; width: 100%; height: 100%;
+   display: flex; justify-content: center; align-items: center; background-color: #000;
+ }
+
+ #game-canvas { display: block; image-rendering: pixelated; z-index: 10; position: absolute; top:0; left:0; }
+
+ .overlay {
+   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+   display: flex; flex-direction: column; justify-content: center; align-items: center;
+   background: var(--ui-bg); z-index: 100; transition: opacity 0.3s ease;
+   overflow-y: auto; padding: 20px 10px;
+ }
+
+ .hidden { display: none !important; }
+
+ .btn {
+   padding: 10px 24px; font-size: 1rem; font-weight: bold; color: white;
+   background: linear-gradient(135deg, #2980b9, #3498db); border: 2px solid #5dade2;
+   border-radius: 25px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+   transition: all 0.15s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+ }
+ .btn:active { transform: scale(0.95); }
+ .btn.red { background: linear-gradient(135deg, #c0392b, #e74c3c); border-color: #f1948a; }
+ .btn.green { background: linear-gradient(135deg, #27ae60, #2ecc71); border-color: #82e0aa; }
+ .btn.purple { background: linear-gradient(135deg, #7d3c98, #8e44ad); border-color: #bb8fce; }
+ .btn.gold { background: linear-gradient(135deg, #d35400, #f39c12); border-color: #f8c471; }
+ .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+ /* ホーム画面 */
+ #home-screen {
+   background: radial-gradient(circle at center, #1b2a4a 0%, #080e18 100%);
+   display: flex; flex-direction: column; justify-content: space-between;
+ }
+
+ .top-bar {
+   width: 100%; padding: 15px; display: flex; justify-content: space-between; align-items: center;
+   background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, transparent 100%);
+   position: absolute; top: 0; left: 0; z-index: 20;
+ }
+
+ .currency-box {
+   background: rgba(0,0,0,0.6); border: 2px solid var(--gold-yellow);
+   border-radius: 20px; padding: 4px 14px; color: var(--gold-yellow); font-weight: bold; font-size: 0.95rem;
+ }
+
+ /* 3体スキン編成画面 */
+ .slot-container {
+   display: flex; gap: 12px; margin: 12px 0; justify-content: center;
+ }
+ .skin-slot {
+   width: 90px; height: 115px; background: rgba(255,255,255,0.05); border: 2px dashed #3498db;
+   border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+   position: relative; cursor: pointer; transition: all 0.2s;
+ }
+ .skin-slot.filled { border-style: solid; background: rgba(52, 152, 219, 0.15); border-color: #5dade2; }
+ .skin-slot .remove-btn {
+   position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; background: #e74c3c;
+   color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+   font-weight: bold; font-size: 12px; border: 2px solid #fff; z-index: 10;
+ }
+
+ .item-grid {
+   display: grid; grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); gap: 10px;
+   max-height: 40vh; overflow-y: auto; width: 100%; padding: 10px; background: rgba(0,0,0,0.4);
+   border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+ }
+ .card-item {
+   background: #2c3e50; border: 2px solid #7f8c8d; border-radius: 8px; padding: 8px;
+   display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative;
+   text-align: center;
+ }
+ .card-item.selected { border-color: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
+ .card-item.locked { filter: grayscale(0.8); opacity: 0.6; }
+ .card-item.SSR { border-color: #f1c40f; }
+ .card-item.SR { border-color: #9b59b6; }
+
+ /* HUD */
+ #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+ .hud-panel { position: absolute; background: rgba(0,0,0,0.75); border: 2px solid #444; border-radius: 10px; padding: 8px 14px; font-weight: bold; }
+ #alive-panel { top: 15px; left: 15px; font-size: 1.1rem; color: #2ecc71; }
+ #oni-timer-panel { top: 15px; left: 50%; transform: translateX(-50%); font-size: 1.2rem; color: #e74c3c; min-width: 180px; text-align: center; }
+
+ #kill-log { position: absolute; top: 15px; right: 15px; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+ .log-entry { background: rgba(0,0,0,0.85); padding: 4px 10px; border-radius: 4px; font-size: 0.85rem; border-left: 3px solid #e74c3c; animation: fadeIn 0.2s forwards; }
+
+ #joystick-zone { position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); pointer-events: auto; touch-action: none; }
+ #joystick-knob { position: absolute; top: 50%; left: 50%; width: 45px; height: 45px; background: rgba(255,255,255,0.4); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+
+ .modal-box { background: rgba(15, 25, 40, 0.95); border: 2px solid #3498db; padding: 20px; border-radius: 16px; text-align: center; width: 90%; max-width: 440px; }
+ 
+ input[type="text"] {
+   background: #111; color: #fff; border: 2px solid #3498db; border-radius: 8px; padding: 10px; font-size: 1.1rem; text-align: center; width: 100%; outline: none; margin: 8px 0;
+ }
+
+ .player-list-item {
+   background: rgba(255,255,255,0.08); padding: 8px 12px; border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; align-items: center; font-weight: bold;
+ }
+ </style>
+</head>
+<body>
+<main id="game-container">
+ <canvas id="game-canvas"></canvas>
+
+ <!-- ゲーム中HUD -->
+ <aside id="hud" class="hidden">
+   <section id="alive-panel" class="hud-panel">生存者: <span id="alive-count">5</span>人</section>
+   <section id="oni-timer-panel" class="hud-panel hidden">👹鬼変身中: <span id="oni-timer">15</span>s</section>
+   <section id="kill-log"></section>
+   <section id="joystick-zone"><figure id="joystick-knob"></figure></section>
+ </aside>
+
+ <!-- タイトル画面 -->
+ <section id="title-screen" class="overlay">
+   <h1 style="font-size: 2.8rem; font-weight: 900; color: #3498db; text-shadow: 0 0 20px rgba(52,152,219,0.6); text-align:center;">青鬼オンライン<br><span style="color:#e74c3c; font-size:2rem;">外伝：変身ガチバトル P2P</span></h1>
+   <p style="margin-top: 30px; font-size: 1.2rem; opacity: 0.8;" class="animate-pulse">タップしてロビーへ</p>
+ </section>
+
+ <!-- ホーム（ロビー）画面 -->
+ <section id="home-screen" class="overlay hidden">
+   <header class="top-bar">
+     <section style="font-weight: bold; font-size: 1rem; display:flex; align-items:center; gap:6px;">
+       <span>👤</span> <input type="text" id="player-name-input" style="width:120px; font-size:0.9rem; padding:4px; margin:0;" value="ゲスト" onchange="uiManager.updatePlayerName(this.value)">
+     </section>
+     <aside class="currency-box">🪙 青銭: <span id="ui-coins">0</span></aside>
+   </header>
+
+   <section style="text-align: center; margin-top: 50px;">
+     <h2 style="font-size: 1.6rem; color: #f1c40f; font-weight: bold;">変身ガチバトル (最大5人P2P)</h2>
+     <p style="font-size: 0.85rem; color: #aaa; margin-top: 4px;">ウィルスボックスで鬼に変身！友達やCPUとマルチ対戦</p>
+     
+     <!-- 選択中パーティプレビュー -->
+     <section class="slot-container" id="home-party-preview" style="margin-top: 15px;"></section>
+     <span id="synergy-badge" style="font-weight: bold; color: #3498db; font-size: 0.9rem; background: rgba(0,0,0,0.5); padding: 4px 14px; border-radius: 15px; display: inline-block;">シナジー: なし</span>
+   </section>
+
+   <!-- P2P 募集 & 参加 エリア -->
+   <section style="background: rgba(0,0,0,0.5); border: 1px solid #3498db; border-radius: 12px; padding: 12px; width: 90%; max-width: 400px; margin: 15px 0;">
+     <p style="font-size: 0.9rem; font-weight: bold; color: #f1c40f; margin-bottom: 8px;">⚔️ オンライン対戦 (P2P通信)</p>
+     <nav style="display: flex; gap: 8px; justify-content: center; align-items: center;">
+       <button class="btn gold" style="flex:1; font-size: 0.95rem;" onclick="p2pManager.hostRoom()">👑 部屋を作成(募集)</button>
+     </nav>
+     <form style="display: flex; gap: 8px; margin-top: 10px; align-items: center;" onsubmit="event.preventDefault(); p2pManager.joinRoom();">
+       <input type="text" id="join-code-input" placeholder="6桁の部屋番号" maxlength="6" style="flex:1; margin:0; font-size:1rem; uppercase;">
+       <button type="submit" class="btn green" style="font-size: 0.95rem; white-space:nowrap;">🔑 参加</button>
+     </form>
+   </section>
+
+   <!-- メニューボタン群 -->
+   <nav style="display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 400px; margin-bottom: 20px;">
+     <section style="display: flex; gap: 8px;">
+       <button class="btn purple" style="flex:1; font-size: 0.85rem;" onclick="uiManager.showScreen('team-setup-screen')">👕 スキン編成</button>
+       <button class="btn gold" style="flex:1; font-size: 0.85rem;" onclick="uiManager.showScreen('gacha-screen')">🎰 ガチャ</button>
+     </section>
+     <section style="display: flex; gap: 8px;">
+       <button class="btn" style="flex:1; font-size: 0.85rem;" onclick="uiManager.showScreen('zukan-screen')">📖 青鬼図鑑</button>
+       <button class="btn red" style="flex:1; font-size: 0.85rem;" onclick="uiManager.showScreen('save-screen')">💾 データ管理</button>
+     </section>
+   </nav>
+ </section>
+
+ <!-- P2P 待機ルーム画面 -->
+ <section id="lobby-screen" class="overlay hidden">
+   <article class="modal-box">
+     <h2 id="lobby-role-title" style="font-size: 1.4rem; color: #f1c40f; font-weight: bold;">対戦待機ルーム</h2>
+     <section style="margin: 12px 0;">
+       <p style="font-size: 0.85rem; color: #aaa;">部屋番号 (パスワード)</p>
+       <p id="room-code-display" style="font-size: 2rem; font-weight: 900; color: #3498db; letter-spacing: 4px; font-family: monospace;">------</p>
+     </section>
+     
+     <p style="font-size: 1rem; margin: 10px 0;">参加メンバー (<span id="room-player-count">1</span> / 5人)</p>
+     <section id="room-player-list" style="max-height: 160px; overflow-y: auto; margin-bottom: 15px;"></section>
+
+     <nav style="display: flex; flex-direction: column; gap: 10px;">
+       <button id="start-game-btn" class="btn gold" style="font-size: 1.2rem;" onclick="p2pManager.startGame()">⚔️ 対戦スタート (CPU補正あり)</button>
+       <button class="btn red" onclick="p2pManager.leaveRoom()">切断して戻る</button>
+     </nav>
+   </article>
+ </section>
+
+ <!-- スキン3体編成画面 -->
+ <section id="team-setup-screen" class="overlay hidden">
+   <h2 style="font-size: 1.4rem; font-weight: bold; color: #f1c40f;">スキン＆変身青鬼編成</h2>
+   <p style="font-size: 0.8rem; color: #ccc; margin-bottom: 8px;">人間スキンで能力を強化し、変身する青鬼を選択！</p>
+
+   <section class="slot-container" id="setup-slots"></section>
+
+   <aside id="setup-info-panel" style="background: rgba(0,0,0,0.6); border: 1px solid #3498db; border-radius: 8px; padding: 8px 12px; width: 95%; max-width: 420px; font-size: 0.8rem; margin-bottom: 8px; text-align: left;">
+     <p><strong>装備中の変身青鬼:</strong> <span id="info-oni-name" style="color:#e74c3c;">通常青鬼</span></p>
+     <p><strong>パーティ補正:</strong> <span id="info-synergy">バランス型（標準速度）</span></p>
+   </aside>
+
+   <!-- タブ切替（人間スキン / 変身青鬼） -->
+   <nav style="display: flex; gap: 6px; margin-bottom: 8px; width: 95%; max-width: 420px;">
+     <button class="btn" style="padding: 4px 10px; font-size: 0.8rem; flex:1;" id="tab-btn-human" onclick="uiManager.switchSetupTab('HUMAN')">👦 人間スキン (3体)</button>
+     <button class="btn purple" style="padding: 4px 10px; font-size: 0.8rem; flex:1;" id="tab-btn-oni" onclick="uiManager.switchSetupTab('ONI')">👹 変身青鬼選択</button>
+   </nav>
+
+   <section style="width: 95%; max-width: 420px;">
+     <section id="skin-inventory-grid" class="item-grid"></section>
+   </section>
+
+   <button class="btn green" style="margin-top: 12px; width: 80%; max-width: 280px;" onclick="uiManager.saveTeamAndReturn()">決定・完了</button>
+ </section>
+
+ <!-- ガチャ画面 -->
+ <section id="gacha-screen" class="overlay hidden">
+   <article class="modal-box" style="max-width: 520px; width: 95%;">
+     <h2 style="font-size: 1.6rem; color: #f1c40f; font-weight: bold;">🎰 青鬼＆スキンガチャ</h2>
+     <p style="font-size: 1.1rem; color: #f1c40f; font-weight: bold; margin: 6px 0 12px 0;">所持青銭: <span id="gacha-coins">0</span> 🪙</p>
+     
+     <!-- 2種類のガチャカード -->
+     <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 12px;">
+       
+       <!-- 人間スキンガチャ -->
+       <article style="background: rgba(41, 128, 185, 0.2); border: 2px solid #3498db; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+         <header>
+           <span style="font-size: 1.8rem; display:block;">👦</span>
+           <h3 style="font-size: 1rem; font-weight: bold; color: #3498db;">人間スキンガチャ</h3>
+           <p style="font-size: 0.75rem; color: #ccc; margin: 4px 0 10px 0;">バトルで操作する人間キャラを獲得！</p>
+         </header>
+         <nav style="display: flex; flex-direction: column; gap: 6px;">
+           <button class="btn gold" style="font-size: 0.8rem; padding: 6px 10px;" onclick="uiManager.playGacha('HUMAN', 1)">単発 (100🪙)</button>
+           <button class="btn purple" style="font-size: 0.8rem; padding: 6px 10px;" onclick="uiManager.playGacha('HUMAN', 10)">10連 (1000🪙)</button>
+         </nav>
+       </article>
+
+       <!-- 青鬼ガチャ -->
+       <article style="background: rgba(142, 68, 173, 0.2); border: 2px solid #8e44ad; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+         <header>
+           <span style="font-size: 1.8rem; display:block;">👹</span>
+           <h3 style="font-size: 1rem; font-weight: bold; color: #bb8fce;">青鬼変身ガチャ</h3>
+           <p style="font-size: 0.75rem; color: #ccc; margin: 4px 0 10px 0;">変身できる特別な青鬼の姿を解放！</p>
+         </header>
+         <nav style="display: flex; flex-direction: column; gap: 6px;">
+           <button class="btn gold" style="font-size: 0.8rem; padding: 6px 10px;" onclick="uiManager.playGacha('ONI', 1)">単発 (100🪙)</button>
+           <button class="btn purple" style="font-size: 0.8rem; padding: 6px 10px;" onclick="uiManager.playGacha('ONI', 10)">10連 (1000🪙)</button>
+         </nav>
+       </article>
+
+     </section>
+
+     <!-- ガチャ結果表示領域 -->
+     <output id="gacha-result-box" style="min-height: 80px; max-height: 140px; overflow-y: auto; background: rgba(0,0,0,0.6); border: 2px dashed #f1c40f; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 12px; padding: 8px; width: 100%;">
+       <span id="gacha-anim-icon" style="font-size: 2rem;">🎁</span>
+       <p id="gacha-result-text" style="font-size: 0.85rem; font-weight: bold; margin-top: 4px; white-space: pre-wrap;">ガチャを選択してください！</p>
+     </output>
+
+     <button class="btn red" style="width: 100%; font-size: 0.9rem; padding: 8px;" onclick="uiManager.showScreen('home-screen')">戻る</button>
+   </article>
+ </section>
+
+ <!-- 図鑑画面 -->
+ <section id="zukan-screen" class="overlay hidden">
+   <h2 style="font-size: 1.5rem; color: #3498db; margin-bottom: 10px;">📖 青鬼＆スキン解放図鑑</h2>
+   <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 10px;">解放条件を満たすかガチャでゲットできます</p>
+   <section id="zukan-grid" class="item-grid" style="width: 95%; max-width: 450px; max-height: 60vh;"></section>
+   <button class="btn red" style="margin-top: 15px;" onclick="uiManager.showScreen('home-screen')">戻る</button>
+ </section>
+
+ <!-- セーブ/ロード -->
+ <section id="save-screen" class="overlay hidden">
+   <article class="modal-box">
+     <h3 style="font-size: 1.3rem; font-weight: bold; margin-bottom: 8px;">💾 データ管理</h3>
+     <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">戦績や獲得スキンの保存・初期化を行えます。</p>
+     
+     <nav style="display: flex; flex-direction: column; gap: 10px;">
+       <button class="btn green" onclick="uiManager.manualSave()">💾 今すぐ手動セーブ</button>
+       <button class="btn gold" onclick="uiManager.exportSaveFile()">📁 セーブデータをファイル出力</button>
+       <label class="btn purple" style="cursor: pointer;">
+         📂 ファイルから復元
+         <input type="file" id="import-file-input" style="display:none;" onchange="uiManager.importSaveFile(event)">
+       </label>
+       <button class="btn red" onclick="uiManager.resetSaveData()">⚠️ データ初期化</button>
+     </nav>
+     <button class="btn" style="margin-top: 15px; width: 100%;" onclick="uiManager.showScreen('home-screen')">閉じる</button>
+   </article>
+ </section>
+
+ <!-- リザルト画面 -->
+ <section id="result-screen" class="overlay hidden">
+   <h2 id="result-rank-title" style="font-size: 3.2rem; font-weight: 900; color: #f1c40f;">1位 / 5人</h2>
+   <p id="result-detail" style="font-size: 1.1rem; margin: 12px 0;">撃破数: 0体</p>
+   <p style="font-size: 1.6rem; color: #f1c40f; font-weight: bold; margin-bottom: 20px;">獲得青銭: +<span id="result-coin-amount">0</span></p>
+   <button class="btn gold" style="font-size: 1.1rem; padding: 10px 30px;" onclick="p2pManager.returnToLobbyOrHome()">ホーム・ロビーへ</button>
+ </section>
+</main>
+
+<script>
+// データベース（本編マスタデータ & 図鑑・ガチャ解放条件）
+const DB = {
+  CHARACTERS: [
+    { id: 'c1', name: 'ひろし風', color: '#3498db', speedBase: 180, rarity: 'N', icon: '👦', type: 'BALANCE', condition: '初期解放' },
+    { id: 'c12', name: 'HIKAKIN', color: '#3498db', speedBase: 180, rarity: 'N', icon: '😎', type: 'BALANCE', condition: '初期解放' },
+    { id: 'c2', name: 'タケル風', color: '#e74c3c', speedBase: 185, rarity: 'N', icon: '👱', type: 'ATTACK', condition: '初期解放' },
+    { id: 'c3', name: 'ミカ風', color: '#f39c12', speedBase: 185, rarity: 'N', icon: '👧', type: 'SPEED', condition: '初期解放' },
+    { id: 'c4', name: 'タクヤ風', color: '#2ecc71', speedBase: 175, rarity: 'N', icon: '👦🏻', type: 'BALANCE', condition: '初期解放' },
+    { id: 'c5', name: 'ニワトリ', color: '#ecf0f1', speedBase: 210, rarity: 'R', icon: '🐔', type: 'SPEED', condition: 'ガチャまたは通算3キル' },
+    { id: 'c6', name: '鎧の騎士', color: '#95a5a6', speedBase: 165, rarity: 'SR', icon: '🛡️', type: 'ATTACK', condition: 'ガチャまたは通算10キル' },
+    { id: 'c7', name: '忍者', color: '#2c3e50', speedBase: 230, rarity: 'SR', icon: '🥷', type: 'SPEED', condition: 'ガチャで獲得' },
+    { id: 'c8', name: '宇宙飛行士', color: '#bdc3c7', speedBase: 190, rarity: 'SR', icon: '👨‍🚀', type: 'BALANCE', condition: 'ガチャで獲得' },
+    { id: 'c9', name: '魔法使い', color: '#9b59b6', speedBase: 200, rarity: 'R', icon: '🧙', type: 'ATTACK', condition: 'ガチャで獲得' },
+    { id: 'c10', name: '芋ボーイ', color: '#8d6e63', speedBase: 240, rarity: 'SR', icon: '🥔', type: 'SPEED', condition: 'ガチャで獲得' },
+    { id: 'c11', name: 'メカハンド', color: '#546de5', speedBase: 200, rarity: 'SR', icon: '🪬', type: 'ATTACK', condition: 'ガチャで獲得' },
+    { id: 'c13', name: 'スプラマニューバー', color: '#ff4757', speedBase: 220, rarity: 'SR', icon: '🔫', type: 'ATTACK', condition: 'ガチャで獲得' },
+    { id: 'c14', name: 'ゲームマスター赤鬼', color: '#e74c3c', speedBase: 210, rarity: 'SR', icon: '👹', type: 'ATTACK', condition: 'ガチャで獲得' },
+    { id: 'c15', name: 'ゴッドこうたん', color: '#f1c40f', speedBase: 230, rarity: 'SSR', icon: '🤪', type: 'SPEED', condition: 'ガチャSSR（超激レア）' },
+    { id: 'c16', name: '大仏', color: '#b7950b', speedBase: 165, rarity: 'SR', icon: '🌚', type: 'BALANCE', condition: 'ガチャで獲得' },
+    { id: 'c17', name: 'ダイヤモンド', color: '#70a1ff', speedBase: 200, rarity: 'SSR', icon: '💎', type: 'BALANCE', condition: 'ガチャSSR（超激レア）' }
+  ],
+  ONI_TYPES: {
+    NORMAL: 0, FUWATTY: 1, SQUAT: 2, JELLY: 3, DEMON: 4, ICE: 5, FIRE: 6, SLIME: 7, SPIDER: 8, MUMMY: 9, NINJA: 10, GIANT: 11, GHOST: 12, BOMB: 13, SNIPER: 14, POISON: 15, ZOMBIE: 16, METAL: 17
+  },
+  ONI_DATA: [
+    { id: 'o0', type: 0, name: '青鬼', rarity: 'N', desc: '標準的な青鬼', condition: '初期から使用可能' },
+    { id: 'o1', type: 1, name: 'フワッティー', rarity: 'R', desc: '超高速直線ダッシュ', condition: 'SPEEDタイプ2体以上で変身' },
+    { id: 'o2', type: 2, name: 'スクワット鬼', rarity: 'R', desc: '屈伸からの大ジャンプ追い上げ', condition: 'BALANCEタイプ3体で変身' },
+    { id: 'o3', type: 3, name: 'クラゲ鬼', rarity: 'SR', desc: '水のようにしなやかな移動', condition: 'ガチャまたはSPEED+BALANCE' },
+    { id: 'o4', type: 4, name: '魔王鬼', rarity: 'SSR', desc: '圧倒的オーラと速度', condition: 'ATTACKタイプ3体編成で解放' },
+    { id: 'o5', type: 5, name: '氷鬼', rarity: 'SR', desc: '周囲の敵を減速させる', condition: 'ガチャで獲得' },
+    { id: 'o6', type: 6, name: '炎鬼', rarity: 'SR', desc: '猛烈なスピードで追跡', condition: 'ガチャで獲得' },
+    { id: 'o7', type: 7, name: 'スライム鬼', rarity: 'R', desc: '伸縮自在のトリッキー挙動', condition: 'ガチャで獲得' },
+    { id: 'o8', type: 8, name: 'クモ鬼', rarity: 'SR', desc: '壁際で真価を発揮', condition: 'ガチャで獲得' },
+    { id: 'o9', type: 9, name: 'ミイラ鬼', rarity: 'R', desc: '耐久力に長けた鬼', condition: 'ガチャで獲得' },
+    { id: 'o10', type: 10, name: '忍者鬼', rarity: 'SR', desc: '素早い身のこなし', condition: 'ガチャで獲得' },
+    { id: 'o11', type: 11, name: '巨人鬼', rarity: 'SR', desc: '広大な攻撃判定範囲', condition: 'ガチャで獲得' },
+    { id: 'o12', type: 12, name: '亡霊鬼', rarity: 'R', desc: '壁をすり抜けて迫る', condition: 'ガチャで獲得' },
+    { id: 'o13', type: 13, name: '爆弾鬼', rarity: 'SR', desc: '広範囲爆破巻き込み', condition: 'ガチャで獲得' },
+    { id: 'o14', type: 14, name: 'スナイパー鬼', rarity: 'SSR', desc: '遠距離ターゲットロック', condition: 'ガチャで獲得' },
+    { id: 'o15', type: 15, name: '毒鬼', rarity: 'SR', desc: '周りに毒霧を撒き散らす', condition: 'ガチャで獲得' },
+    { id: 'o16', type: 16, name: 'ゾンビ鬼', rarity: 'R', desc: 'しぶとく食らいつく', condition: 'ガチャで獲得' },
+    { id: 'o17', type: 17, name: 'メタル鬼', rarity: 'SSR', desc: '超金色の超高速ボディ', condition: '通算20キル達成で解放' }
+  ],
+  NPC_NAMES: [
+    "Bot_ひろし", "Bot_タケル", "Bot_ミカ", "Bot_タクヤ", "Bot_最強鬼", "Bot_逃走中", "Bot_HIKAKIN", "Bot_名無し"
+  ]
+};
+
+const CONFIG = {
+  TILE_SIZE: 48, COLS: 50, ROWS: 50, MAX_PLAYERS: 5, VIRUS_BOX_COUNT: 8
+};
+
+class SaveData {
+  constructor() {
+    this.playerName = "ゲスト";
+    this.coins = 500;
+    this.totalKills = 0;
+    this.unlockedChars = ['c1', 'c2', 'c3', 'c4', 'c12'];
+    this.unlockedOnis = ['o0', 'o1', 'o2', 'o4'];
+    this.teamChars = ['c1', 'c2', 'c3'];
+    this.selectedOni = 'o0';
+    this.load();
+  }
+  save() {
+    try { localStorage.setItem('aooni_p2p_gachi_save', JSON.stringify(this)); } catch(e){}
+  }
+  load() {
+    try {
+      const data = localStorage.getItem('aooni_p2p_gachi_save');
+      if(data) {
+        const parsed = JSON.parse(data);
+        Object.assign(this, parsed);
+        if(!this.teamChars || this.teamChars.length !== 3) this.teamChars = ['c1', 'c2', 'c3'];
+        if(!this.selectedOni) this.selectedOni = 'o0';
+      }
+    } catch(e){}
+  }
+  checkAchievements() {
+    if(this.totalKills >= 3 && !this.unlockedChars.includes('c5')) this.unlockedChars.push('c5');
+    if(this.totalKills >= 10 && !this.unlockedChars.includes('c6')) this.unlockedChars.push('c6');
+    if(this.totalKills >= 20 && !this.unlockedOnis.includes('o17')) this.unlockedOnis.push('o17');
+    this.save();
+  }
+}
+const saveData = new SaveData();
+
+const Utils = {
+  random: (min, max) => Math.random() * (max - min) + min,
+  randomInt: (min, max) => Math.floor(Math.random() * (max - min)) + min,
+  distance: (x1, y1, x2, y2) => Math.sqrt((x2-x1)**2 + (y2-y1)**2),
+  checkCollision: (r1, r2) => (r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y),
+  generate6DigitCode: () => Math.floor(100000 + Math.random() * 900000).toString()
+};
+
+const TILE = { EMPTY: 0, WALL: 1, FLOOR: 2 };
+
+class MapGenerator {
+  static generate(cols, rows) {
+    let grid = Array.from({ length: rows }, () => Array(cols).fill(TILE.WALL));
+    let rooms = [];
+    let leaves = [{ x: 1, y: 1, w: cols - 2, h: rows - 2 }];
+    
+    for (let i = 0; i < 3; i++) {
+      let newLeaves = [];
+      for (let leaf of leaves) {
+        let splitH = Math.random() > 0.5;
+        let max = (splitH ? leaf.h : leaf.w) - 6;
+        if (max <= 5) { newLeaves.push(leaf); continue; }
+        let split = Utils.randomInt(5, max);
+        if (splitH) {
+          newLeaves.push({ x: leaf.x, y: leaf.y, w: leaf.w, h: split });
+          newLeaves.push({ x: leaf.x, y: leaf.y + split, w: leaf.w, h: leaf.h - split });
+        } else {
+          newLeaves.push({ x: leaf.x, y: leaf.y, w: split, h: leaf.h });
+          newLeaves.push({ x: leaf.x + split, y: leaf.y, w: leaf.w - split, h: leaf.h });
+        }
+      }
+      leaves = newLeaves;
+    }
+
+    for (let leaf of leaves) {
+      let rw = Utils.randomInt(4, leaf.w - 1);
+      let rh = Utils.randomInt(4, leaf.h - 1);
+      let rx = leaf.x + Utils.randomInt(1, leaf.w - rw);
+      let ry = leaf.y + Utils.randomInt(1, leaf.h - rh);
+      rooms.push({ x: rx, y: ry, w: rw, h: rh });
+      for (let y = ry; y < ry + rh; y++) {
+        for (let x = rx; x < rx + rw; x++) grid[y][x] = TILE.FLOOR;
+      }
+    }
+
+    for (let i = 0; i < rooms.length - 1; i++) {
+      let rA = rooms[i], rB = rooms[i + 1];
+      let cxA = Math.floor(rA.x + rA.w/2), cyA = Math.floor(rA.y + rA.h/2);
+      let cxB = Math.floor(rB.x + rB.w/2), cyB = Math.floor(rB.y + rB.h/2);
+      for(let x = Math.min(cxA, cxB); x <= Math.max(cxA, cxB); x++) { grid[cyA][x] = TILE.FLOOR; }
+      for(let y = Math.min(cyA, cyB); y <= Math.max(cyA, cyB); y++) { grid[y][cxB] = TILE.FLOOR; }
+    }
+    return grid;
+  }
+
+  static getRandomFloor(grid, cols, rows) {
+    let max = 1000;
+    while (max-- > 0) {
+      let x = Utils.randomInt(1, cols - 1);
+      let y = Utils.randomInt(1, rows - 1);
+      if (grid[y][x] === TILE.FLOOR) return { x: x * CONFIG.TILE_SIZE, y: y * CONFIG.TILE_SIZE };
+    }
+    return { x: 3 * CONFIG.TILE_SIZE, y: 3 * CONFIG.TILE_SIZE };
+  }
+}
+
+class Entity {
+  constructor(id, x, y, w, h) { this.id = id; this.x = x; this.y = y; this.w = w; this.h = h; this.isDead = false; }
+  getRect() { return { x: this.x, y: this.y, w: this.w, h: this.h }; }
+}
+
+class Character extends Entity {
+  constructor(id, x, y, color, speed, icon, name, isBot = false) {
+    super(id, x, y, 24, 24);
+    this.color = color;
+    this.speed = speed;
+    this.icon = icon;
+    this.name = name;
+    this.isBot = isBot;
+    this.dir = 0;
+    this.isMoving = false;
+    this.anim = 0;
+    this.isOni = false;
+    this.oniType = DB.ONI_TYPES.NORMAL;
+    this.oniTimer = 0;
+    this.transformedOniType = DB.ONI_TYPES.NORMAL;
+    this.oniDuration = 15;
+  }
+
+  update(dt, game) {
+    if(this.isDead) return;
+    if(this.isMoving) this.anim += dt * 10;
+    else this.anim = 0;
+
+    if(this.isOni) {
+      this.oniTimer -= dt;
+      if(this.oniTimer <= 0) {
+        this.isOni = false;
+      }
+    }
+  }
+
+  move(dx, dy, grid, cols, rows, dt) {
+    if(this.isDead) return;
+    if (dx === 0 && dy === 0) { this.isMoving = false; return; }
+
+    this.isMoving = true;
+    if(Math.abs(dx) > Math.abs(dy)) this.dir = dx > 0 ? 2 : 1;
+    else this.dir = dy > 0 ? 0 : 3;
+
+    let len = Math.sqrt(dx*dx + dy*dy);
+    if(len === 0) return;
+
+    let spd = this.isOni ? this.speed * 1.35 : this.speed;
+    let vx = (dx/len) * spd * dt;
+    let vy = (dy/len) * spd * dt;
+
+    this.x += vx;
+    if(this.checkWall(grid, cols, rows)) this.x -= vx;
+    this.y += vy;
+    if(this.checkWall(grid, cols, rows)) this.y -= vy;
+  }
+
+  checkWall(grid, cols, rows) {
+    if(this.isOni && this.oniType === DB.ONI_TYPES.GHOST) return false;
+    let left = Math.floor(this.x / CONFIG.TILE_SIZE), right = Math.floor((this.x + this.w) / CONFIG.TILE_SIZE);
+    let top = Math.floor(this.y / CONFIG.TILE_SIZE), bottom = Math.floor((this.y + this.h) / CONFIG.TILE_SIZE);
+    if(left<0 || right>=cols || top<0 || bottom>=rows) return true;
+    return grid[top][left]===TILE.WALL || grid[top][right]===TILE.WALL || grid[bottom][left]===TILE.WALL || grid[bottom][right]===TILE.WALL;
+  }
+
+  transformToOni(oniType, duration) {
+    this.isOni = true;
+    this.oniType = oniType;
+    this.oniTimer = duration;
+  }
+
+  draw(ctx) {
+    if(this.isDead) return;
+
+    if(this.isOni) {
+      EnemyOniDraw.drawCustomOni(ctx, this.x, this.y, this.w, this.h, this.oniType, this.anim, this.dir);
+      ctx.fillStyle = "#f1c40f"; ctx.font = "bold 11px sans-serif";
+      ctx.fillText(`👹 ${this.name}`, this.x - 10, this.y - 45);
+      return;
+    }
+
+    let bob = this.isMoving ? Math.sin(this.anim)*3 : 0;
+    let cx = this.x - 8, cy = this.y - 24;
+
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.beginPath(); ctx.ellipse(this.x+this.w/2, this.y+this.h, 12, 4, 0, 0, Math.PI*2); ctx.fill();
+
+    ctx.fillStyle = this.color;
+    ctx.fillRect(cx+8, cy+16+bob, 24, 24);
+    ctx.fillStyle = "#FFDCB6";
+    ctx.fillRect(cx+6, cy+bob, 28, 20);
+    
+    ctx.fillStyle = "#000";
+    if(this.dir===0 || this.dir===2) ctx.fillRect(cx+18, cy+8+bob, 4, 4);
+    if(this.dir===0 || this.dir===1) ctx.fillRect(cx+10, cy+8+bob, 4, 4);
+
+    ctx.font = "18px Arial";
+    ctx.fillText(this.icon, this.x - 4, this.y - 30 + bob);
+    ctx.fillStyle = "#fff"; ctx.font = "10px sans-serif";
+    ctx.fillText(this.name, this.x - 8, this.y - 48);
+  }
+}
+
+class EnemyOniDraw {
+  static drawCustomOni(ctx, x, y, w, h, type, anim, dir) {
+    let cx = x - (w==48?4:12), cy = y - (h==48?60:40);
+    let bob = Math.sin(anim)*5;
+    
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath(); ctx.ellipse(x+w/2, y+h, w/2, h/4, 0, 0, Math.PI*2); ctx.fill();
+
+    let baseColor = '#8e44ad', headW = 56, headH = 40, bodyW = 40, bodyH = 42;
+    let scale = (type === DB.ONI_TYPES.GIANT) ? 1.4 : 1;
+    if(type === DB.ONI_TYPES.GIANT) { cx -= 10; cy -= 15; headW*=scale; headH*=scale; bodyW*=scale; bodyH*=scale; }
+    
+    switch(type) {
+      case DB.ONI_TYPES.FUWATTY: baseColor = '#e74c3c'; break;
+      case DB.ONI_TYPES.SQUAT: baseColor = '#27ae60'; break;
+      case DB.ONI_TYPES.JELLY: baseColor = 'rgba(52, 152, 219, 0.8)'; break;
+      case DB.ONI_TYPES.DEMON: baseColor = '#c0392b'; break;
+      case DB.ONI_TYPES.ICE: baseColor = '#00ced1'; break;
+      case DB.ONI_TYPES.FIRE: baseColor = '#ff4500'; break;
+      case DB.ONI_TYPES.SLIME: baseColor = 'rgba(46, 204, 113, 0.8)'; break;
+      case DB.ONI_TYPES.SPIDER: baseColor = '#2c3e50'; break;
+      case DB.ONI_TYPES.NINJA: baseColor = '#1a252f'; break;
+      case DB.ONI_TYPES.GHOST: baseColor = 'rgba(236, 240, 241, 0.6)'; break;
+      case DB.ONI_TYPES.BOMB: baseColor = '#111'; break;
+      case DB.ONI_TYPES.METAL: 
+        let grad = ctx.createLinearGradient(cx, cy, cx+headW, cy+headH);
+        grad.addColorStop(0, "#f1c40f"); grad.addColorStop(0.5, "#fff"); grad.addColorStop(1, "#d35400");
+        baseColor = grad; break;
+    }
+
+    ctx.fillStyle = baseColor;
+    if(type === DB.ONI_TYPES.SLIME || type === DB.ONI_TYPES.JELLY) {
+      ctx.beginPath(); ctx.ellipse(cx+headW/2, cy+bob+bodyH/2, headW/2, bodyH/1.5, 0, 0, Math.PI*2); ctx.fill();
+    } else {
+      if(type !== DB.ONI_TYPES.GHOST) ctx.fillRect(cx+(headW-bodyW)/2, cy+30*scale+bob, bodyW, bodyH); 
+      ctx.fillRect(cx, cy+bob, headW, headH); 
+    }
+
+    if(type === DB.ONI_TYPES.DEMON) { 
+      ctx.fillStyle="#000"; 
+      ctx.beginPath(); ctx.moveTo(cx+10, cy+bob); ctx.lineTo(cx+20, cy-20+bob); ctx.lineTo(cx+30, cy+bob); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx+headW-10, cy+bob); ctx.lineTo(cx+headW-20, cy-20+bob); ctx.lineTo(cx+headW-30, cy+bob); ctx.fill();
+    }
+
+    ctx.fillStyle = (type===DB.ONI_TYPES.METAL || type===DB.ONI_TYPES.DEMON) ? "#e74c3c" : "#fff";
+    let eSize = 12 * scale;
+    ctx.fillRect(cx+10*scale, cy+15*scale+bob, eSize, eSize); ctx.fillRect(cx+34*scale, cy+15*scale+bob, eSize, eSize);
+    ctx.fillStyle = "#000";
+    let eOff = dir===1 ? -4*scale : (dir===2 ? 4*scale : 0);
+    ctx.fillRect(cx+14*scale+eOff, cy+18*scale+bob, 4*scale, 4*scale); ctx.fillRect(cx+38*scale+eOff, cy+18*scale+bob, 4*scale, 4*scale);
+    ctx.fillRect(cx+18*scale, cy+32*scale+bob, 20*scale, 6*scale);
+    ctx.restore();
+  }
+}
+
+class VirusBox extends Entity {
+  constructor(id, x, y) {
+    super(id, x, y, 32, 32);
+    this.anim = 0;
+  }
+  update(dt) { this.anim += dt * 3; }
+  draw(ctx) {
+    if(this.isDead) return;
+    let floatY = Math.sin(this.anim) * 4;
+    ctx.fillStyle = "#9b59b6";
+    ctx.fillRect(this.x+2, this.y+2+floatY, 28, 28);
+    ctx.strokeStyle = "#8e44ad"; ctx.lineWidth = 3;
+    ctx.strokeRect(this.x+2, this.y+2+floatY, 28, 28);
+    ctx.fillStyle = "#00ffcc"; ctx.font = "bold 16px sans-serif";
+    ctx.fillText("🧪", this.x+6, this.y+22+floatY);
+  }
+}
+
+class NetworkManager {
+  constructor() {
+    this.peer = null;
+    this.connections = [];
+    this.hostConn = null;
+    this.isHost = false;
+    this.roomCode = "";
+    this.myPeerId = "";
+    this.players = [];
+  }
+
+  initPeer(callback) {
+    if(this.peer && !this.peer.destroyed) { if(callback) callback(); return; }
+    this.peer = new Peer();
+    this.peer.on('open', (id) => {
+      this.myPeerId = id;
+      if(callback) callback();
+    });
+    this.peer.on('connection', (conn) => {
+      this.handleIncomingConnection(conn);
+    });
+    this.peer.on('error', (err) => {
+      console.error('PeerJS Error:', err);
+      alert('P2P通信エラーが発生しました: ' + err.type);
+    });
+  }
+
+  handleIncomingConnection(conn) {
+    if(!this.isHost) return;
+    if(this.players.length >= CONFIG.MAX_PLAYERS) {
+      conn.send({ type: 'ROOM_FULL' });
+      setTimeout(() => conn.close(), 500);
+      return;
+    }
+    this.connections.push(conn);
+    conn.on('data', (data) => this.handleHostData(conn, data));
+    conn.on('close', () => {
+      this.connections = this.connections.filter(c => c !== conn);
+      this.players = this.players.filter(p => p.peerId !== conn.peer);
+      this.broadcastLobbyState();
+      this.updateLobbyUI();
+    });
+  }
+
+  hostRoom() {
+    this.initPeer(() => {
+      this.isHost = true;
+      this.roomCode = Utils.generate6DigitCode();
+      
+      const customPeerId = `aooni-room-${this.roomCode}`;
+      if(this.peer) this.peer.destroy();
+      
+      this.peer = new Peer(customPeerId);
+      this.peer.on('open', () => {
+        this.players = [{
+          peerId: customPeerId,
+          name: saveData.playerName,
+          teamChars: saveData.teamChars,
+          selectedOni: saveData.selectedOni,
+          isHost: true
+        }];
+        this.updateLobbyUI();
+        uiManager.showScreen('lobby-screen');
+      });
+
+      this.peer.on('connection', (conn) => {
+        this.handleIncomingConnection(conn);
+      });
+    });
+  }
+
+  joinRoom() {
+    const code = document.getElementById('join-code-input').value.trim();
+    if(code.length !== 6) {
+      alert('6桁の部屋番号(パスワード)を入力してください');
+      return;
+    }
+    this.initPeer(() => {
+      this.isHost = false;
+      this.roomCode = code;
+      const targetPeerId = `aooni-room-${code}`;
+      this.hostConn = this.peer.connect(targetPeerId);
+
+      this.hostConn.on('open', () => {
+        this.hostConn.send({
+          type: 'JOIN_REQUEST',
+          name: saveData.playerName,
+          teamChars: saveData.teamChars,
+          selectedOni: saveData.selectedOni
+        });
+      });
+
+      this.hostConn.on('data', (data) => this.handleGuestData(data));
+      this.hostConn.on('close', () => {
+        alert('ホストとの接続が切断されました');
+        this.returnToHome();
+      });
+    });
+  }
+
+  handleHostData(conn, data) {
+    if(data.type === 'JOIN_REQUEST') {
+      this.players.push({
+        peerId: conn.peer,
+        name: data.name,
+        teamChars: data.teamChars,
+        selectedOni: data.selectedOni,
+        isHost: false
+      });
+      this.broadcastLobbyState();
+      this.updateLobbyUI();
+    } else if(data.type === 'PLAYER_MOVE') {
+      this.broadcastData(data, conn);
+      if(gameEngine && gameEngine.isPlaying) {
+        gameEngine.updateRemotePlayer(data);
+      }
+    }
+  }
+
+  handleGuestData(data) {
+    if(data.type === 'ROOM_FULL') {
+      alert('部屋が満員です（最大5人）');
+      this.returnToHome();
+    } else if(data.type === 'LOBBY_STATE') {
+      this.players = data.players;
+      this.updateLobbyUI();
+      uiManager.showScreen('lobby-screen');
+    } else if(data.type === 'START_GAME') {
+      gameEngine.startMatch(data.seed, this.players, data.grid);
+    } else if(data.type === 'GAME_SYNC') {
+      if(gameEngine && gameEngine.isPlaying) {
+        gameEngine.applyGameSync(data);
+      }
+    }
+  }
+
+  broadcastLobbyState() {
+    this.broadcastData({
+      type: 'LOBBY_STATE',
+      players: this.players
+    });
+  }
+
+  broadcastData(data, excludeConn = null) {
+    this.connections.forEach(conn => {
+      if(conn !== excludeConn && conn.open) {
+        conn.send(data);
+      }
+    });
+  }
+
+  updateLobbyUI() {
+    document.getElementById('room-code-display').innerText = this.roomCode;
+    document.getElementById('room-player-count').innerText = this.players.length;
+    const list = document.getElementById('room-player-list');
+    list.innerHTML = '';
+    
+    this.players.forEach((p) => {
+      const item = document.createElement('article');
+      item.className = 'player-list-item';
+      item.innerHTML = `
+        <span>${p.isHost ? '👑' : '👤'} ${p.name}</span>
+        <span style="font-size:0.75rem; color:#f1c40f;">${p.isHost ? 'ホスト' : '参加者'}</span>
+      `;
+      list.appendChild(item);
+    });
+
+    const startBtn = document.getElementById('start-game-btn');
+    if(this.isHost) {
+      startBtn.classList.remove('hidden');
+    } else {
+      startBtn.classList.add('hidden');
+    }
+  }
+
+  startGame() {
+    if(!this.isHost) return;
+    const grid = MapGenerator.generate(CONFIG.COLS, CONFIG.ROWS);
+    const seed = Date.now();
+    
+    this.broadcastData({
+      type: 'START_GAME',
+      grid: grid,
+      seed: seed
+    });
+
+    gameEngine.startMatch(seed, this.players, grid);
+  }
+
+  sendPlayerMove(posData) {
+    if(this.isHost) {
+      this.broadcastData({ type: 'PLAYER_MOVE', ...posData });
+    } else if(this.hostConn && this.hostConn.open) {
+      this.hostConn.send({ type: 'PLAYER_MOVE', ...posData });
+    }
+  }
+
+  sendGameSync(syncData) {
+    if(this.isHost) {
+      this.broadcastData({ type: 'GAME_SYNC', ...syncData });
+    }
+  }
+
+  leaveRoom() {
+    if(this.peer) this.peer.destroy();
+    this.peer = null;
+    this.connections = [];
+    this.hostConn = null;
+    this.returnToHome();
+  }
+
+  returnToHome() {
+    uiManager.showScreen('home-screen');
+  }
+
+  returnToLobbyOrHome() {
+    if(this.peer && !this.peer.destroyed) {
+      uiManager.showScreen('lobby-screen');
+    } else {
+      uiManager.showScreen('home-screen');
+    }
+  }
+}
+const p2pManager = new NetworkManager();
+
+class GameEngine {
+  constructor() {
+    this.canvas = document.getElementById('game-canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.grid = [];
+    this.cols = CONFIG.COLS; this.rows = CONFIG.ROWS;
+    this.myPlayerId = "";
+    this.playersMap = new Map();
+    this.virusBoxes = [];
+    this.aliveCount = CONFIG.MAX_PLAYERS;
+    this.kills = 0;
+    this.isPlaying = false;
+    this.lastTime = 0;
+    this.joy = { x: 0, y: 0, active: false };
+    this.keys = {};
+    this.camera = { x: 0, y: 0 };
+
+    this.initControls();
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+    requestAnimationFrame((t) => this.loop(t));
+  }
+
+  resize() {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+  }
+
+  initControls() {
+    window.addEventListener('keydown', e => this.keys[e.code] = true);
+    window.addEventListener('keyup', e => this.keys[e.code] = false);
+
+    const zone = document.getElementById('joystick-zone');
+    const knob = document.getElementById('joystick-knob');
+    const handleTouch = (e) => {
+      e.preventDefault();
+      if(!e.targetTouches[0]) { this.joy.active = false; knob.style.transform=`translate(-50%,-50%)`; return; }
+      let rect = zone.getBoundingClientRect(), r = rect.width/2;
+      let dx = e.targetTouches[0].clientX - (rect.left+r);
+      let dy = e.targetTouches[0].clientY - (rect.top+r);
+      let dist = Math.sqrt(dx*dx+dy*dy);
+      if(dist > r) { dx = (dx/dist)*r; dy = (dy/dist)*r; }
+      knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+      this.joy.x = dx/r; this.joy.y = dy/r; this.joy.active = true;
+    };
+    zone.addEventListener('touchstart', handleTouch);
+    zone.addEventListener('touchmove', handleTouch);
+    zone.addEventListener('touchend', () => { this.joy.active = false; this.joy.x = 0; this.joy.y = 0; knob.style.transform=`translate(-50%,-50%)`; });
+  }
+
+  startMatch(seed, networkPlayers, grid) {
+    this.grid = grid;
+    this.playersMap.clear();
+    this.virusBoxes = [];
+    this.kills = 0;
+    this.aliveCount = CONFIG.MAX_PLAYERS;
+    this.myPlayerId = p2pManager.myPeerId || 'host';
+
+    networkPlayers.forEach(p => {
+      let pos = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+      const synergy = uiManager.getCalculatedSynergy(p.teamChars || ['c1', 'c2', 'c3']);
+      const mainChar = DB.CHARACTERS.find(c => c.id === (p.teamChars ? p.teamChars[0] : 'c1')) || DB.CHARACTERS[0];
+      
+      let char = new Character(p.peerId, pos.x, pos.y, mainChar.color, mainChar.speedBase + synergy.speedBonus, mainChar.icon, p.name, false);
+      
+      let oniData = DB.ONI_DATA.find(o => o.id === (p.selectedOni || 'o0')) || DB.ONI_DATA[0];
+      char.transformedOniType = oniData.type;
+      char.oniDuration = synergy.duration;
+      this.playersMap.set(p.peerId, char);
+    });
+
+    let botCount = CONFIG.MAX_PLAYERS - networkPlayers.length;
+    for(let i=0; i<botCount; i++) {
+      let botId = `bot-${i}`;
+      let pos = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+      let skin = DB.CHARACTERS[Utils.randomInt(0, DB.CHARACTERS.length)];
+      let botName = DB.NPC_NAMES[i % DB.NPC_NAMES.length];
+      
+      let char = new Character(botId, pos.x, pos.y, skin.color, skin.speedBase, skin.icon, botName, true);
+      char.transformedOniType = Utils.randomInt(0, 18);
+      char.oniDuration = 12;
+      this.playersMap.set(botId, char);
+    }
+
+    for(let i=0; i<CONFIG.VIRUS_BOX_COUNT; i++) {
+      let pos = MapGenerator.getRandomFloor(this.grid, this.cols, this.rows);
+      this.virusBoxes.push(new VirusBox(`vbox-${i}`, pos.x, pos.y));
+    }
+
+    this.isPlaying = true;
+    this.lastTime = performance.now();
+    document.getElementById('hud').classList.remove('hidden');
+    document.getElementById('kill-log').innerHTML = '';
+  }
+
+  loop(now) {
+    requestAnimationFrame((t) => this.loop(t));
+    let dt = (now - this.lastTime) / 1000;
+    if(dt > 0.1) dt = 0.1;
+    this.lastTime = now;
+
+    if(!this.isPlaying) return;
+
+    this.update(dt);
+    this.draw();
+  }
+
+  update(dt) {
+    let myPlayer = this.playersMap.get(this.myPlayerId);
+    if(myPlayer && !myPlayer.isDead) {
+      let dx = 0, dy = 0;
+      if(this.keys['KeyW'] || this.keys['ArrowUp']) dy -= 1;
+      if(this.keys['KeyS'] || this.keys['ArrowDown']) dy += 1;
+      if(this.keys['KeyA'] || this.keys['ArrowLeft']) dx -= 1;
+      if(this.keys['KeyD'] || this.keys['ArrowRight']) dx += 1;
+
+      if(this.joy.active) { dx = this.joy.x; dy = this.joy.y; }
+
+      myPlayer.move(dx, dy, this.grid, this.cols, this.rows, dt);
+      myPlayer.update(dt, this);
+
+      p2pManager.sendPlayerMove({
+        id: myPlayer.id,
+        x: myPlayer.x,
+        y: myPlayer.y,
+        dir: myPlayer.dir,
+        isMoving: myPlayer.isMoving,
+        isOni: myPlayer.isOni,
+        oniType: myPlayer.oniType
+      });
+
+      this.camera.x = myPlayer.x - this.canvas.width / 2 + myPlayer.w / 2;
+      this.camera.y = myPlayer.y - this.canvas.height / 2 + myPlayer.h / 2;
+
+      // 鬼HUDタイマー更新
+      const oniTimerPanel = document.getElementById('oni-timer-panel');
+      if(myPlayer.isOni) {
+        oniTimerPanel.classList.remove('hidden');
+        document.getElementById('oni-timer').innerText = Math.ceil(myPlayer.oniTimer);
+      } else {
+        oniTimerPanel.classList.add('hidden');
+      }
+
+      // ウィルスボックス接触判定
+      this.virusBoxes.forEach(box => {
+        if(!box.isDead && Utils.checkCollision(myPlayer.getRect(), box.getRect())) {
+          box.isDead = true;
+          myPlayer.transformToOni(myPlayer.transformedOniType, myPlayer.oniDuration);
+          this.addKillLog(`🧪 ${myPlayer.name} が鬼に変身した！`);
+        }
+      });
+    }
+
+    // ホスト権限でBot思考と当たり判定、同期処理
+    if(p2pManager.isHost) {
+      this.playersMap.forEach(p => {
+        if(p.isBot && !p.isDead) {
+          this.updateBotAI(p, dt);
+          this.virusBoxes.forEach(box => {
+            if(!box.isDead && Utils.checkCollision(p.getRect(), box.getRect())) {
+              box.isDead = true;
+              p.transformToOni(p.transformedOniType, p.oniDuration);
+              this.addKillLog(`🧪 ${p.name} が鬼に変身した！`);
+            }
+          });
+        }
+      });
+
+      // 鬼と逃走者の接触判定 (キル処理)
+      this.playersMap.forEach(oni => {
+        if(oni.isOni && !oni.isDead) {
+          this.playersMap.forEach(target => {
+            if(target !== oni && !target.isDead && !target.isOni) {
+              if(Utils.checkCollision(oni.getRect(), target.getRect())) {
+                target.isDead = true;
+                this.aliveCount--;
+                if(oni.id === this.myPlayerId) this.kills++;
+                this.addKillLog(`👹 ${oni.name} が ${target.name} を撃破！`);
+
+                if(target.id === this.myPlayerId) {
+                  this.endGame(false);
+                }
+              }
+            }
+          });
+        }
+      });
+
+      // 生存者数計算
+      let aliveList = Array.from(this.playersMap.values()).filter(p => !p.isDead);
+      this.aliveCount = aliveList.length;
+      document.getElementById('alive-count').innerText = this.aliveCount;
+
+      // 勝利判定
+      if(myPlayer && !myPlayer.isDead && this.aliveCount === 1) {
+        this.endGame(true);
+      }
+
+      // 状態同期
+      let syncData = {
+        aliveCount: this.aliveCount,
+        players: Array.from(this.playersMap.values()).map(p => ({
+          id: p.id, x: p.x, y: p.y, isDead: p.isDead, isOni: p.isOni, oniType: p.oniType
+        }))
+      };
+      p2pManager.sendGameSync(syncData);
+    }
+  }
+
+  updateBotAI(bot, dt) {
+    bot.update(dt, this);
+    if(bot.isOni) {
+      let nearest = null, minDist = 9999;
+      this.playersMap.forEach(c => {
+        if(c !== bot && !c.isDead && !c.isOni) {
+          let d = Utils.distance(bot.x, bot.y, c.x, c.y);
+          if(d < minDist) { minDist = d; nearest = c; }
+        }
+      });
+      if(nearest) bot.move(nearest.x - bot.x, nearest.y - bot.y, this.grid, this.cols, this.rows, dt);
+    } else {
+      let box = this.virusBoxes.find(b => !b.isDead);
+      if(box) bot.move(box.x - bot.x, box.y - bot.y, this.grid, this.cols, this.rows, dt);
+    }
+  }
+
+  updateRemotePlayer(data) {
+    const p = this.playersMap.get(data.id);
+    if(p && p.id !== this.myPlayerId) {
+      p.x = data.x; p.y = data.y;
+      p.dir = data.dir; p.isMoving = data.isMoving;
+      p.isOni = data.isOni; p.oniType = data.oniType;
+    }
+  }
+
+  applyGameSync(data) {
+    this.aliveCount = data.aliveCount;
+    document.getElementById('alive-count').innerText = this.aliveCount;
+    data.players.forEach(sp => {
+      const p = this.playersMap.get(sp.id);
+      if(p && p.id !== this.myPlayerId) {
+        p.x = sp.x; p.y = sp.y; p.isDead = sp.isDead; p.isOni = sp.isOni; p.oniType = sp.oniType;
+      }
+      if(p && p.id === this.myPlayerId && sp.isDead && !p.isDead) {
+        p.isDead = true;
+        this.endGame(false);
+      }
+    });
+  }
+
+  endGame(isVictory) {
+    this.isPlaying = false;
+    document.getElementById('hud').classList.add('hidden');
+    
+    let rank = isVictory ? 1 : this.aliveCount;
+    let earnedCoins = (6 - rank) * 50 + this.kills * 100;
+    saveData.coins += earnedCoins;
+    saveData.totalKills += this.kills;
+    saveData.checkAchievements();
+
+    document.getElementById('result-rank-title').innerText = isVictory ? "🏆 青逃(1位)！" : `${rank}位 / 5人`;
+    document.getElementById('result-detail').innerText = `撃破数: ${this.kills}体`;
+    document.getElementById('result-coin-amount').innerText = earnedCoins;
+
+    uiManager.showScreen('result-screen');
+  }
+
+  addKillLog(msg) {
+    const logContainer = document.getElementById('kill-log');
+    const entry = document.createElement('p');
+    entry.className = 'log-entry';
+    entry.innerText = msg;
+    logContainer.appendChild(entry);
+    if(logContainer.children.length > 5) logContainer.removeChild(logContainer.children[0]);
+    setTimeout(() => { if(entry.parentNode) entry.parentNode.removeChild(entry); }, 4000);
+  }
+
+  draw() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.save();
+    this.ctx.translate(-this.camera.x, -this.camera.y);
+
+    let startCol = Math.max(0, Math.floor(this.camera.x / CONFIG.TILE_SIZE));
+    let endCol = Math.min(this.cols, startCol + Math.ceil(this.canvas.width / CONFIG.TILE_SIZE) + 1);
+    let startRow = Math.max(0, Math.floor(this.camera.y / CONFIG.TILE_SIZE));
+    let endRow = Math.min(this.rows, startRow + Math.ceil(this.canvas.height / CONFIG.TILE_SIZE) + 1);
+
+    for(let r = startRow; r < endRow; r++) {
+      for(let c = startCol; c < endCol; c++) {
+        let x = c * CONFIG.TILE_SIZE, y = r * CONFIG.TILE_SIZE;
+        if(this.grid[r][c] === TILE.WALL) {
+          this.ctx.fillStyle = "#1e2b37";
+          this.ctx.fillRect(x, y, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+          this.ctx.strokeStyle = "#0f171e";
+          this.ctx.strokeRect(x, y, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+        } else {
+          this.ctx.fillStyle = "#2c3e50";
+          this.ctx.fillRect(x, y, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+        }
+      }
+    }
+
+    this.virusBoxes.forEach(box => box.draw(this.ctx));
+    this.playersMap.forEach(p => p.draw(this.ctx));
+
+    this.ctx.restore();
+  }
+}
+const gameEngine = new GameEngine();
+
+class UIManager {
+  constructor() {
+    this.setupTab = 'HUMAN';
+  }
+
+  showScreen(id) {
+    document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+    const target = document.getElementById(id);
+    if(target) target.classList.remove('hidden');
+    
+    if(id === 'home-screen') this.renderHome();
+    if(id === 'team-setup-screen') this.renderSetupScreen();
+    if(id === 'gacha-screen') this.renderGachaScreen();
+    if(id === 'zukan-screen') this.renderZukan();
+  }
+
+  updatePlayerName(name) {
+    if(!name) return;
+    saveData.playerName = name;
+    saveData.save();
+  }
+
+  renderHome() {
+    document.getElementById('ui-coins').innerText = saveData.coins;
+    document.getElementById('player-name-input').value = saveData.playerName;
+
+    const preview = document.getElementById('home-party-preview');
+    preview.innerHTML = '';
+    
+    saveData.teamChars.forEach(cid => {
+      let c = DB.CHARACTERS.find(x => x.id === cid) || DB.CHARACTERS[0];
+      preview.appendChild(this.createSkinSlotCard(c, false));
+    });
+
+    const equippedOni = DB.ONI_DATA.find(o => o.id === saveData.selectedOni) || DB.ONI_DATA[0];
+    const syn = this.getCalculatedSynergy(saveData.teamChars);
+    document.getElementById('synergy-badge').innerText = `変身青鬼: 👹${equippedOni.name} (${syn.typeText})`;
+  }
+
+  getCalculatedSynergy(teamArray) {
+    let types = teamArray.map(cid => {
+      let c = DB.CHARACTERS.find(x => x.id === cid);
+      return c ? c.type : 'BALANCE';
+    });
+
+    let speedCount = types.filter(t => t === 'SPEED').length;
+    let attackCount = types.filter(t => t === 'ATTACK').length;
+    let balanceCount = types.filter(t => t === 'BALANCE').length;
+
+    if(attackCount === 3) return { duration: 20, speedBonus: 30, typeText: '攻撃特化 (+30速度 / 変身20秒)' };
+    if(speedCount >= 2) return { duration: 12, speedBonus: 50, typeText: '速度特化 (+50速度 / 変身12秒)' };
+    if(balanceCount === 3) return { duration: 16, speedBonus: 15, typeText: '耐久バランス (+15速度 / 変身16秒)' };
+    
+    return { duration: 15, speedBonus: 0, typeText: 'ノーマル (標準速度 / 変身15秒)' };
+  }
+
+  createSkinSlotCard(charData, showRemove = false, index = 0) {
+    const slot = document.createElement('article');
+    slot.className = 'skin-slot filled';
+    slot.innerHTML = `
+      <span style="font-size: 2rem; margin-top:2px; display:block;">${charData.icon}</span>
+      <p style="font-size:0.75rem; font-weight:bold; margin-top:2px;">${charData.name}</p>
+      <p style="font-size:0.65rem; color:#f1c40f;">${charData.rarity} | ${charData.type}</p>
+    `;
+    if(showRemove) {
+      const btn = document.createElement('button');
+      btn.className = 'remove-btn';
+      btn.innerText = '×';
+      btn.onclick = (e) => { e.stopPropagation(); this.removeSkinFromTeam(index); };
+      slot.appendChild(btn);
+    }
+    return slot;
+  }
+
+  switchSetupTab(tab) {
+    this.setupTab = tab;
+    this.renderSetupScreen();
+  }
+
+  renderSetupScreen() {
+    const slotsContainer = document.getElementById('setup-slots');
+    slotsContainer.innerHTML = '';
+
+    for(let i=0; i<3; i++) {
+      let cid = saveData.teamChars[i];
+      if(cid) {
+        let c = DB.CHARACTERS.find(x => x.id === cid);
+        slotsContainer.appendChild(this.createSkinSlotCard(c, true, i));
+      } else {
+        let empty = document.createElement('article');
+        empty.className = 'skin-slot';
+        empty.innerHTML = `<span style="font-size:2rem; color:#555;">＋</span>`;
+        slotsContainer.appendChild(empty);
+      }
+    }
+
+    const grid = document.getElementById('skin-inventory-grid');
+    grid.innerHTML = '';
+
+    if(this.setupTab === 'HUMAN') {
+      DB.CHARACTERS.forEach(c => {
+        const isUnlocked = saveData.unlockedChars.includes(c.id);
+        const isEquipped = saveData.teamChars.includes(c.id);
+        const card = document.createElement('article');
+        card.className = `card-item ${c.rarity} ${isEquipped ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}`;
+        card.innerHTML = `
+          <span style="font-size: 1.6rem; display:block;">${isUnlocked ? c.icon : '🔒'}</span>
+          <p style="font-size: 0.7rem; font-weight:bold;">${c.name}</p>
+          <p style="font-size: 0.6rem; color:#aaa;">${c.type}</p>
+        `;
+        if(isUnlocked) card.onclick = () => this.addSkinToTeam(c.id);
+        grid.appendChild(card);
+      });
+    } else {
+      DB.ONI_DATA.forEach(o => {
+        const isUnlocked = saveData.unlockedOnis.includes(o.id);
+        const isSelected = saveData.selectedOni === o.id;
+        const card = document.createElement('article');
+        card.className = `card-item ${o.rarity} ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}`;
+        card.innerHTML = `
+          <span style="font-size: 1.6rem; display:block;">${isUnlocked ? '👹' : '🔒'}</span>
+          <p style="font-size: 0.7rem; font-weight:bold; color:#e74c3c;">${o.name}</p>
+          <p style="font-size: 0.6rem; color:#f1c40f;">${o.rarity}</p>
+        `;
+        if(isUnlocked) card.onclick = () => {
+          saveData.selectedOni = o.id;
+          this.renderSetupScreen();
+        };
+        grid.appendChild(card);
+      });
+    }
+
+    const equippedOni = DB.ONI_DATA.find(o => o.id === saveData.selectedOni) || DB.ONI_DATA[0];
+    const syn = this.getCalculatedSynergy(saveData.teamChars);
+    document.getElementById('info-oni-name').innerText = `👹 ${equippedOni.name} (${equippedOni.desc})`;
+    document.getElementById('info-synergy').innerText = syn.typeText;
+  }
+
+  addSkinToTeam(charId) {
+    if(saveData.teamChars.includes(charId)) return;
+    if(saveData.teamChars.length >= 3) saveData.teamChars.shift();
+    saveData.teamChars.push(charId);
+    this.renderSetupScreen();
+  }
+
+  removeSkinFromTeam(index) {
+    saveData.teamChars.splice(index, 1);
+    this.renderSetupScreen();
+  }
+
+  saveTeamAndReturn() {
+    if(saveData.teamChars.length < 3) {
+      alert('人間スキンを3体選択してください');
+      return;
+    }
+    saveData.save();
+    this.showScreen('home-screen');
+  }
+
+  renderGachaScreen() {
+    document.getElementById('gacha-coins').innerText = saveData.coins;
+  }
+
+  playGacha(type, count) {
+    let cost = count * 100;
+    if(saveData.coins < cost) {
+      alert('青銭が足りません！対戦で青銭を獲得してください。');
+      return;
+    }
+    saveData.coins -= cost;
+    document.getElementById('gacha-coins').innerText = saveData.coins;
+
+    let results = [];
+
+    if (type === 'HUMAN') {
+      const lockedChars = DB.CHARACTERS.filter(c => !saveData.unlockedChars.includes(c.id));
+      for(let i = 0; i < count; i++) {
+        if(lockedChars.length > 0 && Math.random() < 0.7) {
+          let pickedIdx = Utils.randomInt(0, lockedChars.length);
+          let picked = lockedChars[pickedIdx];
+          if(!saveData.unlockedChars.includes(picked.id)) {
+            saveData.unlockedChars.push(picked.id);
+            lockedChars.splice(pickedIdx, 1);
+          }
+          results.push(`【人間 NEW!】${picked.icon} ${picked.name} [${picked.rarity}]`);
+        } else {
+          let randChar = DB.CHARACTERS[Utils.randomInt(0, DB.CHARACTERS.length)];
+          results.push(`【人間重複】${randChar.icon} ${randChar.name} ➔ 🪙 50枚還元`);
+          saveData.coins += 50;
+        }
+      }
+    } else if (type === 'ONI') {
+      const lockedOnis = DB.ONI_DATA.filter(o => !saveData.unlockedOnis.includes(o.id));
+      for(let i = 0; i < count; i++) {
+        if(lockedOnis.length > 0 && Math.random() < 0.7) {
+          let pickedIdx = Utils.randomInt(0, lockedOnis.length);
+          let picked = lockedOnis[pickedIdx];
+          if(!saveData.unlockedOnis.includes(picked.id)) {
+            saveData.unlockedOnis.push(picked.id);
+            lockedOnis.splice(pickedIdx, 1);
+          }
+          results.push(`【青鬼 NEW!】👹 ${picked.name} [${picked.rarity}]`);
+        } else {
+          let randOni = DB.ONI_DATA[Utils.randomInt(0, DB.ONI_DATA.length)];
+          results.push(`【青鬼重複】👹 ${randOni.name} ➔ 🪙 50枚還元`);
+          saveData.coins += 50;
+        }
+      }
+    }
+
+    saveData.save();
+
+    document.getElementById('gacha-coins').innerText = saveData.coins;
+    document.getElementById('gacha-result-text').innerText = results.join('\n');
+    document.getElementById('gacha-anim-icon').innerText = type === 'HUMAN' ? "👦✨" : "👹🔥";
+  }
+
+  renderZukan() {
+    const grid = document.getElementById('zukan-grid');
+    grid.innerHTML = '';
+
+    DB.ONI_DATA.forEach(o => {
+      const isUnlocked = saveData.unlockedOnis.includes(o.id);
+      const card = document.createElement('article');
+      card.className = `card-item ${o.rarity} ${!isUnlocked ? 'locked' : ''}`;
+      card.innerHTML = `
+        <span style="font-size: 1.6rem; display:block;">${isUnlocked ? '👹' : '🔒'}</span>
+        <p style="font-size: 0.75rem; font-weight:bold; color:#e74c3c;">${o.name}</p>
+        <p style="font-size: 0.65rem; color:#aaa;">${o.desc}</p>
+        <p style="font-size: 0.6rem; color:#f1c40f; margin-top:2px;">条件: ${o.condition}</p>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  manualSave() {
+    saveData.save();
+    alert('ゲームデータを保存しました！');
+  }
+
+  exportSaveFile() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(saveData));
+    const dlAnchor = document.createElement('a');
+    dlAnchor.setAttribute("href", dataStr);
+    dlAnchor.setAttribute("download", `aooni_save_${Date.now()}.json`);
+    document.body.appendChild(dlAnchor);
+    dlAnchor.click();
+    dlAnchor.remove();
+  }
+
+  importSaveFile(event) {
+    const file = event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const parsed = JSON.parse(e.target.result);
+        Object.assign(saveData, parsed);
+        saveData.save();
+        alert('セーブデータを復元しました！');
+        this.renderHome();
+      } catch(err) {
+        alert('無効なセーブデータファイルです');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  resetSaveData() {
+    if(confirm('本当にデータを初期化しますか？')) {
+      localStorage.removeItem('aooni_p2p_gachi_save');
+      location.reload();
+    }
+  }
+}
+const uiManager = new UIManager();
+
+window.onload = function() {
+  document.getElementById('title-screen').onclick = () => uiManager.showScreen('home-screen');
+};
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
- <title>青鬼オンライン外伝 - 変身ガチバトル (全バリエーション集結)</title>
+ <title>青鬼オンライン外伝 - 変身ガチバトル (全50種バリエーション集結)</title>
  <script src="https://cdn.tailwindcss.com"></script>
  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
  <style>
@@ -341,7 +341,7 @@
  <section id="gacha-screen" class="overlay hidden">
    <article class="modal-box">
      <h2 style="font-size: 1.6rem; color: #f1c40f; font-weight: bold; margin-bottom: 8px;">👹 青鬼＆キャラガチャ</h2>
-     <p style="font-size: 0.85rem; color: #ccc;">ガチャから【全20種の変身用青鬼】や【レアキャラ】が登場！</p>
+     <p style="font-size: 0.85rem; color: #ccc;">ガチャから【全50種の変身用青鬼】や【レアキャラ】が登場！</p>
 
      <section style="margin: 20px 0; padding: 18px; background: rgba(0,0,0,0.5); border-radius: 15px; border: 1px solid rgba(241,196,15,0.3);">
        <p style="font-size: 1.3rem; color: #f1c40f; font-weight: bold; margin-bottom: 8px;">1回ガチャ: 🪙 200青銭</p>
@@ -361,7 +361,7 @@
  <!-- 青鬼図鑑画面 -->
  <section id="zukan-screen" class="overlay hidden">
    <h2 style="font-size: 1.6rem; color: #3498db; font-weight: bold; margin-bottom: 4px;">変身青鬼図鑑</h2>
-   <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 12px;">全20種類の青鬼バリエーションをコンプリートしよう！</p>
+   <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 12px;">全50種類の青鬼バリエーションをコンプリートしよう！</p>
    <section id="zukan-grid" class="item-grid" style="width: 92%; max-width: 450px; max-height: 60vh;"></section>
    <button class="btn red" style="margin-top: 15px;" onclick="uiManager.showScreen('home-screen')">戻る</button>
  </section>
@@ -374,8 +374,8 @@
      
      <section style="margin: 20px 0; text-align: left; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 10px; font-size: 0.9rem; line-height: 1.6;">
        <p>🪙 所持青銭: <span id="save-info-coins" style="color:#f1c40f; font-weight:bold;">0</span></p>
-       <p>👥 解放キャラ: <span id="save-info-chars" style="color:#2ecc71; font-weight:bold;">0</span> / 8</p>
-       <p>👹 解放青鬼: <span id="save-info-onis" style="color:#9b59b6; font-weight:bold;">0</span> / 20</p>
+       <p>👥 解放キャラ: <span id="save-info-chars" style="color:#2ecc71; font-weight:bold;">0</span> / 20</p>
+       <p>👹 解放青鬼: <span id="save-info-onis" style="color:#9b59b6; font-weight:bold;">0</span> / 50</p>
      </section>
 
      <section style="display: flex; flex-direction: column; gap: 10px;">
@@ -404,15 +404,33 @@ const DB = {
     { id: 'c3', name: 'ミカ', color: '#f39c12', speedBase: 190, rarity: 'N', icon: '👧', type: 'SPEED' },
     { id: 'c4', name: 'タクヤ', color: '#2ecc71', speedBase: 175, rarity: 'N', icon: '👦🏻', type: 'BALANCE' },
     { id: 'c5', name: 'ニワトリ', color: '#ecf0f1', speedBase: 210, rarity: 'R', icon: '🐔', type: 'SPEED' },
-    { id: 'c6', name: '忍者', color: '#2c3e50', speedBase: 220, rarity: 'SR', icon: '🥷', type: 'SPEED' },
-    { id: 'c7', name: 'HIKAKIN', color: '#f1c40f', speedBase: 195, rarity: 'SR', icon: '😎', type: 'BALANCE' },
-    { id: 'c8', name: '宇宙飛行士', color: '#bdc3c7', speedBase: 190, rarity: 'SR', icon: '👨‍🚀', type: 'BALANCE' }
+    { id: 'c6', name: '忍者', color: '#2c3e50', speedBase: 230, rarity: 'SR', icon: '🥷', type: 'SPEED' },
+    { id: 'c7', name: 'HIKAKIN', color: '#f1c40f', speedBase: 220, rarity: 'SR', icon: '😎', type: 'BALANCE' },
+    { id: 'c8', name: '宇宙飛行士', color: '#bdc3c7', speedBase: 220, rarity: 'SR', icon: '👨‍🚀', type: 'BALANCE' },
+    { id: 'c9', name: '火山', color: '#f1c40f', speedBase: 220, rarity: 'SR', icon: '🌋', type: 'ATTACK' },
+    { id: 'c10', name: 'みてるよ〜', color: '#bdc3c7', speedBase: 230, rarity: 'SR', icon: '👁', type: 'ATTACK' },
+    { id: 'c11', name: '機関車トーマス号', color: '#3498db', speedBase: 235, rarity: 'SR', icon: '🚂', type: 'SPEED' },
+    { id: 'c12', name: 'メガネボーイ', color: '#e74c3c', speedBase: 185, rarity: 'N', icon: '🥸', type: 'ATTACK' },
+    { id: 'c13', name: 'ウェーブ(サマー)', color: '#f39c12', speedBase: 237, rarity: 'SR', icon: '🌊', type: 'SPEED' },
+    { id: 'c14', name: '水球', color: '#2ecc71', speedBase: 175, rarity: 'N', icon: '🤽', type: 'BALANCE' },
+    { id: 'c15', name: 'サーファー', color: '#ecf0f1', speedBase: 220, rarity: 'SR', icon: '🏄', type: 'SPEED' },
+    { id: 'c16', name: 'シャーク', color: '#2c3e50', speedBase: 200, rarity: 'R', icon: '🦈', type: 'SPEED' },
+    { id: 'c17', name: '⚠️☢️DANGER☢️⚠️', color: '#f1c40f', speedBase: 240, rarity: 'SR', icon: '⚠️', type: 'SPEED' },
+    { id: 'c18', name: 'フォックス', color: '#bdc3c7', speedBase: 240, rarity: 'SR', icon: '🦊', type: 'BALANCE' },
+    { id: 'c19', name: '招き猫', color: '#f1c40f', speedBase: 250, rarity: 'SR', icon: '😺💰💵', type: 'SPEED' },
+    { id: 'c20', name: 'たぬき', color: '#bdc3c7', speedBase: 300, rarity: 'SR', icon: '🦝🌠👾', type: 'SPEED' }
   ],
   ONI_TYPES: {
     NORMAL: 0, FUWATTY: 1, SQUAT: 2, JELLY: 3, DEMON: 4, 
     ICE: 5, FIRE: 6, SLIME: 7, SPIDER: 8, MUMMY: 9, 
     NINJA: 10, GIANT: 11, GHOST: 12, BOMB: 13, METAL: 14,
-    BIKEI: 15, LONGNECK: 16, HAMMER: 17, MECHA: 18, ASURA: 19
+    BIKEI: 15, LONGNECK: 16, HAMMER: 17, MECHA: 18, ASURA: 19,
+    ALIEN: 20, CYCLOPS: 21, POISON: 22, SHADOW: 23, ANGEL: 24,
+    DRAGON: 25, VAMPIRE: 26, PUMPKIN: 27, CRYSTAL: 28, STEAMPUNK: 29,
+    NEON: 30, SKULL: 31, CACTUS: 32, COSMIC: 33, SAMURAI: 34,
+    CLOWN: 35, JIANGSHI: 36, MAGMA: 37, THUNDER: 38, WOOD: 39,
+    CAT: 40, RABBIT: 41, PIRATE: 42, ANUBIS: 43, PREDATOR: 44,
+    GALAXY: 45, OCTOPUS: 46, CLOCK: 47, KNIGHT: 48, CHAOS: 49
   },
   ONI_DATA: [
     { id: 'o0', type: 0, name: '青鬼', rarity: 'N', desc: '本家でおなじみの巨頭の標準青鬼。', condition: '初期解放', icon: '👹', duration: 15, speedAdd: 0 },
@@ -434,7 +452,37 @@ const DB = {
     { id: 'o16', type: 16, name: 'ろくろ首鬼', rarity: 'SR', desc: '首がぐにゃりと長く伸びて追撃。', condition: 'ガチャ', icon: '🦒', duration: 16, speedAdd: 12 },
     { id: 'o17', type: 17, name: 'ハンマー鬼', rarity: 'SR', desc: 'トゲトゲの金棒を背負った筋肉鬼。', condition: 'ガチャ', icon: '🔨', duration: 17, speedAdd: 8 },
     { id: 'o18', type: 18, name: 'メカ鬼', rarity: 'SR', desc: '装甲とバイザーでサイボーグ化。', condition: 'ガチャ', icon: '🤖', duration: 15, speedAdd: 18 },
-    { id: 'o19', type: 19, name: '千手観音鬼', rarity: 'SSR', desc: '背後から無数の腕が伸びる異形。', condition: 'ガチャ', icon: '🖐️', duration: 19, speedAdd: 22 }
+    { id: 'o19', type: 19, name: '千手観音鬼', rarity: 'SSR', desc: '背後から無数の腕が伸びる異形。', condition: 'ガチャ', icon: '🖐️', duration: 19, speedAdd: 22 },
+    { id: 'o20', type: 20, name: 'エイリアン鬼', rarity: 'SR', desc: '未知の領域からきた黄緑の単眼鬼。', condition: 'ガチャ', icon: '👽', duration: 16, speedAdd: 16 },
+    { id: 'o21', type: 21, name: 'サイクロプス鬼', rarity: 'SR', desc: '額に巨大な一ツ目を備えた鬼。', condition: 'ガチャ', icon: '👁️', duration: 15, speedAdd: 14 },
+    { id: 'o22', type: 22, name: '毒鬼', rarity: 'R', desc: '劇薬のヴェノムを滴らせる鬼。', condition: 'ガチャ', icon: '☣️', duration: 15, speedAdd: 10 },
+    { id: 'o23', type: 23, name: 'シャドウ鬼', rarity: 'SSR', desc: '闇夜と同化する真っ黒な漆黒の鬼。', condition: 'ガチャ', icon: '🌑', duration: 18, speedAdd: 26 },
+    { id: 'o24', type: 24, name: 'エンジェル鬼', rarity: 'SR', desc: '光のリングを浮かべた聖なる鬼。', condition: 'ガチャ', icon: '😇', duration: 17, speedAdd: 15 },
+    { id: 'o25', type: 25, name: 'ドラゴン鬼', rarity: 'SSR', desc: '巨大な龍の角と牙を持つ最凶鬼。', condition: 'ガチャ', icon: '🐉', duration: 20, speedAdd: 24 },
+    { id: 'o26', type: 26, name: 'ヴァンパイア鬼', rarity: 'SR', desc: '鋭い吸血牙を持つ夜の支配者。', condition: 'ガチャ', icon: '🧛', duration: 16, speedAdd: 20 },
+    { id: 'o27', type: 27, name: 'カボチャ鬼', rarity: 'R', desc: 'ハロウィンのジャックオーランタン鬼。', condition: 'ガチャ', icon: '🎃', duration: 14, speedAdd: 10 },
+    { id: 'o28', type: 28, name: '結晶鬼', rarity: 'SR', desc: '全身から硬質クリスタルを生やした鬼。', condition: 'ガチャ', icon: '💎', duration: 17, speedAdd: 12 },
+    { id: 'o29', type: 29, name: 'スチームパンク鬼', rarity: 'SR', desc: '真鍮のゴーグルとギアで武装した鬼。', condition: 'ガチャ', icon: '⚙️', duration: 15, speedAdd: 15 },
+    { id: 'o30', type: 30, name: 'ネオン鬼', rarity: 'SSR', desc: 'サイバー空間の輝くネオン鬼。', condition: 'ガチャ', icon: '⚡', duration: 16, speedAdd: 27 },
+    { id: 'o31', type: 31, name: 'ドクロ鬼', rarity: 'SR', desc: '白骨のドクロ顔をした死神鬼。', condition: 'ガチャ', icon: '💀', duration: 15, speedAdd: 18 },
+    { id: 'o32', type: 32, name: 'サボテン鬼', rarity: 'R', desc: '全身トゲだらけの砂漠の鬼。', condition: 'ガチャ', icon: '🌵', duration: 14, speedAdd: 8 },
+    { id: 'o33', type: 33, name: '宇宙鬼', rarity: 'SSR', desc: '星屑と銀河のオーラを放つ鬼。', condition: 'ガチャ', icon: '🌌', duration: 19, speedAdd: 23 },
+    { id: 'o34', type: 34, name: 'サムライ鬼', rarity: 'SR', desc: '兜と立派な前立を装着した将軍鬼。', condition: 'ガチャ', icon: '🏯', duration: 16, speedAdd: 16 },
+    { id: 'o35', type: 35, name: 'クラウン鬼', rarity: 'R', desc: '真っ赤な鼻を持つ不気味な道化師鬼。', condition: 'ガチャ', icon: '🤡', duration: 15, speedAdd: 12 },
+    { id: 'o36', type: 36, name: 'キョンシー鬼', rarity: 'SR', desc: '額にお札を貼られた跳躍鬼。', condition: 'ガチャ', icon: '📜', duration: 15, speedAdd: 14 },
+    { id: 'o37', type: 37, name: 'マグマ鬼', rarity: 'SSR', desc: '溶岩の亀裂から熱気を放つ鬼。', condition: 'ガチャ', icon: '🌋', duration: 18, speedAdd: 21 },
+    { id: 'o38', type: 38, name: '雷鬼', rarity: 'SR', desc: '稲妻をまとった黄色の雷鳴鬼。', condition: 'ガチャ', icon: '⚡', duration: 14, speedAdd: 25 },
+    { id: 'o39', type: 39, name: '樹木鬼', rarity: 'R', desc: '古木の枝と皮で形成された大樹鬼。', condition: 'ガチャ', icon: '🌲', duration: 17, speedAdd: -2 },
+    { id: 'o40', type: 40, name: 'ネコ鬼', rarity: 'R', desc: 'ピンと立った猫耳とヒゲを持つ鬼。', condition: 'ガチャ', icon: '🐱', duration: 13, speedAdd: 22 },
+    { id: 'o41', type: 41, name: 'ウサギ鬼', rarity: 'R', desc: '長い耳で足音が素早い跳躍鬼。', condition: 'ガチャ', icon: '🐰', duration: 13, speedAdd: 24 },
+    { id: 'o42', type: 42, name: '海賊鬼', rarity: 'SR', desc: '眼帯と海賊帽を被った大海賊鬼。', condition: 'ガチャ', icon: '🏴‍☠️', duration: 16, speedAdd: 15 },
+    { id: 'o43', type: 43, name: 'アヌビス鬼', rarity: 'SSR', desc: 'エジプト神話の冥界の守護鬼。', condition: 'ガチャ', icon: '🐕', duration: 18, speedAdd: 22 },
+    { id: 'o44', type: 44, name: 'プレデター鬼', rarity: 'SSR', desc: '無数のドレッド角を持つ最強の狩人。', condition: 'ガチャ', icon: '🛸', duration: 17, speedAdd: 26 },
+    { id: 'o45', type: 45, name: 'ギャラクシー鬼', rarity: 'SSR', desc: '虹色に輝く最高峰の神秘鬼。', condition: 'ガチャ', icon: '🌟', duration: 20, speedAdd: 30 },
+    { id: 'o46', type: 46, name: 'タコ鬼', rarity: 'SR', desc: '吸盤のついた触手と丸口の鬼。', condition: 'ガチャ', icon: '🐙', duration: 16, speedAdd: 11 },
+    { id: 'o47', type: 47, name: 'クロック鬼', rarity: 'SR', desc: '額に時計の針が刻まれた時の鬼。', condition: 'ガチャ', icon: '⏰', duration: 16, speedAdd: 13 },
+    { id: 'o48', type: 48, name: 'ダークナイト鬼', rarity: 'SSR', desc: '重厚な漆黒甲冑に身を包んだ鬼。', condition: 'ガチャ', icon: '🛡️', duration: 19, speedAdd: 18 },
+    { id: 'o49', type: 49, name: 'カオス鬼', rarity: 'SSR', desc: '無限に変色し周囲を狂わせる混濁鬼。', condition: 'ガチャ', icon: '🌀', duration: 20, speedAdd: 32 }
   ],
   NPC_NAMES: ["ひろしBot", "タケルBot", "ミカBot", "タクヤBot", "青鬼マニア"]
 };
@@ -720,6 +768,7 @@ class EnemyOniDraw {
     ctx.ellipse(x + w/2, y + h, w * 0.95, h / 3, 0, 0, Math.PI * 2); 
     ctx.fill();
 
+    // 1: フワッティー (四角)
     if (type === DB.ONI_TYPES.FUWATTY) {
       let fw = 44, fh = 42;
       let fx = x + w/2 - fw/2, fy = y + h/2 - fh/2 + bob;
@@ -753,61 +802,62 @@ class EnemyOniDraw {
     let darkEyeArea = '#191d3d';    
     let auraColor = null;
 
+    // タイプごとのパラメータ調整
     switch(type) {
-      case DB.ONI_TYPES.SQUAT:
-        bodyH = 14; headH = 38; cy = y + h - bodyH - headH + Math.abs(Math.sin(anim*2))*8;
-        break;
-      case DB.ONI_TYPES.JELLY:
-        skinColor = '#00a8ff'; skinShadow = '#006699';
-        break;
-      case DB.ONI_TYPES.DEMON:
-        skinColor = '#b22222'; skinShadow = '#5c0000'; darkEyeArea = '#380000'; auraColor = 'rgba(255,0,0,0.4)';
-        break;
-      case DB.ONI_TYPES.ICE:
-        skinColor = '#00ced1'; skinShadow = '#006666'; darkEyeArea = '#003333'; auraColor = 'rgba(0,255,255,0.4)';
-        break;
-      case DB.ONI_TYPES.FIRE:
-        skinColor = '#ff4500'; skinShadow = '#8b0000'; darkEyeArea = '#4a0000'; auraColor = 'rgba(255,140,0,0.5)';
-        break;
-      case DB.ONI_TYPES.SLIME:
-        skinColor = '#2ecc71'; skinShadow = '#1e8449'; darkEyeArea = '#145a32';
-        break;
-      case DB.ONI_TYPES.SPIDER:
-        skinColor = '#4a0072'; skinShadow = '#2a0042'; darkEyeArea = '#12001e';
-        break;
-      case DB.ONI_TYPES.MUMMY:
-        skinColor = '#d2b48c'; skinShadow = '#8b7355'; darkEyeArea = '#3b2f2f';
-        break;
-      case DB.ONI_TYPES.NINJA:
-        skinColor = '#2c3e50'; skinShadow = '#1a252f'; darkEyeArea = '#0f171e';
-        break;
-      case DB.ONI_TYPES.GIANT:
-        headW = 56; headH = 50; bodyW = 34; bodyH = 26; cx = x + w/2 - headW/2; cy = y + h - bodyH - headH + bob;
-        break;
-      case DB.ONI_TYPES.GHOST:
-        skinColor = 'rgba(180, 200, 255, 0.75)'; skinShadow = 'rgba(100, 120, 180, 0.8)'; darkEyeArea = 'rgba(50, 60, 100, 0.9)';
-        break;
-      case DB.ONI_TYPES.BOMB:
-        skinColor = '#34495e'; skinShadow = '#1a252f'; auraColor = 'rgba(231, 76, 60, 0.3)';
-        break;
-      case DB.ONI_TYPES.METAL:
-        skinColor = '#f1c40f'; skinShadow = '#b7950b'; darkEyeArea = '#7d6608'; auraColor = 'rgba(241,196,15,0.5)';
-        break;
-      case DB.ONI_TYPES.BIKEI:
-        skinColor = '#485460'; skinShadow = '#1e272e';
-        break;
-      case DB.ONI_TYPES.LONGNECK:
-        cy -= 16;
-        break;
-      case DB.ONI_TYPES.HAMMER:
-        skinColor = '#3c40c6'; skinShadow = '#1e272e';
-        break;
-      case DB.ONI_TYPES.MECHA:
-        skinColor = '#718093'; skinShadow = '#2f3640'; darkEyeArea = '#192a56';
-        break;
-      case DB.ONI_TYPES.ASURA:
-        skinColor = '#8e44ad'; skinShadow = '#4a235a'; auraColor = 'rgba(142, 68, 173, 0.4)';
-        break;
+      case DB.ONI_TYPES.SQUAT: bodyH = 14; headH = 38; cy = y + h - bodyH - headH + Math.abs(Math.sin(anim*2))*8; break;
+      case DB.ONI_TYPES.JELLY: skinColor = '#00a8ff'; skinShadow = '#006699'; break;
+      case DB.ONI_TYPES.DEMON: skinColor = '#b22222'; skinShadow = '#5c0000'; darkEyeArea = '#380000'; auraColor = 'rgba(255,0,0,0.4)'; break;
+      case DB.ONI_TYPES.ICE: skinColor = '#00ced1'; skinShadow = '#006666'; darkEyeArea = '#003333'; auraColor = 'rgba(0,255,255,0.4)'; break;
+      case DB.ONI_TYPES.FIRE: skinColor = '#ff4500'; skinShadow = '#8b0000'; darkEyeArea = '#4a0000'; auraColor = 'rgba(255,140,0,0.5)'; break;
+      case DB.ONI_TYPES.SLIME: skinColor = '#2ecc71'; skinShadow = '#1e8449'; darkEyeArea = '#145a32'; break;
+      case DB.ONI_TYPES.SPIDER: skinColor = '#4a0072'; skinShadow = '#2a0042'; darkEyeArea = '#12001e'; break;
+      case DB.ONI_TYPES.MUMMY: skinColor = '#d2b48c'; skinShadow = '#8b7355'; darkEyeArea = '#3b2f2f'; break;
+      case DB.ONI_TYPES.NINJA: skinColor = '#2c3e50'; skinShadow = '#1a252f'; darkEyeArea = '#0f171e'; break;
+      case DB.ONI_TYPES.GIANT: headW = 56; headH = 50; bodyW = 34; bodyH = 26; cx = x + w/2 - headW/2; cy = y + h - bodyH - headH + bob; break;
+      case DB.ONI_TYPES.GHOST: skinColor = 'rgba(180, 200, 255, 0.75)'; skinShadow = 'rgba(100, 120, 180, 0.8)'; darkEyeArea = 'rgba(50, 60, 100, 0.9)'; break;
+      case DB.ONI_TYPES.BOMB: skinColor = '#34495e'; skinShadow = '#1a252f'; auraColor = 'rgba(231, 76, 60, 0.3)'; break;
+      case DB.ONI_TYPES.METAL: skinColor = '#f1c40f'; skinShadow = '#b7950b'; darkEyeArea = '#7d6608'; auraColor = 'rgba(241,196,15,0.5)'; break;
+      case DB.ONI_TYPES.BIKEI: skinColor = '#485460'; skinShadow = '#1e272e'; break;
+      case DB.ONI_TYPES.LONGNECK: cy -= 16; break;
+      case DB.ONI_TYPES.HAMMER: skinColor = '#3c40c6'; skinShadow = '#1e272e'; break;
+      case DB.ONI_TYPES.MECHA: skinColor = '#718093'; skinShadow = '#2f3640'; darkEyeArea = '#192a56'; break;
+      case DB.ONI_TYPES.ASURA: skinColor = '#8e44ad'; skinShadow = '#4a235a'; auraColor = 'rgba(142, 68, 173, 0.4)'; break;
+      case DB.ONI_TYPES.ALIEN: skinColor = '#a3cb38'; skinShadow = '#009432'; darkEyeArea = '#006266'; break;
+      case DB.ONI_TYPES.CYCLOPS: skinColor = '#1289a7'; skinShadow = '#0652dd'; break;
+      case DB.ONI_TYPES.POISON: skinColor = '#833471'; skinShadow = '#6f1e51'; auraColor = 'rgba(163, 203, 56, 0.4)'; break;
+      case DB.ONI_TYPES.SHADOW: skinColor = '#1e272e'; skinShadow = '#000000'; darkEyeArea = '#000000'; auraColor = 'rgba(0,0,0,0.6)'; break;
+      case DB.ONI_TYPES.ANGEL: skinColor = '#ffffff'; skinShadow = '#dcdde1'; darkEyeArea = '#7f8c8d'; auraColor = 'rgba(255,255,255,0.6)'; break;
+      case DB.ONI_TYPES.DRAGON: skinColor = '#009432'; skinShadow = '#006266'; darkEyeArea = '#110207'; auraColor = 'rgba(234, 32, 39, 0.3)'; break;
+      case DB.ONI_TYPES.VAMPIRE: skinColor = '#6d214f'; skinShadow = '#182C61'; darkEyeArea = '#182C61'; break;
+      case DB.ONI_TYPES.PUMPKIN: skinColor = '#e67e22'; skinShadow = '#d35400'; darkEyeArea = '#2c3e50'; break;
+      case DB.ONI_TYPES.CRYSTAL: skinColor = '#00d2d3'; skinShadow = '#01a3a4'; auraColor = 'rgba(0, 210, 211, 0.5)'; break;
+      case DB.ONI_TYPES.STEAMPUNK: skinColor = '#cd6133'; skinShadow = '#84817a'; break;
+      case DB.ONI_TYPES.NEON: skinColor = '#ff5252'; skinShadow = '#ff793f'; auraColor = 'rgba(255, 82, 82, 0.6)'; break;
+      case DB.ONI_TYPES.SKULL: skinColor = '#f5f6fa'; skinShadow = '#7f8c8d'; darkEyeArea = '#2f3640'; break;
+      case DB.ONI_TYPES.CACTUS: skinColor = '#26de81'; skinShadow = '#20bf6b'; break;
+      case DB.ONI_TYPES.COSMIC: skinColor = '#3c40c6'; skinShadow = '#0f0c29'; auraColor = 'rgba(156, 136, 255, 0.5)'; break;
+      case DB.ONI_TYPES.SAMURAI: skinColor = '#b33939'; skinShadow = '#218c74'; break;
+      case DB.ONI_TYPES.CLOWN: skinColor = '#f8a5c2'; skinShadow = '#f78fb3'; break;
+      case DB.ONI_TYPES.JIANGSHI: skinColor = '#33d9b2'; skinShadow = '#218c74'; break;
+      case DB.ONI_TYPES.MAGMA: skinColor = '#2f3542'; skinShadow = '#ff4757'; auraColor = 'rgba(255, 71, 87, 0.5)'; break;
+      case DB.ONI_TYPES.THUNDER: skinColor = '#fed330'; skinShadow = '#f7b731'; auraColor = 'rgba(254, 211, 48, 0.5)'; break;
+      case DB.ONI_TYPES.WOOD: skinColor = '#84817a'; skinShadow = '#4b4b4b'; break;
+      case DB.ONI_TYPES.CAT: skinColor = '#4b6584'; skinShadow = '#2bcbba'; break;
+      case DB.ONI_TYPES.RABBIT: skinColor = '#a55eea'; skinShadow = '#8854d0'; break;
+      case DB.ONI_TYPES.PIRATE: skinColor = '#2d98da'; skinShadow = '#3867d6'; break;
+      case DB.ONI_TYPES.ANUBIS: skinColor = '#4b4b4b'; skinShadow = '#f7b731'; break;
+      case DB.ONI_TYPES.PREDATOR: skinColor = '#20bf6b'; skinShadow = '#0fb9b1'; auraColor = 'rgba(32, 191, 107, 0.4)'; break;
+      case DB.ONI_TYPES.GALAXY: 
+        let hue = (Date.now() / 20) % 360;
+        skinColor = `hsl(${hue}, 70%, 50%)`; skinShadow = `hsl(${(hue+40)%360}, 80%, 30%)`;
+        auraColor = `hsla(${hue}, 100%, 50%, 0.5)`; break;
+      case DB.ONI_TYPES.OCTOPUS: skinColor = '#eb4d4b'; skinShadow = '#130f40'; break;
+      case DB.ONI_TYPES.CLOCK: skinColor = '#f0932b'; skinShadow = '#ffbe76'; break;
+      case DB.ONI_TYPES.KNIGHT: skinColor = '#535c68'; skinShadow = '#2d3436'; break;
+      case DB.ONI_TYPES.CHAOS: 
+        let cRatio = (Math.sin(anim*2) + 1) / 2;
+        skinColor = cRatio > 0.5 ? '#ff0055' : '#00ffff'; skinShadow = '#000000';
+        auraColor = 'rgba(255,0,255,0.5)'; break;
     }
 
     if (auraColor) {
@@ -834,14 +884,36 @@ class EnemyOniDraw {
       }
     }
 
+    // 胴体描画
     ctx.fillStyle = skinShadow; ctx.fillRect(cx + (headW - bodyW)/2, cy + headH - 6, bodyW, bodyH);
     ctx.fillStyle = skinColor; ctx.fillRect(cx + (headW - bodyW)/2 + 3, cy + headH - 6, bodyW - 6, bodyH);
 
+    // 持ち物・装飾パーツ
     if (type === DB.ONI_TYPES.HAMMER) {
       ctx.fillStyle = '#7f8c8d'; ctx.fillRect(cx - 10, cy + 10, 8, 30);
       ctx.fillStyle = '#2c3e50'; ctx.fillRect(cx - 18, cy + 5, 24, 12);
     }
+    if (type === DB.ONI_TYPES.ANGEL) {
+      ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 3; ctx.beginPath();
+      ctx.ellipse(cx + headW/2, cy - 8, 14, 5, 0, 0, Math.PI*2); ctx.stroke();
+    }
+    if (type === DB.ONI_TYPES.CAT || type === DB.ONI_TYPES.RABBIT || type === DB.ONI_TYPES.ANUBIS) {
+      let earH = type === DB.ONI_TYPES.RABBIT ? 22 : 12;
+      ctx.fillStyle = skinColor;
+      ctx.beginPath(); ctx.moveTo(cx + 4, cy); ctx.lineTo(cx + 12, cy - earH); ctx.lineTo(cx + 18, cy); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx + headW - 4, cy); ctx.lineTo(cx + headW - 12, cy - earH); ctx.lineTo(cx + headW - 18, cy); ctx.fill();
+    }
+    if (type === DB.ONI_TYPES.DRAGON) {
+      ctx.fillStyle = '#f1c40f';
+      ctx.beginPath(); ctx.moveTo(cx + 8, cy); ctx.lineTo(cx - 6, cy - 18); ctx.lineTo(cx + 16, cy - 4); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx + headW - 8, cy); ctx.lineTo(cx + headW + 6, cy - 18); ctx.lineTo(cx + headW - 16, cy - 4); ctx.fill();
+    }
+    if (type === DB.ONI_TYPES.SAMURAI) {
+      ctx.fillStyle = '#f1c40f';
+      ctx.beginPath(); ctx.arc(cx + headW/2, cy - 2, 10, Math.PI, Math.PI*2); ctx.fill();
+    }
 
+    // 耳・頭部ベース
     ctx.fillStyle = skinShadow; ctx.beginPath();
     ctx.ellipse(cx - 3, cy + headH*0.5, 5, 8, 0, 0, Math.PI*2);
     ctx.ellipse(cx + headW + 3, cy + headH*0.5, 5, 8, 0, 0, Math.PI*2); ctx.fill();
@@ -852,50 +924,82 @@ class EnemyOniDraw {
     ctx.roundRect(cx, cy, headW, headH, [18, 18, 10, 10]); ctx.fill();
     ctx.strokeStyle = '#12152e'; ctx.lineWidth = 2; ctx.stroke();
 
+    // 頭部特殊効果・模様
     if (type === DB.ONI_TYPES.MUMMY) {
       ctx.strokeStyle = '#f5f5dc'; ctx.lineWidth = 2.5;
       for(let i = 0; i < 4; i++) {
         ctx.beginPath(); ctx.moveTo(cx + 2, cy + 8 + i*9); ctx.lineTo(cx + headW - 2, cy + 6 + i*9); ctx.stroke();
       }
     }
-
-    if (type === DB.ONI_TYPES.BOMB) {
-      ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(cx + headW/2, cy); ctx.quadraticCurveTo(cx + headW/2 + 8, cy - 8, cx + headW/2 + 4, cy - 14); ctx.stroke();
-      ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(cx + headW/2 + 4, cy - 14, 3, 0, Math.PI*2); ctx.fill();
+    if (type === DB.ONI_TYPES.JIANGSHI) {
+      ctx.fillStyle = '#f1c40f'; ctx.fillRect(cx + headW/2 - 6, cy + 2, 12, 18);
+      ctx.fillStyle = '#e74c3c'; ctx.fillRect(cx + headW/2 - 3, cy + 6, 6, 10);
+    }
+    if (type === DB.ONI_TYPES.CACTUS) {
+      ctx.fillStyle = '#f1c40f';
+      for(let i = 0; i < 6; i++) ctx.fillRect(cx + 4 + i*7, cy + 4 + (i%2)*12, 2, 5);
     }
 
-    ctx.fillStyle = darkEyeArea; let socketY = cy + 18;
-    ctx.beginPath();
-    ctx.ellipse(cx + 12, socketY + 1, 9, 10, 0, 0, Math.PI*2);
-    ctx.ellipse(cx + headW - 12, socketY + 1, 9, 10, 0, 0, Math.PI*2); ctx.fill();
+    // 目のソケット描画
+    let socketY = cy + 18;
+    ctx.fillStyle = darkEyeArea;
 
-    if (type === DB.ONI_TYPES.BIKEI) {
-      ctx.fillStyle = '#ff9ff3';
-      ctx.beginPath(); ctx.ellipse(cx + 12, socketY, 6, 7, 0, 0, Math.PI*2);
-      ctx.ellipse(cx + headW - 12, socketY, 6, 7, 0, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath(); ctx.arc(cx + 10, socketY - 2, 2.5, 0, Math.PI*2);
-      ctx.arc(cx + headW - 14, socketY - 2, 2.5, 0, Math.PI*2); ctx.fill();
+    if (type === DB.ONI_TYPES.CYCLOPS || type === DB.ONI_TYPES.ALIEN) {
+      ctx.beginPath(); ctx.ellipse(cx + headW/2, socketY, 14, 14, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = (type === DB.ONI_TYPES.ALIEN) ? '#e74c3c' : '#ffffff';
+      ctx.beginPath(); ctx.ellipse(cx + headW/2, socketY, 10, 10, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#000000';
+      ctx.beginPath(); ctx.arc(cx + headW/2 + (dir===2?3:dir===1?-3:0), socketY, 4, 0, Math.PI*2); ctx.fill();
+    } else if (type === DB.ONI_TYPES.SPIDER) {
+      for(let i=0; i<3; i++) {
+        ctx.beginPath(); ctx.arc(cx + 10 + i*13, socketY - 4, 4, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + 10 + i*13, socketY + 6, 4, 0, Math.PI*2); ctx.fill();
+      }
     } else {
-      let eyeW = 13, eyeH = 14;
-      ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.ellipse(cx + 12, socketY, eyeW/2, eyeH/2, 0, 0, Math.PI*2);
-      ctx.ellipse(cx + headW - 12, socketY, eyeW/2, eyeH/2, 0, 0, Math.PI*2); ctx.fill();
+      ctx.ellipse(cx + 12, socketY + 1, 9, 10, 0, 0, Math.PI*2);
+      ctx.ellipse(cx + headW - 12, socketY + 1, 9, 10, 0, 0, Math.PI*2); ctx.fill();
 
-      let lookX = (dir === 2 ? 2 : dir === 1 ? -2 : 0);
-      let lookY = (dir === 0 ? 1.5 : dir === 3 ? -1.5 : 0);
-      ctx.fillStyle = (type === DB.ONI_TYPES.MECHA) ? '#e74c3c' : '#000000';
-      ctx.beginPath(); ctx.arc(cx + 12 + lookX, socketY + lookY, 3, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(cx + headW - 12 + lookX, socketY + lookY, 3, 0, Math.PI*2); ctx.fill();
+      if (type === DB.ONI_TYPES.BIKEI) {
+        ctx.fillStyle = '#ff9ff3';
+        ctx.beginPath(); ctx.ellipse(cx + 12, socketY, 6, 7, 0, 0, Math.PI*2);
+        ctx.ellipse(cx + headW - 12, socketY, 6, 7, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(cx + 10, socketY - 2, 2.5, 0, Math.PI*2);
+        ctx.arc(cx + headW - 14, socketY - 2, 2.5, 0, Math.PI*2); ctx.fill();
+      } else if (type === DB.ONI_TYPES.SKULL) {
+        ctx.fillStyle = '#000000';
+        ctx.beginPath(); ctx.moveTo(cx + 12, socketY - 4); ctx.lineTo(cx + 16, socketY + 4); ctx.lineTo(cx + 8, socketY + 4); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(cx + headW - 12, socketY - 4); ctx.lineTo(cx + headW - 8, socketY + 4); ctx.lineTo(cx + headW - 16, socketY + 4); ctx.fill();
+      } else {
+        let eyeW = 13, eyeH = 14;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(cx + 12, socketY, eyeW/2, eyeH/2, 0, 0, Math.PI*2);
+        ctx.ellipse(cx + headW - 12, socketY, eyeW/2, eyeH/2, 0, 0, Math.PI*2); ctx.fill();
+
+        let lookX = (dir === 2 ? 2 : dir === 1 ? -2 : 0);
+        let lookY = (dir === 0 ? 1.5 : dir === 3 ? -1.5 : 0);
+        ctx.fillStyle = (type === DB.ONI_TYPES.MECHA || type === DB.ONI_TYPES.STEAMPUNK) ? '#e74c3c' : '#000000';
+        ctx.beginPath(); ctx.arc(cx + 12 + lookX, socketY + lookY, 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + headW - 12 + lookX, socketY + lookY, 3, 0, Math.PI*2); ctx.fill();
+      }
     }
 
+    // 口の描画
     let mouthY = cy + 32;
     ctx.fillStyle = '#110207'; ctx.beginPath();
     ctx.ellipse(cx + headW/2, mouthY, 13, 6, 0, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = '#ffffff';
     for(let i = 0; i < 5; i++) ctx.fillRect(cx + headW/2 - 8 + i*4, mouthY - 5, 2.5, 4);
+
+    if (type === DB.ONI_TYPES.VAMPIRE || type === DB.ONI_TYPES.DRAGON) {
+      ctx.beginPath(); ctx.moveTo(cx + headW/2 - 6, mouthY - 2); ctx.lineTo(cx + headW/2 - 4, mouthY + 5); ctx.lineTo(cx + headW/2 - 2, mouthY - 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx + headW/2 + 2, mouthY - 2); ctx.lineTo(cx + headW/2 + 4, mouthY + 5); ctx.lineTo(cx + headW/2 + 6, mouthY - 2); ctx.fill();
+    }
+    if (type === DB.ONI_TYPES.CLOWN) {
+      ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.arc(cx + headW/2, mouthY - 6, 5, 0, Math.PI*2); ctx.fill();
+    }
 
     ctx.restore();
   }
@@ -1023,7 +1127,6 @@ class NetworkManager {
       });
       this.broadcastLobbyState(); this.updateLobbyUI();
     } else if(data.type === 'PLAYER_SYNC') {
-      // 連続位置・変身・状態情報の更新と他メンバーへのブロードキャスト
       gameEngine.updateRemotePlayer(data.id, data.x, data.y, data.dir, data.isMoving, data.isOni, data.oniType, data.oniTimer, data.isHidden, data.hiddenLockerId, data.isDead);
       this.broadcast({ type: 'REMOTE_SYNC', playerData: data }, conn.peer);
     } else if(data.type === 'VIRUS_CLAIM') {
@@ -1168,7 +1271,7 @@ class GameEngine {
       let botChar = DB.CHARACTERS[i + 1] || DB.CHARACTERS[0];
       players.push({
         id: `bot_${i}`, name: DB.NPC_NAMES[i], color: botChar.color, speed: botChar.speedBase,
-        icon: botChar.icon, oniType: Utils.randomInt(0, 20), oniDuration: 15, isBot: true
+        icon: botChar.icon, oniType: Utils.randomInt(0, 50), oniDuration: 15, isBot: true
       });
     }
 
@@ -1213,7 +1316,7 @@ class GameEngine {
     this.isPlaying = true;
     uiManager.showScreen('hud');
     document.getElementById('hud').classList.remove('hidden');
-    this.addKillLog("変身バトル開始！全20種の青鬼に変身だ！");
+    this.addKillLog("変身バトル開始！全50種の青鬼に変身だ！");
   }
 
   updateRemotePlayer(id, x, y, dir, isMoving, isOni, oniType, oniTimer, isHidden, hiddenLockerId, isDead) {
@@ -1344,9 +1447,8 @@ class GameEngine {
         });
       }
 
-      // オンライン対戦時：毎フレーム〜約30Hzの頻度で「位置・変身状況・アクション」を通信送信し続ける
       this.syncTimer += dt;
-      if(this.syncTimer > 0.033) { // 30fpsで常に更新送信
+      if(this.syncTimer > 0.033) {
         this.syncTimer = 0;
         const syncData = {
           type: 'PLAYER_SYNC', 
@@ -1573,16 +1675,18 @@ class UIManager {
     grid.innerHTML = '';
 
     if(this.currentSetupTab === 'CHARS') {
-      DB.CHARACTERS.forEach(c => {
-        const isUnlocked = saveData.unlockedChars.includes(c.id);
-        const isSelected = saveData.teamChars.includes(c.id);
+      DB.CHARACTERS.forEach(char => {
+        const unlocked = saveData.unlockedChars.includes(char.id);
+        const selected = saveData.teamChars.includes(char.id);
         const card = document.createElement('div');
-        card.className = `card-item ${c.rarity} ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}`;
-        card.innerHTML = `<span style="font-size:2rem">${c.icon}</span><span style="font-size:0.75rem; font-weight:bold;">${c.name}</span>`;
-        if(isUnlocked) {
+        card.className = `card-item ${char.rarity} ${selected ? 'selected' : ''} ${!unlocked ? 'locked' : ''}`;
+        card.innerHTML = `<span style="font-size:2rem">${char.icon}</span><span style="font-size:0.7rem; font-weight:bold;">${char.name}</span>`;
+        if(unlocked) {
           card.onclick = () => {
-            if(!saveData.teamChars.includes(c.id)) {
-              saveData.teamChars[0] = c.id;
+            if(!saveData.teamChars.includes(char.id)) {
+              saveData.teamChars[1] = saveData.teamChars[0];
+              saveData.teamChars[0] = char.id;
+              saveData.save();
               this.renderTeamSetupScreen();
             }
           };
@@ -1590,15 +1694,16 @@ class UIManager {
         grid.appendChild(card);
       });
     } else {
-      DB.ONI_DATA.forEach(o => {
-        const isUnlocked = saveData.unlockedOnis.includes(o.id);
-        const isSelected = saveData.selectedOni === o.id;
+      DB.ONI_DATA.forEach(oni => {
+        const unlocked = saveData.unlockedOnis.includes(oni.id);
+        const selected = saveData.selectedOni === oni.id;
         const card = document.createElement('div');
-        card.className = `card-item ${o.rarity} ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}`;
-        card.innerHTML = `<span style="font-size:2rem">${o.icon}</span><span style="font-size:0.75rem; font-weight:bold;">${o.name}</span>`;
-        if(isUnlocked) {
+        card.className = `card-item ${oni.rarity} ${selected ? 'selected' : ''} ${!unlocked ? 'locked' : ''}`;
+        card.innerHTML = `<span style="font-size:2rem">${oni.icon}</span><span style="font-size:0.7rem; font-weight:bold;">${oni.name}</span>`;
+        if(unlocked) {
           card.onclick = () => {
-            saveData.selectedOni = o.id;
+            saveData.selectedOni = oni.id;
+            saveData.save();
             this.renderTeamSetupScreen();
           };
         }
@@ -1619,34 +1724,45 @@ class UIManager {
     }
     saveData.coins -= 200;
 
-    const isOniGacha = Math.random() < 0.7;
-    let pool = isOniGacha ? DB.ONI_DATA : DB.CHARACTERS;
-    let item = pool[Utils.randomInt(0, pool.length)];
+    const isOni = Math.random() < 0.6;
+    let resultItem = null;
 
-    if(isOniGacha) {
-      if(!saveData.unlockedOnis.includes(item.id)) saveData.unlockedOnis.push(item.id);
+    if(isOni) {
+      const lockedOnis = DB.ONI_DATA.filter(o => !saveData.unlockedOnis.includes(o.id));
+      if(lockedOnis.length > 0) {
+        resultItem = lockedOnis[Math.floor(Math.random() * lockedOnis.length)];
+        saveData.unlockedOnis.push(resultItem.id);
+      } else {
+        resultItem = DB.ONI_DATA[Math.floor(Math.random() * DB.ONI_DATA.length)];
+      }
     } else {
-      if(!saveData.unlockedChars.includes(item.id)) saveData.unlockedChars.push(item.id);
+      const lockedChars = DB.CHARACTERS.filter(c => !saveData.unlockedChars.includes(c.id));
+      if(lockedChars.length > 0) {
+        resultItem = lockedChars[Math.floor(Math.random() * lockedChars.length)];
+        saveData.unlockedChars.push(resultItem.id);
+      } else {
+        resultItem = DB.CHARACTERS[Math.floor(Math.random() * DB.CHARACTERS.length)];
+      }
     }
+
     saveData.save();
-
-    const resultBox = document.getElementById('gacha-result');
-    resultBox.classList.remove('hidden');
-    document.getElementById('gacha-type-tag').innerText = isOniGacha ? '【変身青鬼】' : '【人間キャラ】';
-    document.getElementById('gacha-result-icon').innerText = item.icon;
-    document.getElementById('gacha-result-name').innerText = item.name;
-
     this.updateHomeScreenUI();
+
+    const resBox = document.getElementById('gacha-result');
+    resBox.classList.remove('hidden');
+    document.getElementById('gacha-type-tag').innerText = isOni ? "👹 変身青鬼" : "👦 キャラクター";
+    document.getElementById('gacha-result-icon').innerText = resultItem.icon;
+    document.getElementById('gacha-result-name').innerText = resultItem.name;
   }
 
   renderZukan() {
     const grid = document.getElementById('zukan-grid');
     grid.innerHTML = '';
-    DB.ONI_DATA.forEach(o => {
-      const isUnlocked = saveData.unlockedOnis.includes(o.id);
+    DB.ONI_DATA.forEach(oni => {
+      const unlocked = saveData.unlockedOnis.includes(oni.id);
       const card = document.createElement('div');
-      card.className = `card-item ${o.rarity} ${!isUnlocked ? 'locked' : ''}`;
-      card.innerHTML = `<span style="font-size:2rem">${isUnlocked ? o.icon : '❓'}</span><span style="font-size:0.75rem; font-weight:bold;">${isUnlocked ? o.name : '？？？'}</span>`;
+      card.className = `card-item ${oni.rarity} ${!unlocked ? 'locked' : ''}`;
+      card.innerHTML = `<span style="font-size:2rem">${unlocked ? oni.icon : '❓'}</span><span style="font-size:0.75rem; font-weight:bold;">${unlocked ? oni.name : '？？？'}</span><span style="font-size:0.65rem; color:#aaa;">${unlocked ? oni.desc : 'ガチャ等で解放'}</span>`;
       grid.appendChild(card);
     });
   }
@@ -1658,8 +1774,9 @@ class UIManager {
   }
 
   resetSaveData() {
-    if(confirm('セーブデータを初期化してもよろしいですか？')) {
+    if(confirm('本当にデータを初期化しますか？')) {
       saveData.reset();
+      this.updateHomeScreenUI();
       this.showMessage('データを初期化しました');
       this.showScreen('home-screen');
     }
@@ -1673,10 +1790,6 @@ class UIManager {
   }
 }
 const uiManager = new UIManager();
-
-window.onload = () => {
-  uiManager.updateHomeScreenUI();
-};
 </script>
 </body>
 </html>

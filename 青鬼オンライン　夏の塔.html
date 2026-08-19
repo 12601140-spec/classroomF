@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>青鬼オンライン 外伝 -  夏の塔</title>
+    <title>青鬼オンライン 外伝 - 夏の塔</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
@@ -686,7 +686,7 @@ class EnemyOni extends Entity {
 class SummerDragon extends Entity {
     constructor(x, y) {
         super(x, y, 100, 100);
-        this.hp = 10;
+        this.hp = 3;
         this.state = 'MOVE'; // MOVE, ATK1, ATK2, ATK3, ATK4
         this.stateTimer = 2.0;
         this.anim = 0;
@@ -839,7 +839,7 @@ class SummerDragon extends Entity {
         ctx.fillStyle = "red";
         ctx.fillRect(cx, cy - 20, 100, 10);
         ctx.fillStyle = "green";
-        ctx.fillRect(cx, cy - 20, (this.hp/10)*100, 10);
+        ctx.fillRect(cx, cy - 20, (this.hp/3)*100, 10);
     }
 }
 

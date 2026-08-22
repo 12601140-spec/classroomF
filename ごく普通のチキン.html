@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CHIKIN RAGDOLL ARENA 3D - SUPER ULTRA</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js for 3D graphics -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=M+PLUS+1p:wght@700;900&family=Press+Start+2P&family=Teko:wght@700&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      box-sizing: border-box;
+      touch-action: manipulation;
+    }
+    
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #050508;
+      font-family: 'M PLUS 1p', 'Teko', sans-serif;
+      color: #ffffff;
+    }
+
+    .font-title { font-family: 'Black Ops One', 'M PLUS 1p', cursive; }
+    .font-arcade { font-family: 'Press Start 2P', monospace; }
+    .font-action { font-family: 'Teko', sans-serif; text-transform: uppercase; }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.4); }
+    ::-webkit-scrollbar-thumb { background: #ff4500; border-radius: 4px; }
+
+    /* Cinematic Mode Black Bars */
+    .cinematic-bar-top, .cinematic-bar-bottom {
+      position: fixed;
+      left: 0;
+      width: 100%;
+      height: 0;
+      background: #000;
+      z-index: 100;
+      transition: height 0.4s ease-in-out;
+      pointer-events: none;
+    }
+    body.mode-cinematic .cinematic-bar-top,
+    body.mode-cinematic .cinematic-bar-bottom {
+      height: 10vh;
+    }
+    .cinematic-bar-top { top: 0; }
+    .cinematic-bar-bottom { bottom: 0; }
+
+    /* Filter Effects Container Overlay */
+    .filter-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 90;
+      transition: all 0.3s ease;
+    }
+
+    /* Graphic Filter Modes */
+    body.filter-terminal .filter-overlay {
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      background-size: 100% 3px, 6px 100%;
+      box-shadow: inset 0 0 100px rgba(0, 255, 65, 0.3);
+      filter: sepia(1) hue-rotate(80deg) saturate(3) brightness(0.9);
+    }
+
+    body.filter-thermo .filter-overlay {
+      mix-blend-mode: color;
+      background: linear-gradient(135deg, #0000ff, #ff00ff, #ff0000, #ffff00, #ffffff);
+      opacity: 0.8;
+      filter: contrast(200%) saturate(300%);
+    }
+
+    body.filter-blueprint .filter-overlay {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 0);
+      background-size: 20px 20px;
+      box-shadow: inset 0 0 50px #0033aa;
+      filter: sepia(1) hue-rotate(180deg) saturate(4) contrast(150%);
+    }
+
+    body.filter-toycam .filter-overlay {
+      box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.95), inset 0 0 60px rgba(0,0,0,0.8);
+      backdrop-filter: contrast(180%) saturate(220%) brightness(0.85);
+    }
+
+    body.filter-minimum .filter-overlay {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: opacity(1);
+      filter: grayscale(100%) brightness(1.6) contrast(140%);
+    }
+
+    @keyframes textGlow {
+      0%, 100% { text-shadow: 0 0 10px #ff3300, 0 0 20px #ff8800, 0 0 30px #ffcc00; }
+      50% { text-shadow: 0 0 20px #ff0055, 0 0 35px #ff4500, 0 0 50px #ff0000; }
+    }
+    .glow-title { animation: textGlow 2s infinite; }
+
+    .fighter-card {
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .fighter-card.selected {
+      transform: scale(1.08) translateY(-4px);
+      border-color: #ffaa00 !important;
+      box-shadow: 0 0 20px rgba(255, 170, 0, 0.8), inset 0 0 15px rgba(255, 255, 0, 0.5);
+    }
+    .fighter-card.entry-p1 { border-color: #00f0ff !important; box-shadow: 0 0 15px #00f0ff; }
+    .fighter-card.entry-p2 { border-color: #ff0055 !important; box-shadow: 0 0 15px #ff0055; }
+    .fighter-card.entry-other { border-color: #00ff66 !important; box-shadow: 0 0 10px #00ff66; }
+
+    .btn-action {
+      background: linear-gradient(135deg, #ff4500, #ff8700);
+      box-shadow: 0 4px 15px rgba(255, 69, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      transition: all 0.15s ease;
+    }
+    .btn-action:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 6px 20px rgba(255, 69, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+    .btn-action:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    section.grid-roster {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+    @media (max-width: 640px) {
+      section.grid-roster {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.35rem;
+      }
+    }
+  </style>
+</head>
+<body class="bg-black text-white antialiased select-none overflow-hidden">
+
+  <!-- 3D WebGL Canvas Layer -->
+  <canvas id="webgl-canvas" class="fixed inset-0 w-full h-full z-0 block"></canvas>
+
+  <!-- Filter Layer -->
+  <section id="filter-layer" class="filter-overlay"></section>
+
+  <!-- Cinematic Letterbox Bars -->
+  <header class="cinematic-bar-top"></header>
+  <footer class="cinematic-bar-bottom"></footer>
+
+  <!-- ========================================== -->
+  <!-- 1. TITLE SCREEN                            -->
+  <!-- ========================================== -->
+  <main id="screen-title" class="fixed inset-0 z-20 flex flex-col justify-between p-6 md:p-12 pointer-events-auto bg-gradient-to-t from-black/80 via-transparent to-black/60">
+    <header class="flex justify-between items-center w-full">
+      <section class="flex items-center space-x-3">
+        <span class="px-3 py-1 bg-red-600/90 text-white font-arcade text-xs rounded-md tracking-wider border border-red-400/50 shadow-lg animate-pulse">
+          VER 2.0 SUPER EX
+        </span>
+        <span class="px-3 py-1 bg-amber-500/80 text-black font-action text-lg font-bold rounded-md tracking-wider">
+          ROBLOX RAGDOLL 3D
+        </span>
+      </section>
+      <button id="btn-open-settings" class="p-3 bg-gray-900/80 hover:bg-gray-800 text-gray-200 border border-gray-600 rounded-xl flex items-center space-x-2 backdrop-blur-md transition">
+        <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        <span class="font-bold text-sm hidden sm:inline">環境設定</span>
+      </button>
+    </header>
+
+    <article class="flex flex-col items-center justify-center text-center my-auto">
+      <p class="font-action text-3xl md:text-5xl text-amber-400 font-extrabold tracking-widest drop-shadow-md mb-0">
+        ハイパー・ボクセル・チキン・アリーナ
+      </p>
+      <h1 class="font-title text-6xl sm:text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 via-orange-500 to-red-600 glow-title tracking-tight my-1 uppercase">
+        CHIKIN
+      </h1>
+      <p class="font-arcade text-xs sm:text-sm md:text-base text-cyan-300 tracking-widest bg-black/60 px-6 py-2 rounded-full border border-cyan-500/40 backdrop-blur-md mt-2">
+        ― 覚醒！超ド派手ラグドールバトルロイヤル ―
+      </p>
+    </article>
+
+    <footer class="flex flex-col items-center justify-center space-y-4 mb-4">
+      <button id="btn-start-app" class="btn-action w-full max-w-md py-5 px-8 rounded-2xl text-2xl font-black font-title tracking-wider text-white border-2 border-yellow-300/80 shadow-2xl flex items-center justify-center space-x-3 group">
+        <span class="group-hover:translate-x-1 transition-transform">画面をタップしてスタート</span>
+        <svg class="w-8 h-8 text-yellow-200 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+      </button>
+      <p class="text-xs text-gray-400 font-sans">※ 閲覧専用オートバトルシミュレーター (最大8体物理ぶつかり合い)</p>
+    </footer>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 2. CHARACTER SELECT SCREEN                 -->
+  <!-- ========================================== -->
+  <main id="screen-select" class="fixed inset-0 z-20 hidden flex-col justify-between p-3 sm:p-6 pointer-events-auto bg-gradient-to-b from-black/90 via-black/40 to-black/95 overflow-hidden">
+    
+    <header class="flex justify-between items-center bg-gray-900/80 px-4 py-2 rounded-2xl border border-gray-700/60 backdrop-blur-md">
+      <section class="flex items-center space-x-3">
+        <button id="btn-back-to-title" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-bold rounded-lg border border-gray-600">
+          ◀ タイトル
+        </button>
+        <h2 class="font-title text-xl sm:text-3xl text-amber-400 tracking-wider">CHARACTER SELECT</h2>
+      </section>
+
+      <section class="flex items-center space-x-2 bg-black/60 px-3 py-1 rounded-xl border border-amber-500/40">
+        <label class="text-xs text-amber-300 font-bold uppercase tracking-wider hidden sm:inline">参戦体数:</label>
+        <select id="select-fighter-count" class="bg-gray-800 text-amber-300 font-bold px-2 py-1 rounded border border-amber-500/50 focus:outline-none text-sm">
+          <option value="2">2体 (1v1 デュエル)</option>
+          <option value="3">3体 (乱闘)</option>
+          <option value="4" selected>4体 (バトルロイヤル)</option>
+          <option value="6">6体 (大乱闘)</option>
+          <option value="8">8体 (カオスハオスマッチ)</option>
+        </select>
+      </section>
+    </header>
+
+    <!-- Center Display Area (Fixed Text Overlap) -->
+    <section class="flex-1 my-2 grid grid-cols-1 md:grid-cols-2 gap-3 items-center justify-center overflow-hidden">
+      <article class="bg-gradient-to-r from-cyan-950/85 to-black/70 p-3 sm:p-4 rounded-2xl border-l-4 border-cyan-400 flex flex-col justify-between h-full max-h-40 md:max-h-52 backdrop-blur-md relative overflow-hidden">
+        <div>
+          <span class="inline-block text-cyan-400 font-arcade text-[10px] sm:text-xs bg-cyan-950/90 px-2.5 py-0.5 rounded border border-cyan-500/40 mb-1">P1 MAIN CHIKIN</span>
+          <h3 id="p1-name" class="font-title text-2xl sm:text-4xl text-white drop-shadow-md leading-tight">クラシック CHIKIN</h3>
+        </div>
+        <div>
+          <p id="p1-special" class="text-amber-400 font-action text-base sm:text-xl font-bold tracking-wide">超必殺技: ギガント・グランド・ペック</p>
+          <p id="p1-desc" class="text-gray-300 text-xs mt-0.5 line-clamp-2">バランスの取れた標準的なボクセルチキン。超巨大嘴で地響きと共に大粉砕！</p>
+          <section id="p1-stats" class="flex space-x-4 mt-1 text-xs font-arcade text-cyan-300">
+            <span>HP: <strong id="p1-hp">1000</strong></span>
+            <span>SPEED: <strong id="p1-spd">HIGH</strong></span>
+          </section>
+        </div>
+      </article>
+
+      <article class="bg-gradient-to-l from-red-950/85 to-black/70 p-3 sm:p-4 rounded-2xl border-r-4 border-red-500 flex flex-col justify-between text-right h-full max-h-40 md:max-h-52 backdrop-blur-md relative overflow-hidden">
+        <div>
+          <span class="inline-block text-red-400 font-arcade text-[10px] sm:text-xs bg-red-950/90 px-2.5 py-0.5 rounded border border-red-500/40 mb-1">TARGET CHIKIN</span>
+          <h3 id="p2-name" class="font-title text-2xl sm:text-4xl text-white drop-shadow-md leading-tight">メカ CHIKIN</h3>
+        </div>
+        <div>
+          <p id="p2-special" class="text-amber-400 font-action text-base sm:text-xl font-bold tracking-wide">超必殺技: ギガ・プラズマ・キャノン</p>
+          <p id="p2-desc" class="text-gray-300 text-xs mt-0.5 line-clamp-2">光学兵器とツインキャノン搭載！極太の破壊ビーム柱でフィールド全域を焼き尽くす！</p>
+          <section id="p2-stats" class="flex justify-end space-x-4 mt-1 text-xs font-arcade text-red-300">
+            <span>HP: <strong id="p2-hp">1200</strong></span>
+            <span>COOLTIME: <strong id="p2-cd">FAST</strong></span>
+          </section>
+        </div>
+      </article>
+    </section>
+
+    <!-- Bottom Roster Grid -->
+    <footer class="bg-gray-950/90 p-3 rounded-2xl border border-gray-800 backdrop-blur-lg flex flex-col space-y-2">
+      <header class="flex justify-between items-center text-xs text-gray-400 px-1">
+        <span class="font-bold text-amber-400">CHIKIN ROSTER (全15体)</span>
+        <span id="selected-entry-status" class="font-arcade text-cyan-400">参戦枠: 1/4 選択中</span>
+      </header>
+
+      <section id="fighter-roster-grid" class="grid-roster max-h-36 sm:max-h-44 overflow-y-auto p-1">
+        <!-- Javascript populates 15 unique fighters -->
+      </section>
+
+      <section class="flex flex-col sm:flex-row items-center justify-between pt-2 border-t border-gray-800 gap-2">
+        <aside class="flex items-center space-x-2 w-full sm:w-auto">
+          <label class="text-xs text-gray-300 font-bold uppercase tracking-wider">ステージ:</label>
+          <select id="select-stage" class="bg-gray-800 text-yellow-400 font-bold px-3 py-1.5 rounded-xl border border-yellow-500/50 text-xs sm:text-sm flex-1 sm:flex-none">
+            <option value="0">1. 牧場アリーナ (物理木箱 & 柵コライダー)</option>
+            <option value="1">2. ボクセル山岳コロシアム (高低差山頂マップ)</option>
+            <option value="2">3. サイバー・ネオンシティ (無限地平線 & 巨大プラズマ柱)</option>
+            <option value="3">4. 溶岩マグマ・クラッシュ (灼熱溶岩地帯 & 炎柱)</option>
+            <option value="4">5. 天空スカイ・アイランド (空中浮島 & 落下境界)</option>
+          </select>
+        </aside>
+
+        <button id="btn-launch-battle" class="btn-action w-full sm:w-auto px-8 py-3 rounded-xl font-title text-xl text-white tracking-wider flex items-center justify-center space-x-2">
+          <span>バトル観戦スタート！</span>
+          <svg class="w-6 h-6 text-yellow-200" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+        </button>
+      </section>
+    </footer>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 3. BATTLE HUD                              -->
+  <!-- ========================================== -->
+  <main id="screen-battle" class="fixed inset-0 z-20 hidden pointer-events-none flex flex-col justify-between p-4">
+    <header class="flex justify-between items-start w-full pointer-events-auto">
+      <section class="bg-black/70 backdrop-blur-md border border-amber-500/40 px-4 py-2 rounded-2xl flex items-center space-x-3">
+        <span class="w-3 h-3 rounded-full bg-red-500 animate-ping"></span>
+        <span class="font-title text-lg text-amber-400 tracking-wider">SPECTATING BATTLE</span>
+        <span id="battle-stage-name" class="text-xs text-cyan-300 font-arcade border-l border-gray-600 pl-3">STAGE: 牧場アリーナ</span>
+      </section>
+
+      <section class="flex items-center space-x-2">
+        <button id="btn-camera-toggle" class="p-2.5 bg-gray-900/80 hover:bg-gray-800 text-amber-400 border border-amber-500/40 rounded-xl backdrop-blur-md font-bold text-xs flex items-center space-x-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+          <span class="hidden sm:inline">スマート追従カメラ</span>
+        </button>
+
+        <button id="btn-open-settings-battle" class="p-2.5 bg-gray-900/80 hover:bg-gray-800 text-gray-200 border border-gray-600 rounded-xl backdrop-blur-md">
+          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        </button>
+
+        <button id="btn-exit-battle" class="px-4 py-2 bg-red-600/90 hover:bg-red-500 text-white font-bold text-xs rounded-xl border border-red-400 shadow-lg">
+          終了 / セレクト
+        </button>
+      </section>
+    </header>
+
+    <!-- Super Banner Announcement -->
+    <article id="battle-announcement" class="self-center text-center opacity-0 transition-opacity duration-300 pointer-events-none transform scale-90 transition-transform">
+      <h2 id="announcement-text" class="font-title text-4xl sm:text-6xl text-yellow-300 drop-shadow-[0_5px_15px_rgba(255,69,0,0.9)] animate-bounce leading-tight">
+        SUPER ULTIMATE ATTACK!
+      </h2>
+    </article>
+
+    <footer class="w-full pointer-events-auto flex flex-col sm:flex-row justify-between items-end gap-2">
+      <section id="hud-fighters-bars" class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-3xl bg-black/70 backdrop-blur-md p-3 rounded-2xl border border-gray-800">
+        <!-- Live status -->
+      </section>
+
+      <aside class="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-gray-700 text-[10px] text-gray-400 font-sans">
+        💡 ドラッグで手動視点調整 / 障害物・高低差物理リアルタイム反映
+      </aside>
+    </footer>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 4. SETTINGS MODAL                          -->
+  <!-- ========================================== -->
+  <aside id="modal-settings" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-md p-4 pointer-events-auto">
+    <article class="bg-gray-900 border-2 border-amber-500/60 rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-6">
+      <header class="flex justify-between items-center border-b border-gray-800 pb-3">
+        <h3 class="font-title text-2xl text-amber-400 flex items-center space-x-2">
+          <span>ビジュアル & 環境設定</span>
+        </h3>
+        <button id="btn-close-settings" class="text-gray-400 hover:text-white font-bold text-2xl">✕</button>
+      </header>
+
+      <section class="space-y-3">
+        <label class="block font-bold text-sm text-gray-300">グラフィックテーマ (5モード):</label>
+        <section class="grid grid-cols-2 gap-2 text-xs">
+          <button data-filter="normal" class="btn-filter-opt p-3 rounded-xl border border-amber-500/80 bg-amber-500/20 text-white font-bold text-left flex items-center justify-between">
+            <span>0. ノーマル</span>
+            <span class="text-[10px] opacity-70">標準</span>
+          </button>
+          <button data-filter="terminal" class="btn-filter-opt p-3 rounded-xl border border-gray-700 bg-gray-800/60 text-green-400 font-mono text-left flex items-center justify-between">
+            <span>1. ターミナル</span>
+            <span class="text-[10px] opacity-70">CUI</span>
+          </button>
+          <button data-filter="thermo" class="btn-filter-opt p-3 rounded-xl border border-gray-700 bg-gray-800/60 text-pink-400 font-bold text-left flex items-center justify-between">
+            <span>2. サーモグラフィ</span>
+            <span class="text-[10px] opacity-70">熱感知</span>
+          </button>
+          <button data-filter="blueprint" class="btn-filter-opt p-3 rounded-xl border border-gray-700 bg-gray-800/60 text-cyan-300 font-bold text-left flex items-center justify-between">
+            <span>3. 設計図</span>
+            <span class="text-[10px] opacity-70">ブループリント</span>
+          </button>
+          <button data-filter="toycam" class="btn-filter-opt p-3 rounded-xl border border-gray-700 bg-gray-800/60 text-yellow-300 font-bold text-left flex items-center justify-between">
+            <span>4. トイ・カメラ</span>
+            <span class="text-[10px] opacity-70">高画質</span>
+          </button>
+          <button data-filter="minimum" class="btn-filter-opt p-3 rounded-xl border border-gray-700 bg-gray-800/60 text-gray-200 font-bold text-left flex items-center justify-between">
+            <span>5. ミニマム・ライト</span>
+            <span class="text-[10px] opacity-70">白</span>
+          </button>
+        </section>
+      </section>
+
+      <section class="flex items-center justify-between p-3 bg-gray-800/80 rounded-2xl border border-gray-700">
+        <section class="flex flex-col">
+          <span class="font-bold text-sm text-white">シネマティックモード</span>
+          <span class="text-xs text-gray-400">上下シネマスコープ黒帯</span>
+        </section>
+        <button id="toggle-cinematic" class="px-4 py-2 bg-gray-700 text-gray-300 font-bold text-xs rounded-xl border border-gray-600">OFF</button>
+      </section>
+
+      <section class="flex items-center justify-between p-3 bg-gray-800/80 rounded-2xl border border-gray-700">
+        <section class="flex flex-col">
+          <span class="font-bold text-sm text-white">BGM & 効果音</span>
+          <span class="text-xs text-gray-400">リアルタイムシンセ</span>
+        </section>
+        <button id="toggle-audio" class="px-4 py-2 bg-amber-500 text-black font-bold text-xs rounded-xl">ON</button>
+      </section>
+
+      <footer class="pt-2">
+        <button id="btn-save-settings" class="btn-action w-full py-3 rounded-xl font-bold text-white text-center">適用して閉じる</button>
+      </footer>
+    </article>
+  </aside>
+
+  <script>
+    // =========================================================
+    // 1. MASTER ULTIMATE MOVES (ULTRA FLASHY 3D EFFECTS)
+    // =========================================================
+    const ULTIMATE_MOVES = [
+      { id: 0, name: "ギガント・グランド・ペック", desc: "超巨大化した黄金の神嘴が天空から降臨！大地を叩き割り全敵粉砕！", cooldown: 5.5, color: 0xffcc00, type: "GIANT_BEAK" },
+      { id: 1, name: "メテオ・ストーム・インフェルノ", desc: "上空に巨大な異次元ポータル出現！爆発する巨大隕石群を降らせる！", cooldown: 7.0, color: 0xff3300, type: "METEOR_RAIN" },
+      { id: 2, name: "超光速ソニック・ヴァルキリー", desc: "光速の 残像と共にフィールド内を縦横無尽に超高速一閃突き抜け！", cooldown: 4.8, color: 0x00ffff, type: "LIGHTNING_DASH" },
+      { id: 3, name: "メガ・ギガント・サイクロン", desc: "巨大な虹色竜巻を召喚！敵を上空高く巻き上げて地面へ激突！", cooldown: 6.5, color: 0x00ff88, type: "TORNADO" },
+      { id: 4, name: "天変地異・雷神サンダーピラー", desc: "超巨大な雷光柱が中央に落雷！周囲の敵に広範囲麻痺＆超吹き飛ばし！", cooldown: 6.0, color: 0xffff00, type: "THUNDER_PILLAR" },
+      { id: 5, name: "ヘル・ファイア・バーンノヴァ", desc: "自身の中心から灼熱の巨大火炎リング波が地平線まで拡散爆発！", cooldown: 6.2, color: 0xff0055, type: "FIRE_NOVA" },
+      { id: 6, name: "ギガ・プラズマ・キャノン", desc: "両翼のキャノン砲から極太プラズマ超レーザーを全方位に照射！", cooldown: 7.5, color: 0xff00ff, type: "BEAM_CANNON" },
+      { id: 7, name: "グラビティ・インパクト・プレス", desc: "高度100mへ超ジャンプし、巨大大剣と共にグラビティ衝撃波プレス！", cooldown: 6.0, color: 0x9900ff, type: "SWORD_PRESS" }
+    ];
+
+    // 15 ENHANCED ROSTER WITH EXPANDED 3D ACCESSORIES
+    const CHIKIN_ROSTER = [
+      { id: 0, name: "クラシック CHIKIN", color: 0xffffff, combColor: 0xff0000, ultId: 0, hp: 1000, speed: 1.0, accessory: "NONE", desc: "標準ボクセルチキン。天を突く巨大神嘴ペックを放つ。" },
+      { id: 1, name: "メカ CHIKIN", color: 0x778899, combColor: 0x00f0ff, ultId: 6, hp: 1100, speed: 0.9, accessory: "CANNON", desc: "重装甲サイボーグ。両翼のハイパーメガキャノン砲で薙ぎ払う！" },
+      { id: 2, name: "シノビ CHIKIN", color: 0x222222, combColor: 0xffcc00, ultId: 2, hp: 850, speed: 1.4, accessory: "KATANA", desc: "背中に漆黒の刀を背負った忍者。超光速で残像一閃！" },
+      { id: 3, name: "キング CHIKIN", color: 0xffd700, combColor: 0xff0033, ultId: 7, hp: 1300, speed: 0.8, accessory: "CROWN", desc: "煌めく黄金王冠。天空からの巨大グラビティプレス！" },
+      { id: 4, name: "バイキング CHIKIN", color: 0x8b5a2b, combColor: 0xdddddd, ultId: 0, hp: 1200, speed: 0.95, accessory: "HELMET", desc: "角付き豪傑兜。力任せの大地割りペックで粉砕。" },
+      { id: 5, name: "ポイズン CHIKIN", color: 0x8800cc, combColor: 0x00ff66, ultId: 3, hp: 900, speed: 1.1, accessory: "HORNS", desc: "怪しい毒角と翼。巨大な毒渦竜巻で敵を巻き上げる。" },
+      { id: 6, name: "ファイア CHIKIN", color: 0xff3300, combColor: 0xffff00, ultId: 5, hp: 950, speed: 1.15, accessory: "FIRE_WINGS", desc: "全身燃え盛る炎。広範囲ヘルファイアノヴァを放射。" },
+      { id: 7, name: "フリーズ CHIKIN", color: 0x00ccff, combColor: 0xffffff, ultId: 4, hp: 1050, speed: 1.05, accessory: "ICE_CROWN", desc: "氷結晶の冠。天空から極大絶対零度雷光柱を落とす。" },
+      { id: 8, name: "アフロ CHIKIN", color: 0xff9900, combColor: 0x442200, ultId: 3, hp: 1000, speed: 1.0, accessory: "AFRO", desc: "巨大ブラウンアフロヘアー。ハッピーな超竜巻を起こす。" },
+      { id: 9, name: "パイレーツ CHIKIN", color: 0x553311, combColor: 0xff0000, ultId: 1, hp: 1000, speed: 1.0, accessory: "PIRATE_HAT", desc: "海賊帽子と眼帯。次元ポータルからメテオを砲撃！" },
+      { id: 10, name: "ゴールデン CHIKIN", color: 0xffea00, combColor: 0xffffff, ultId: 6, hp: 1400, speed: 1.1, accessory: "GOLD_WINGS", desc: "全身まばゆい純金。高出力プラズマビームを全方位噴射。" },
+      { id: 11, name: "ゾンビ CHIKIN", color: 0x447744, combColor: 0x882222, ultId: 5, hp: 1250, speed: 0.75, accessory: "BOLTS", desc: "頭部にボルト。不気味な暗黒火炎ノヴァを炸裂させる。" },
+      { id: 12, name: "ナイト CHIKIN", color: 0x778899, combColor: 0x0000ff, ultId: 7, hp: 1350, speed: 0.85, accessory: "GREATSWORD", desc: "巨大な両手剣を保持。空中ダイブ衝撃波で粉砕。" },
+      { id: 13, name: "エイリアン CHIKIN", color: 0x33cc33, combColor: 0xff00ff, ultId: 1, hp: 800, speed: 1.3, accessory: "ANTENNA", desc: "発光アンテナを装着。未知の巨大隕石群を召喚！" },
+      { id: 14, name: "レインボー CHIKIN", color: 0xff66cc, combColor: 0x00ffff, ultId: 2, hp: 1100, speed: 1.2, accessory: "SUNGLASSES", desc: "サングラス着用。虹色光速残像でフィールドを駆け抜ける！" }
+    ];
+
+    let currentScreen = "title";
+    let activeFilter = "normal";
+    let isCinematic = false;
+    let audioEnabled = true;
+
+    let selectedEntries = [0, 1, 2, 3];
+    let selectedStageIndex = 0;
+    let cameraSmartTrack = true;
+
+    // WebAudio Synthesizer
+    const AudioEngine = {
+      ctx: null,
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+      },
+      playHit() {
+        if (!audioEnabled || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.12);
+        } catch(e){}
+      },
+      playUlt() {
+        if (!audioEnabled || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.4);
+          gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.5);
+        } catch(e){}
+      }
+    };
+
+    // =========================================================
+    // 2. THREE.JS SYSTEM & STAGE COLLISION SYSTEM
+    // =========================================================
+    let canvas, renderer, scene, camera;
+    let stageGroup, fightersGroup, particlesGroup, ultEffectsGroup;
+    let clock = new THREE.Clock();
+
+    // Camera Controls
+    let isMouseDown = false, mouseX = 0, mouseY = 0;
+    let cameraAngleX = 0, cameraAngleY = 0.35;
+    let cameraDistance = 28;
+
+    // Obstacle Collision Data Array
+    let stageObstacles = [];
+
+    function initThreeJS() {
+      canvas = document.getElementById('webgl-canvas');
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0a0c14);
+      scene.fog = new THREE.FogExp2(0x0a0c14, 0.008); // Extended distant fog for infinite floor
+
+      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
+      camera.position.set(0, 15, 30);
+
+      stageGroup = new THREE.Group();
+      fightersGroup = new THREE.Group();
+      particlesGroup = new THREE.Group();
+      ultEffectsGroup = new THREE.Group();
+
+      scene.add(stageGroup);
+      scene.add(fightersGroup);
+      scene.add(particlesGroup);
+      scene.add(ultEffectsGroup);
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xfffaed, 0.9);
+      dirLight.position.set(30, 60, 30);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 2048;
+      dirLight.shadow.mapSize.height = 2048;
+      dirLight.shadow.camera.near = 0.5;
+      dirLight.shadow.camera.far = 150;
+      dirLight.shadow.camera.left = -40;
+      dirLight.shadow.camera.right = 40;
+      dirLight.shadow.camera.top = 40;
+      dirLight.shadow.camera.bottom = -40;
+      scene.add(dirLight);
+
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444455, 0.4);
+      scene.add(hemiLight);
+
+      // Pointer Orbit Controls
+      window.addEventListener('pointerdown', (e) => {
+        if (e.target.tagName === 'CANVAS') {
+          isMouseDown = true;
+          mouseX = e.clientX;
+          mouseY = e.clientY;
+        }
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!isMouseDown) return;
+        const dx = e.clientX - mouseX;
+        const dy = e.clientY - mouseY;
+        cameraAngleX -= dx * 0.005;
+        cameraAngleY = Math.max(0.1, Math.min(Math.PI / 2.2, cameraAngleY + dy * 0.005));
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+      window.addEventListener('pointerup', () => { isMouseDown = false; });
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // =========================================================
+    // 3. ENHANCED VOXEL CHIKIN GENERATOR (WITH 3D ACCESSORIES)
+    // =========================================================
+    function createVoxelChikinMesh(data) {
+      const group = new THREE.Group();
+
+      const bodyMat = new THREE.MeshStandardMaterial({ color: data.color, roughness: 0.4 });
+      const combMat = new THREE.MeshStandardMaterial({ color: data.combColor, roughness: 0.3 });
+      const beakMat = new THREE.MeshStandardMaterial({ color: 0xff9900, roughness: 0.3 });
+      const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1 });
+      const legMat = new THREE.MeshStandardMaterial({ color: 0xdd8800, roughness: 0.5 });
+
+      // Body Base
+      const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 1.6), bodyMat);
+      bodyMesh.position.y = 1.4;
+      bodyMesh.castShadow = true;
+      bodyMesh.receiveShadow = true;
+      group.add(bodyMesh);
+
+      // Head
+      const headMesh = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 1.0), bodyMat);
+      headMesh.position.set(0, 1.1, 0.4);
+      headMesh.castShadow = true;
+      bodyMesh.add(headMesh);
+
+      // Comb
+      const combMesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.5, 0.8), combMat);
+      combMesh.position.set(0, 0.75, -0.1);
+      combMesh.castShadow = true;
+      headMesh.add(combMesh);
+
+      // Beak
+      const beakMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.5), beakMat);
+      beakMesh.position.set(0, -0.1, 0.75);
+      beakMesh.castShadow = true;
+      headMesh.add(beakMesh);
+
+      // Eyes
+      const eyeGeo = new THREE.BoxGeometry(0.15, 0.15, 0.05);
+      const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+      eyeL.position.set(0.51, 0.1, 0.3);
+      const eyeR = eyeL.clone();
+      eyeR.position.x = -0.51;
+      headMesh.add(eyeL); headMesh.add(eyeR);
+
+      // Wings (Pivots)
+      const wingGeo = new THREE.BoxGeometry(0.2, 0.9, 1.1);
+      const wingLPivot = new THREE.Group();
+      wingLPivot.position.set(0.8, 0.1, 0);
+      const wingL = new THREE.Mesh(wingGeo, bodyMat);
+      wingL.position.y = -0.3;
+      wingL.castShadow = true;
+      wingLPivot.add(wingL);
+      bodyMesh.add(wingLPivot);
+
+      const wingRPivot = new THREE.Group();
+      wingRPivot.position.set(-0.8, 0.1, 0);
+      const wingR = new THREE.Mesh(wingGeo, bodyMat);
+      wingR.position.y = -0.3;
+      wingR.castShadow = true;
+      wingRPivot.add(wingR);
+      bodyMesh.add(wingRPivot);
+
+      // Legs
+      const legGeo = new THREE.BoxGeometry(0.25, 0.8, 0.25);
+      const footGeo = new THREE.BoxGeometry(0.5, 0.15, 0.6);
+
+      const legLPivot = new THREE.Group();
+      legLPivot.position.set(0.4, -0.7, 0);
+      const legL = new THREE.Mesh(legGeo, legMat);
+      legL.position.y = -0.4; legL.castShadow = true;
+      const footL = new THREE.Mesh(footGeo, legMat);
+      footL.position.set(0, -0.4, 0.15); footL.castShadow = true;
+      legL.add(footL); legLPivot.add(legL); bodyMesh.add(legLPivot);
+
+      const legRPivot = new THREE.Group();
+      legRPivot.position.set(-0.4, -0.7, 0);
+      const legR = new THREE.Mesh(legGeo, legMat);
+      legR.position.y = -0.4; legR.castShadow = true;
+      const footR = new THREE.Mesh(footGeo, legMat);
+      footR.position.set(0, -0.4, 0.15); footR.castShadow = true;
+      legR.add(footR); legRPivot.add(legR); bodyMesh.add(legRPivot);
+
+      // Tail
+      const tailMesh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.2), combMat);
+      tailMesh.position.set(0, 0.3, -0.9);
+      tailMesh.rotation.x = -0.4;
+      bodyMesh.add(tailMesh);
+
+      // ----------------------------------------------------
+      // ATTACH UNIQUE 3D ACCESSORIES
+      // ----------------------------------------------------
+      const acc = data.accessory;
+      if (acc === "CANNON") {
+        const canGeo = new THREE.CylinderGeometry(0.2, 0.25, 1.2, 8);
+        const canMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8 });
+        const cL = new THREE.Mesh(canGeo, canMat);
+        cL.rotation.x = Math.PI / 2; cL.position.set(0.9, 0.5, 0);
+        const cR = cL.clone(); cR.position.x = -0.9;
+        bodyMesh.add(cL); bodyMesh.add(cR);
+      } else if (acc === "KATANA") {
+        const swordMesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.8, 0.1), new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9 }));
+        swordMesh.rotation.z = 0.6; swordMesh.position.set(-0.3, 0.2, -0.9);
+        bodyMesh.add(swordMesh);
+      } else if (acc === "CROWN") {
+        const crownMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.4, 0.4, 6), new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8 }));
+        crownMesh.position.set(0, 0.8, 0); headMesh.add(crownMesh);
+      } else if (acc === "HELMET") {
+        const hornGeo = new THREE.ConeGeometry(0.15, 0.6, 6);
+        const hMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const hL = new THREE.Mesh(hornGeo, hMat); hL.position.set(0.5, 0.6, 0); hL.rotation.z = -0.5;
+        const hR = hL.clone(); hR.position.x = -0.5; hR.rotation.z = 0.5;
+        headMesh.add(hL); headMesh.add(hR);
+      } else if (acc === "AFRO") {
+        const afroMesh = new THREE.Mesh(new THREE.SphereGeometry(0.8, 8, 8), new THREE.MeshStandardMaterial({ color: 0x442200, roughness: 0.9 }));
+        afroMesh.position.set(0, 0.6, -0.1); headMesh.add(afroMesh);
+      } else if (acc === "PIRATE_HAT") {
+        const hatMesh = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.4, 1.2), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+        hatMesh.position.set(0, 0.7, 0); headMesh.add(hatMesh);
+      } else if (acc === "GREATSWORD") {
+        const sword = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.5, 0.4), new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.8 }));
+        sword.position.set(0, 0.5, -1.0); sword.rotation.x = -0.3;
+        bodyMesh.add(sword);
+      } else if (acc === "SUNGLASSES") {
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.2, 0.1), new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1 }));
+        glass.position.set(0, 0.1, 0.55); headMesh.add(glass);
+      }
+
+      group.parts = { body: bodyMesh, head: headMesh, wingL: wingLPivot, wingR: wingRPivot, legL: legLPivot, legR: legRPivot };
+
+      // Double Ring Gauges (HP & ULT Cooldown)
+      const ringsGroup = new THREE.Group();
+      ringsGroup.position.y = 0.05;
+
+      const outerRing = new THREE.Mesh(
+        new THREE.RingGeometry(1.5, 1.7, 32),
+        new THREE.MeshBasicMaterial({ color: 0x00ff66, side: THREE.DoubleSide, transparent: true, opacity: 0.8 })
+      );
+      outerRing.rotation.x = -Math.PI / 2;
+      ringsGroup.add(outerRing);
+
+      const innerRing = new THREE.Mesh(
+        new THREE.RingGeometry(1.0, 1.25, 32),
+        new THREE.MeshBasicMaterial({ color: ULTIMATE_MOVES[data.ultId].color, side: THREE.DoubleSide, transparent: true, opacity: 0.9 })
+      );
+      innerRing.rotation.x = -Math.PI / 2;
+      ringsGroup.add(innerRing);
+
+      group.add(ringsGroup);
+      group.rings = { outerRing, innerRing };
+
+      return group;
+    }
+
+    // =========================================================
+    // 4. STAGE ELEVATION MAP & INFINITE GROUND GENERATOR
+    // =========================================================
+    // Get precise surface elevation Y for any position (x, z)
+    function getStageHeight(x, z) {
+      if (selectedStageIndex === 1) {
+        // Mountain Colosseum height equation
+        const distFromCenter = Math.sqrt(x * x + z * z);
+        if (distFromCenter < 12) {
+          return 3.0; // Mountain Peak Terrace
+        } else if (distFromCenter < 18) {
+          return 3.0 - (distFromCenter - 12) * 0.5; // Slope
+        } else {
+          return 0.0; // Base floor
+        }
+      } else if (selectedStageIndex === 4) {
+        // Sky Island surface height
+        const distFromCenter = Math.sqrt(x * x + z * z);
+        if (distFromCenter > 22) {
+          return -15.0; // Abyss drop off
+        }
+        return 1.5;
+      }
+      return 0.0; // Stage 0, 2, 3 flat
+    }
+
+    function buildStage(stageIndex) {
+      while(stageGroup.children.length > 0) stageGroup.remove(stageGroup.children[0]);
+      stageObstacles = []; // Reset Colliders
+
+      // INFINITE HORIZON BASE FLOOR (1000x1000)
+      const floorColors = [0x2e5c1e, 0x334455, 0x0a0a18, 0x330000, 0x001122];
+      const infiniteFloorMat = new THREE.MeshStandardMaterial({
+        color: floorColors[stageIndex] || 0x111111,
+        roughness: 0.9
+      });
+      const infiniteFloor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), infiniteFloorMat);
+      infiniteFloor.rotation.x = -Math.PI / 2;
+      infiniteFloor.position.y = -0.05;
+      infiniteFloor.receiveShadow = true;
+      stageGroup.add(infiniteFloor);
+
+      if (stageIndex === 0) {
+        // STAGE 1: 牧場アリーナ
+        const groundGeo = new THREE.CylinderGeometry(22, 22, 0.6, 32);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x558833, roughness: 0.8 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.position.y = -0.3; ground.receiveShadow = true;
+        stageGroup.add(ground);
+
+        stageObstacles.push({ type: "BOUNDS", radius: 21 });
+
+        const fenceMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.7 });
+        for (let i = 0; i < 20; i++) {
+          const angle = (i / 20) * Math.PI * 2;
+          const px = Math.cos(angle) * 21;
+          const pz = Math.sin(angle) * 21;
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.6, 2.5, 0.6), fenceMat);
+          post.position.set(px, 1.25, pz); post.castShadow = true;
+          stageGroup.add(post);
+        }
+
+        const crateGeo = new THREE.BoxGeometry(2.5, 2.5, 2.5);
+        const crateMat = new THREE.MeshStandardMaterial({ color: 0xb8860b, roughness: 0.6 });
+        const cratePositions = [[6, 1.25, 6], [-7, 1.25, -5], [8, 1.25, -7], [-6, 1.25, 8], [0, 1.25, 0]];
+
+        cratePositions.forEach(pos => {
+          const crate = new THREE.Mesh(crateGeo, crateMat);
+          crate.position.set(pos[0], pos[1], pos[2]);
+          crate.castShadow = true; crate.receiveShadow = true;
+          stageGroup.add(crate);
+          stageObstacles.push({ type: "CYLINDER", x: pos[0], z: pos[2], radius: 1.8 });
+        });
+
+      } else if (stageIndex === 1) {
+        // STAGE 2: ボクセル山岳コロシアム
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x667788, roughness: 0.5 });
+        const snowMat = new THREE.MeshStandardMaterial({ color: 0xe0e8f0, roughness: 0.3 });
+
+        const tier1 = new THREE.Mesh(new THREE.CylinderGeometry(24, 26, 2, 16), baseMat);
+        tier1.position.y = -1; tier1.receiveShadow = true;
+        stageGroup.add(tier1);
+
+        const hill = new THREE.Mesh(new THREE.CylinderGeometry(12, 18, 3, 16), baseMat);
+        hill.position.y = 1.5; hill.receiveShadow = true;
+        stageGroup.add(hill);
+
+        const topCap = new THREE.Mesh(new THREE.CylinderGeometry(11.8, 11.8, 0.2, 16), snowMat);
+        topCap.position.y = 3.01; topCap.receiveShadow = true;
+        stageGroup.add(topCap);
+
+        const rockGeo = new THREE.DodecahedronGeometry(1.8, 0);
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x445566, roughness: 0.9 });
+        for(let i=0; i<6; i++) {
+          const a = (i/6) * Math.PI * 2;
+          const rx = Math.cos(a) * 8.5;
+          const rz = Math.sin(a) * 8.5;
+          const rMesh = new THREE.Mesh(rockGeo, rockMat);
+          rMesh.position.set(rx, 3.8, rz); rMesh.castShadow = true;
+          stageGroup.add(rMesh);
+          stageObstacles.push({ type: "CYLINDER", x: rx, z: rz, radius: 2.0 });
+        }
+        stageObstacles.push({ type: "BOUNDS", radius: 25 });
+
+      } else if (stageIndex === 2) {
+        // STAGE 3: サイバー・ネオンシティ
+        const neonGridMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, wireframe: true });
+        const gridOverlay = new THREE.Mesh(new THREE.PlaneGeometry(100, 100, 40, 40), neonGridMat);
+        gridOverlay.rotation.x = -Math.PI / 2; gridOverlay.position.y = 0.01;
+        stageGroup.add(gridOverlay);
+
+        const colGeo = new THREE.BoxGeometry(3.5, 12, 3.5);
+        const colMat = new THREE.MeshStandardMaterial({ color: 0x220044, roughness: 0.3 });
+        const neonMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
+
+        const colPositions = [[-12, 6, -12], [12, 6, -12], [-12, 6, 12], [12, 6, 12]];
+        colPositions.forEach(pos => {
+          const col = new THREE.Mesh(colGeo, colMat);
+          col.position.set(pos[0], pos[1], pos[2]); col.castShadow = true;
+          stageGroup.add(col);
+
+          const glowBox = new THREE.Mesh(new THREE.BoxGeometry(3.7, 0.6, 3.7), neonMat);
+          glowBox.position.set(pos[0], pos[1] + 2, pos[2]);
+          stageGroup.add(glowBox);
+
+          stageObstacles.push({ type: "CYLINDER", x: pos[0], z: pos[2], radius: 2.4 });
+        });
+        stageObstacles.push({ type: "BOUNDS", radius: 30 });
+
+      } else if (stageIndex === 3) {
+        // STAGE 4: 溶岩マグマ・クラッシュ
+        const obsidianMat = new THREE.MeshStandardMaterial({ color: 0x111115, roughness: 0.4, metalness: 0.5 });
+        const magmaMat = new THREE.MeshBasicMaterial({ color: 0xff2200 });
+
+        const centerPlatform = new THREE.Mesh(new THREE.CylinderGeometry(20, 22, 1, 32), obsidianMat);
+        centerPlatform.position.y = -0.2; centerPlatform.receiveShadow = true;
+        stageGroup.add(centerPlatform);
+
+        const magmaRing = new THREE.Mesh(new THREE.RingGeometry(20, 60, 32), magmaMat);
+        magmaRing.rotation.x = -Math.PI / 2; magmaRing.position.y = -0.1;
+        stageGroup.add(magmaRing);
+
+        // Magma Fire Pillars
+        const fireGeo = new THREE.CylinderGeometry(1.5, 2.0, 8, 12);
+        const fireMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.8 });
+        const fPositions = [[-8, 4, -8], [8, 4, -8], [-8, 4, 8], [8, 4, 8], [0, 4, -12], [0, 4, 12]];
+        fPositions.forEach(pos => {
+          const fMesh = new THREE.Mesh(fireGeo, fireMat);
+          fMesh.position.set(pos[0], pos[1], pos[2]);
+          stageGroup.add(fMesh);
+          stageObstacles.push({ type: "CYLINDER", x: pos[0], z: pos[2], radius: 2.2 });
+        });
+        stageObstacles.push({ type: "BOUNDS", radius: 21 });
+
+      } else if (stageIndex === 4) {
+        // STAGE 5: 天空スカイ・アイランド
+        const skyPlatMat = new THREE.MeshStandardMaterial({ color: 0xddeeff, roughness: 0.2, metalness: 0.3 });
+        const goldRimMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9 });
+
+        const skyIsland = new THREE.Mesh(new THREE.CylinderGeometry(22, 16, 4, 24), skyPlatMat);
+        skyIsland.position.y = -0.5; skyIsland.receiveShadow = true; skyIsland.castShadow = true;
+        stageGroup.add(skyIsland);
+
+        const goldBorder = new THREE.Mesh(new THREE.TorusGeometry(22, 0.8, 12, 32), goldRimMat);
+        goldBorder.rotation.x = Math.PI / 2; goldBorder.position.y = 1.5;
+        stageGroup.add(goldBorder);
+
+        // Floating Crystal Monoliths
+        const crystalGeo = new THREE.OctahedronGeometry(2, 0);
+        const crystalMat = new THREE.MeshStandardMaterial({ color: 0x00ffff, roughness: 0.1, metalness: 0.8 });
+        const cPositions = [[-9, 3, -9], [9, 3, -9], [-9, 3, 9], [9, 3, 9]];
+        cPositions.forEach(pos => {
+          const cMesh = new THREE.Mesh(crystalGeo, crystalMat);
+          cMesh.position.set(pos[0], pos[1], pos[2]); cMesh.castShadow = true;
+          stageGroup.add(cMesh);
+          stageObstacles.push({ type: "CYLINDER", x: pos[0], z: pos[2], radius: 2.0 });
+        });
+        stageObstacles.push({ type: "BOUNDS", radius: 21.5 });
+      }
+    }
+
+    // =========================================================
+    // 5. FIGHTER AI, RAGDOLL PHYSICS & OBSTACLE COLLIDER
+    // =========================================================
+    class FighterInstance {
+      constructor(rosterData, index) {
+        this.data = rosterData;
+        this.index = index;
+        
+        this.maxHp = rosterData.hp;
+        this.currentHp = rosterData.hp;
+        this.ultCooldown = 0.0;
+        this.maxUltCooldown = ULTIMATE_MOVES[rosterData.ultId].cooldown;
+
+        this.mesh = createVoxelChikinMesh(rosterData);
+
+        // Fix Stage 2 spawn: Spawn ON TOP of the mountain peak (Radius 4-7)
+        const angle = (index / selectedEntries.length) * Math.PI * 2;
+        const radius = selectedStageIndex === 1 ? (3 + Math.random() * 4) : (7 + Math.random() * 4);
+        
+        const sx = Math.cos(angle) * radius;
+        const sz = Math.sin(angle) * radius;
+        const sy = getStageHeight(sx, sz);
+
+        this.position = new THREE.Vector3(sx, sy, sz);
+        this.velocity = new THREE.Vector3();
+        this.rotationY = Math.random() * Math.PI * 2;
+
+        this.mesh.position.copy(this.position);
+        fightersGroup.add(this.mesh);
+
+        this.isRagdoll = false;
+        this.ragdollTimer = 0;
+        this.stateTimer = 0;
+        this.targetFighter = null;
+        this.animTime = Math.random() * 100;
+      }
+
+      update(delta, allFighters) {
+        this.animTime += delta * 10;
+
+        if (this.currentHp <= 0) {
+          this.isRagdoll = true;
+          this.applyRagdollAnimation(delta, true);
+          return;
+        }
+
+        if (this.ultCooldown < this.maxUltCooldown) {
+          this.ultCooldown = Math.min(this.maxUltCooldown, this.ultCooldown + delta);
+        }
+
+        // Update Gauge Scaling
+        const hpPercent = Math.max(0, this.currentHp / this.maxHp);
+        const ultPercent = Math.min(1.0, this.ultCooldown / this.maxUltCooldown);
+        this.mesh.rings.outerRing.scale.set(hpPercent, hpPercent, 1);
+        this.mesh.rings.innerRing.scale.set(ultPercent, ultPercent, 1);
+
+        // Surface elevation height
+        const targetGroundY = getStageHeight(this.position.x, this.position.z);
+
+        // Ragdoll Physics Mode
+        if (this.isRagdoll) {
+          this.ragdollTimer -= delta;
+          this.velocity.x *= 0.92;
+          this.velocity.z *= 0.92;
+          this.position.addScaledVector(this.velocity, delta);
+
+          // Gravity vs Terrain Height
+          if (this.position.y > targetGroundY) {
+            this.velocity.y -= 35 * delta;
+          } else {
+            this.position.y = targetGroundY;
+            this.velocity.y = 0;
+          }
+
+          this.resolveObstacleCollisions();
+          this.applyRagdollAnimation(delta, false);
+
+          if (this.ragdollTimer <= 0 && this.position.y <= targetGroundY + 0.1) {
+            this.isRagdoll = false;
+            this.resetMeshPose();
+          }
+          this.mesh.position.copy(this.position);
+          return;
+        }
+
+        // Snap to Ground elevation smoothly when walking
+        this.position.y = targetGroundY;
+
+        // Target Finder
+        this.stateTimer -= delta;
+        if (!this.targetFighter || this.targetFighter.currentHp <= 0 || Math.random() < 0.02) {
+          let minDist = 9999;
+          allFighters.forEach(f => {
+            if (f !== this && f.currentHp > 0) {
+              const d = this.position.distanceTo(f.position);
+              if (d < minDist) { minDist = d; this.targetFighter = f; }
+            }
+          });
+        }
+
+        if (this.targetFighter) {
+          const dir = new THREE.Vector3().subVectors(this.targetFighter.position, this.position);
+          dir.y = 0;
+          const dist = dir.length();
+
+          this.rotationY = Math.atan2(dir.x, dir.z);
+          this.mesh.rotation.y = this.rotationY;
+
+          // ULTIMATE TRIGGER!
+          if (this.ultCooldown >= this.maxUltCooldown && dist < 14) {
+            this.executeUltimate(allFighters);
+            return;
+          }
+
+          if (dist < 2.5 && this.stateTimer <= 0) {
+            this.executeNormalAttack(this.targetFighter);
+            this.stateTimer = 0.8 + Math.random() * 0.6;
+          } else if (dist >= 2.5) {
+            dir.normalize();
+            const moveSpeed = 4.5 * this.data.speed;
+            this.position.addScaledVector(dir, moveSpeed * delta);
+
+            // Limb Animation
+            const legAngle = Math.sin(this.animTime * 1.4) * 0.7;
+            this.mesh.parts.legL.rotation.x = legAngle;
+            this.mesh.parts.legR.rotation.x = -legAngle;
+            this.mesh.parts.wingL.rotation.z = Math.sin(this.animTime * 1.8) * 0.4;
+            this.mesh.parts.wingR.rotation.z = -Math.sin(this.animTime * 1.8) * 0.4;
+          }
+        }
+
+        // OBSTACLE COLLISION RESOLUTION (DO NOT PASS THROUGH OBSTACLES)
+        this.resolveObstacleCollisions();
+        this.mesh.position.copy(this.position);
+      }
+
+      // Hard Obstacle & Outer Boundary Collision Resolution
+      resolveObstacleCollisions() {
+        const bodyRadius = 1.0;
+        stageObstacles.forEach(obs => {
+          if (obs.type === "CYLINDER") {
+            const dx = this.position.x - obs.x;
+            const dz = this.position.z - obs.z;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+            const minDist = obs.radius + bodyRadius;
+            if (dist < minDist && dist > 0.001) {
+              const overlap = minDist - dist;
+              this.position.x += (dx / dist) * overlap;
+              this.position.z += (dz / dist) * overlap;
+            }
+          } else if (obs.type === "BOUNDS") {
+            const dist = Math.sqrt(this.position.x * this.position.x + this.position.z * this.position.z);
+            if (dist > obs.radius) {
+              this.position.x = (this.position.x / dist) * obs.radius;
+              this.position.z = (this.position.z / dist) * obs.radius;
+            }
+          }
+        });
+      }
+
+      takeDamage(amount, knockbackDir, force = 14) {
+        this.currentHp -= amount;
+        AudioEngine.playHit();
+
+        this.isRagdoll = true;
+        this.ragdollTimer = 1.2;
+        this.velocity.copy(knockbackDir).multiplyScalar(force);
+        this.velocity.y = 8 + Math.random() * 6; // High Launch!
+
+        spawnHitParticles(this.position);
+      }
+
+      executeNormalAttack(target) {
+        const kbDir = new THREE.Vector3().subVectors(target.position, this.position).normalize();
+        this.mesh.parts.head.position.z = 0.9;
+        setTimeout(() => { if(this.mesh.parts.head) this.mesh.parts.head.position.z = 0.4; }, 180);
+        target.takeDamage(90, kbDir, 12);
+      }
+
+      // ----------------------------------------------------
+      // EXECUTE ULTRA FLASHY ULTIMATE MOVES (WITH VISUAL 3D OBJECTS)
+      // ----------------------------------------------------
+      executeUltimate(allFighters) {
+        this.ultCooldown = 0;
+        const move = ULTIMATE_MOVES[this.data.ultId];
+        showAnnouncement(`${this.data.name}\n【${move.name}】！！`);
+        AudioEngine.playUlt();
+
+        const origin = this.position.clone();
+
+        // 1. GIANT GOD BEAK DOWNPOUR
+        if (move.type === "GIANT_BEAK") {
+          const gBeak = new THREE.Mesh(
+            new THREE.ConeGeometry(3, 8, 8),
+            new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, emissive: 0xff8800 })
+          );
+          gBeak.position.set(origin.x, origin.y + 25, origin.z);
+          gBeak.rotation.x = Math.PI;
+          ultEffectsGroup.add(gBeak);
+
+          // Animate Drop Impact
+          let t = 0;
+          const animInterval = setInterval(() => {
+            t += 0.08;
+            gBeak.position.y -= 2.5;
+            if (gBeak.position.y <= origin.y + 1) {
+              clearInterval(animInterval);
+              ultEffectsGroup.remove(gBeak);
+              spawnShockwaveRing(origin, 0xffd700);
+            }
+          }, 16);
+        }
+
+        // 2. GIANT METEOR RAIN FROM次元 PORTAL
+        else if (move.type === "METEOR_RAIN") {
+          for (let i = 0; i < 5; i++) {
+            setTimeout(() => {
+              const meteor = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(2.0, 0),
+                new THREE.MeshStandardMaterial({ color: 0xff3300, emissive: 0xff1100, roughness: 0.2 })
+              );
+              const offset = new THREE.Vector3((Math.random()-0.5)*12, 20, (Math.random()-0.5)*12);
+              meteor.position.copy(origin).add(offset);
+              ultEffectsGroup.add(meteor);
+
+              let mt = 0;
+              const mAnim = setInterval(() => {
+                mt += 0.1;
+                meteor.position.y -= 1.8;
+                if (meteor.position.y <= getStageHeight(meteor.position.x, meteor.position.z)) {
+                  clearInterval(mAnim);
+                  spawnUltParticles(meteor.position, 0xff3300);
+                  ultEffectsGroup.remove(meteor);
+                }
+              }, 16);
+            }, i * 150);
+          }
+        }
+
+        // 3. THUNDER PILLAR
+        else if (move.type === "THUNDER_PILLAR") {
+          const pillar = new THREE.Mesh(
+            new THREE.CylinderGeometry(2.5, 2.5, 40, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.8 })
+          );
+          pillar.position.set(origin.x, origin.y + 20, origin.z);
+          ultEffectsGroup.add(pillar);
+          spawnShockwaveRing(origin, 0xffff00);
+
+          setTimeout(() => { ultEffectsGroup.remove(pillar); }, 500);
+        }
+
+        // 4. BEAM CANNON SUPER LASER
+        else if (move.type === "BEAM_CANNON") {
+          const beam = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.5, 1.5, 60, 16),
+            new THREE.MeshBasicMaterial({ color: 0xff00ff, transparent: true, opacity: 0.85 })
+          );
+          beam.rotation.z = Math.PI / 2;
+          beam.position.set(origin.x, origin.y + 1.5, origin.z);
+          ultEffectsGroup.add(beam);
+
+          setTimeout(() => { ultEffectsGroup.remove(beam); }, 600);
+        }
+
+        // 5. FIRE NOVA RING
+        else if (move.type === "FIRE_NOVA") {
+          spawnShockwaveRing(origin, 0xff0055, 12);
+        }
+
+        // Damage & Blowback Application
+        allFighters.forEach(f => {
+          if (f !== this && f.currentHp > 0) {
+            const dist = f.position.distanceTo(origin);
+            if (dist < 14) {
+              const kb = new THREE.Vector3().subVectors(f.position, origin).normalize();
+              f.takeDamage(320, kb, 24); // ULTRA BLOWBACK!
+            }
+          }
+        });
+
+        spawnUltParticles(origin, move.color);
+      }
+
+      applyRagdollAnimation(delta, isDead) {
+        this.mesh.parts.body.rotation.x += delta * 10;
+        this.mesh.parts.body.rotation.z += delta * 8;
+        this.mesh.parts.wingL.rotation.x = Math.sin(this.animTime * 4) * 2;
+        this.mesh.parts.wingR.rotation.x = Math.cos(this.animTime * 4) * 2;
+        this.mesh.parts.legL.rotation.z = 1.2;
+        this.mesh.parts.legR.rotation.z = -1.2;
+
+        if (isDead) {
+          this.mesh.position.y = getStageHeight(this.position.x, this.position.z) + 0.2;
+          this.mesh.rotation.x = Math.PI / 2;
+        }
+      }
+
+      resetMeshPose() {
+        this.mesh.parts.body.rotation.set(0, 0, 0);
+        this.mesh.parts.head.rotation.set(0, 0, 0);
+        this.mesh.parts.wingL.rotation.set(0, 0, 0);
+        this.mesh.parts.wingR.rotation.set(0, 0, 0);
+        this.mesh.parts.legL.rotation.set(0, 0, 0);
+        this.mesh.parts.legR.rotation.set(0, 0, 0);
+      }
+    }
+
+    let activeFighterInstances = [];
+
+    // Particles & Shockwave Ring Generators
+    function spawnHitParticles(pos) {
+      for (let i = 0; i < 10; i++) {
+        const p = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), new THREE.MeshBasicMaterial({ color: 0xffaa00 }));
+        p.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*1.5, 1, (Math.random()-0.5)*1.5));
+        particlesGroup.add(p);
+        setTimeout(() => { particlesGroup.remove(p); }, 300);
+      }
+    }
+
+    function spawnUltParticles(pos, colorHex) {
+      for (let i = 0; i < 35; i++) {
+        const p = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshBasicMaterial({ color: colorHex }));
+        p.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*6, 0.5, (Math.random()-0.5)*6));
+        particlesGroup.add(p);
+        setTimeout(() => { particlesGroup.remove(p); }, 700);
+      }
+    }
+
+    function spawnShockwaveRing(pos, colorHex, maxRadius = 15) {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.5, 1.5, 32),
+        new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide, transparent: true, opacity: 0.9 })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.copy(pos); ring.position.y += 0.2;
+      ultEffectsGroup.add(ring);
+
+      let scale = 1;
+      const rAnim = setInterval(() => {
+        scale += 0.8;
+        ring.scale.set(scale, scale, 1);
+        ring.material.opacity -= 0.04;
+        if (ring.material.opacity <= 0) {
+          clearInterval(rAnim);
+          ultEffectsGroup.remove(ring);
+        }
+      }, 16);
+    }
+
+    // =========================================================
+    // 6. UI CONTROLLER & SMART AUTO-TRACKING CAMERA
+    // =========================================================
+    function setupUI() {
+      document.getElementById('btn-start-app').onclick = () => {
+        AudioEngine.init();
+        switchScreen('select');
+      };
+
+      document.getElementById('btn-back-to-title').onclick = () => {
+        switchScreen('title');
+      };
+
+      document.getElementById('btn-launch-battle').onclick = () => {
+        startBattleMode();
+      };
+
+      document.getElementById('btn-exit-battle').onclick = () => {
+        switchScreen('select');
+      };
+
+      document.getElementById('select-fighter-count').onchange = (e) => {
+        const count = parseInt(e.target.value);
+        selectedEntries = [];
+        for (let i = 0; i < count; i++) {
+          selectedEntries.push(i % CHIKIN_ROSTER.length);
+        }
+        renderRosterGrid();
+      };
+
+      document.getElementById('btn-camera-toggle').onclick = () => {
+        cameraSmartTrack = !cameraSmartTrack;
+        showAnnouncement(cameraSmartTrack ? "スマート追従カメラ ON" : "手動カメラモード");
+      };
+
+      // Settings Modal
+      const modal = document.getElementById('modal-settings');
+      document.getElementById('btn-open-settings').onclick = () => modal.classList.remove('hidden');
+      document.getElementById('btn-open-settings-battle').onclick = () => modal.classList.remove('hidden');
+      document.getElementById('btn-close-settings').onclick = () => modal.classList.add('hidden');
+      document.getElementById('btn-save-settings').onclick = () => modal.classList.add('hidden');
+
+      document.querySelectorAll('.btn-filter-opt').forEach(btn => {
+        btn.onclick = () => {
+          activeFilter = btn.dataset.filter;
+          document.body.className = document.body.className.replace(/filter-\w+/g, '');
+          if (activeFilter !== 'normal') document.body.classList.add(`filter-${activeFilter}`);
+          document.querySelectorAll('.btn-filter-opt').forEach(b => b.classList.remove('border-amber-500'));
+          btn.classList.add('border-amber-500');
+        };
+      });
+
+      const cinBtn = document.getElementById('toggle-cinematic');
+      cinBtn.onclick = () => {
+        isCinematic = !isCinematic;
+        document.body.classList.toggle('mode-cinematic', isCinematic);
+        cinBtn.textContent = isCinematic ? 'ON' : 'OFF';
+        cinBtn.classList.toggle('bg-amber-500', isCinematic);
+      };
+
+      const audBtn = document.getElementById('toggle-audio');
+      audBtn.onclick = () => {
+        audioEnabled = !audioEnabled;
+        audBtn.textContent = audioEnabled ? 'ON' : 'OFF';
+        audBtn.classList.toggle('bg-amber-500', audioEnabled);
+      };
+
+      renderRosterGrid();
+    }
+
+    // =========================================================
+    // ROSTER GRID RENDER & SELECTION CONTROLLER
+    // =========================================================
+    function renderRosterGrid() {
+      const container = document.getElementById('fighter-roster-grid');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const maxSlots = selectedEntries.length;
+      const statusEl = document.getElementById('selected-entry-status');
+      if (statusEl) {
+        statusEl.textContent = `参戦枠: ${maxSlots}体 選択中`;
+      }
+
+      CHIKIN_ROSTER.forEach((fighter, idx) => {
+        const card = document.createElement('div');
+        card.className = `fighter-card bg-gray-800/80 p-2 rounded-xl border border-gray-700 cursor-pointer hover:border-amber-400 flex flex-col justify-between transition-all`;
+
+        const slotIdx = selectedEntries.indexOf(idx);
+        if (slotIdx !== -1) {
+          card.classList.add('selected');
+          if (slotIdx === 0) card.classList.add('entry-p1');
+          else if (slotIdx === 1) card.classList.add('entry-p2');
+          else card.classList.add('entry-other');
+        }
+
+        const colorHex = '#' + fighter.color.toString(16).padStart(6, '0');
+
+        card.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <span class="w-3 h-3 rounded-full flex-shrink-0 border border-white/20" style="background-color: ${colorHex}"></span>
+            <span class="font-bold text-xs truncate text-white">${fighter.name}</span>
+          </div>
+          <div class="flex justify-between items-center text-[10px] text-gray-400 mt-1">
+            <span>HP: ${fighter.hp}</span>
+            ${slotIdx !== -1 ? `<span class="px-1.5 py-0.5 bg-amber-500 text-black font-extrabold rounded text-[9px]">P${slotIdx + 1}</span>` : ''}
+          </div>
+        `;
+
+        card.onclick = () => {
+          const existingSlot = selectedEntries.indexOf(idx);
+          if (existingSlot !== -1) {
+            // Already selected, cycle order
+            selectedEntries.push(selectedEntries.splice(existingSlot, 1)[0]);
+          } else {
+            // Replace oldest selection entry
+            selectedEntries.push(idx);
+            if (selectedEntries.length > maxSlots) {
+              selectedEntries.shift();
+            }
+          }
+          renderRosterGrid();
+          spawnPreviewFighters();
+        };
+
+        container.appendChild(card);
+      });
+
+      updateSelectInfo();
+    }
+
+    function updateSelectInfo() {
+      if (selectedEntries.length > 0) {
+        const p1 = CHIKIN_ROSTER[selectedEntries[0]];
+        const p1Move = ULTIMATE_MOVES[p1.ultId];
+        document.getElementById('p1-name').textContent = p1.name;
+        document.getElementById('p1-special').textContent = `超必殺技: ${p1Move.name}`;
+        document.getElementById('p1-desc').textContent = p1.desc;
+        document.getElementById('p1-hp').textContent = p1.hp;
+        document.getElementById('p1-spd').textContent = p1.speed > 1.1 ? "HIGH" : (p1.speed < 0.9 ? "LOW" : "NORMAL");
+      }
+
+      if (selectedEntries.length > 1) {
+        const p2 = CHIKIN_ROSTER[selectedEntries[1]];
+        const p2Move = ULTIMATE_MOVES[p2.ultId];
+        document.getElementById('p2-name').textContent = p2.name;
+        document.getElementById('p2-special').textContent = `超必殺技: ${p2Move.name}`;
+        document.getElementById('p2-desc').textContent = p2.desc;
+        document.getElementById('p2-hp').textContent = p2.hp;
+        document.getElementById('p2-cd').textContent = p2Move.cooldown <= 5.5 ? "FAST" : "NORMAL";
+      }
+    }
+
+    function switchScreen(screenName) {
+      currentScreen = screenName;
+      document.getElementById('screen-title').classList.toggle('hidden', screenName !== 'title');
+      document.getElementById('screen-select').classList.toggle('hidden', screenName !== 'select');
+      document.getElementById('screen-battle').classList.toggle('hidden', screenName !== 'battle');
+
+      if (screenName === 'select') {
+        buildStage(0);
+        spawnPreviewFighters();
+      }
+    }
+
+    function spawnPreviewFighters() {
+      while(fightersGroup.children.length > 0) fightersGroup.remove(fightersGroup.children[0]);
+      activeFighterInstances = [];
+      const isSelect = currentScreen === 'select';
+
+      selectedEntries.forEach((rIndex, slot) => {
+        const fighter = new FighterInstance(CHIKIN_ROSTER[rIndex], slot);
+        if (isSelect) {
+          // Line up in select screen for clear 3D preview facing camera
+          const total = selectedEntries.length;
+          const spacing = Math.min(4.0, 18 / total);
+          const startX = -((total - 1) * spacing) / 2;
+          const curY = getStageHeight(startX + slot * spacing, 2);
+          fighter.position.set(startX + slot * spacing, curY, 2);
+          fighter.rotationY = Math.PI; // Face camera
+          fighter.mesh.rotation.y = Math.PI;
+          fighter.mesh.position.copy(fighter.position);
+        }
+        activeFighterInstances.push(fighter);
+      });
+    }
+
+    function startBattleMode() {
+      selectedStageIndex = parseInt(document.getElementById('select-stage').value);
+      switchScreen('battle');
+      
+      const stageNames = [
+        "牧場アリーナ (物理木箱 & 柵)",
+        "ボクセル山岳コロシアム (高低差マップ)",
+        "サイバー・ネオンシティ (無限地平線)",
+        "溶岩マグマ・クラッシュ (危険な溶岩地帯)",
+        "天空スカイ・アイランド (空中浮島)"
+      ];
+      document.getElementById('battle-stage-name').textContent = `STAGE: ${stageNames[selectedStageIndex]}`;
+
+      buildStage(selectedStageIndex);
+      spawnPreviewFighters();
+      setupBattleHUD();
+    }
+
+    function setupBattleHUD() {
+      const hudContainer = document.getElementById('hud-fighters-bars');
+      hudContainer.innerHTML = '';
+
+      activeFighterInstances.forEach((f, i) => {
+        const barBox = document.createElement('article');
+        barBox.className = "flex flex-col bg-gray-900/80 p-1.5 rounded-xl border border-gray-700 text-xs";
+        barBox.innerHTML = `
+          <header class="flex justify-between font-bold truncate">
+            <span class="text-amber-400">${f.data.name}</span>
+            <span id="hud-hp-val-${i}" class="font-arcade text-[10px] text-green-400">100%</span>
+          </header>
+          <section class="w-full bg-gray-800 h-2 rounded-full overflow-hidden my-1">
+            <aside id="hud-hp-fill-${i}" class="bg-green-500 h-full w-full transition-all duration-200"></aside>
+          </section>
+          <section class="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
+            <aside id="hud-ult-fill-${i}" class="bg-amber-400 h-full w-0 transition-all duration-200"></aside>
+          </section>
+        `;
+        hudContainer.appendChild(barBox);
+      });
+    }
+
+    function updateBattleHUD() {
+      activeFighterInstances.forEach((f, i) => {
+        const hpPercent = Math.max(0, (f.currentHp / f.maxHp) * 100);
+        const ultPercent = Math.min(100, (f.ultCooldown / f.maxUltCooldown) * 100);
+
+        const hpFill = document.getElementById(`hud-hp-fill-${i}`);
+        const ultFill = document.getElementById(`hud-ult-fill-${i}`);
+        const hpVal = document.getElementById(`hud-hp-val-${i}`);
+
+        if (hpFill) hpFill.style.width = `${hpPercent}%`;
+        if (ultFill) ultFill.style.width = `${ultPercent}%`;
+        if (hpVal) {
+          hpVal.textContent = `${Math.ceil(hpPercent)}%`;
+          if (hpPercent <= 0) hpVal.textContent = "K.O.";
+        }
+      });
+    }
+
+    function showAnnouncement(text) {
+      const banner = document.getElementById('battle-announcement');
+      const bannerText = document.getElementById('announcement-text');
+      bannerText.innerText = text;
+      banner.classList.remove('opacity-0', 'scale-90');
+      banner.classList.add('scale-100');
+      setTimeout(() => {
+        banner.classList.add('opacity-0', 'scale-90');
+        banner.classList.remove('scale-100');
+      }, 1800);
+    }
+
+    // =========================================================
+    // 7. MAIN GAME RENDER & SMART BOUNDING CAMERA LOOP
+    // =========================================================
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+
+      if (currentScreen === 'battle') {
+        activeFighterInstances.forEach(f => f.update(delta, activeFighterInstances));
+        updateBattleHUD();
+
+        // ----------------------------------------------------
+        // SMART DYNAMIC CAMERA: FIT ALL FIGHTERS IN VIEW
+        // ----------------------------------------------------
+        if (cameraSmartTrack && activeFighterInstances.length > 0 && !isMouseDown) {
+          let center = new THREE.Vector3();
+          let activeCount = 0;
+          let maxDist = 0;
+
+          activeFighterInstances.forEach(f => {
+            if (f.currentHp > 0) {
+              center.add(f.position);
+              activeCount++;
+            }
+          });
+
+          if (activeCount > 0) center.divideScalar(activeCount);
+          else center.set(0, 0, 0);
+
+          activeFighterInstances.forEach(f => {
+            if (f.currentHp > 0) {
+              const d = f.position.distanceTo(center);
+              if (d > maxDist) maxDist = d;
+            }
+          });
+
+          // Compute ideal distance so no fighter goes off-screen
+          const targetCamDist = Math.max(22, Math.min(50, maxDist * 2.2 + 10));
+          cameraDistance += (targetCamDist - cameraDistance) * 0.05;
+
+          cameraAngleX += delta * 0.08;
+          camera.position.x = center.x + Math.sin(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
+          camera.position.z = center.z + Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
+          camera.position.y = center.y + Math.sin(cameraAngleY) * cameraDistance + 6;
+          camera.lookAt(center.x, center.y + 2, center.z);
+        }
+      } else {
+        // Orbit on Menu / Character Select Screen with enhanced centering
+        if (!isMouseDown) cameraAngleX += delta * 0.15;
+        const targetFocusY = currentScreen === 'select' ? 2.2 : 2.0;
+        const camDist = currentScreen === 'select' ? 16 : cameraDistance;
+        camera.position.x = Math.sin(cameraAngleX) * Math.cos(cameraAngleY) * camDist;
+        camera.position.z = Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * camDist;
+        camera.position.y = Math.sin(cameraAngleY) * camDist + targetFocusY;
+        camera.lookAt(0, targetFocusY, 1.5);
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    window.onload = function() {
+      initThreeJS();
+      setupUI();
+      buildStage(0);
+      spawnPreviewFighters();
+      animate();
+    };
+  </script>
+</body>
+</html>
